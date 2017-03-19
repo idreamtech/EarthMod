@@ -65,20 +65,24 @@ function getOsmService:retry(_err, _msg, _data, _params, _callback)
 	end
 end
 
-function getOsmService:getOsmXMLData(dleft,dbottom,dright,dtop,_callback)
-	--local filePath  = self.worldName .. "osm/" .. modName .. ".xml";
+function getOsmService:getOsmXMLData(x,y,_callback)
 	local osmXMLUrl = getOsmService.osmXMLUrl();
 
-	osmXMLUrl = osmXMLUrl:gsub("{left}",dleft);
-	osmXMLUrl = osmXMLUrl:gsub("{bottom}",dbottom);
-	osmXMLUrl = osmXMLUrl:gsub("{right}",dright);
-	osmXMLUrl = osmXMLUrl:gsub("{top}",dtop);
+	osmXMLUrl = osmXMLUrl:gsub("{left}",self.dleft);
+	osmXMLUrl = osmXMLUrl:gsub("{bottom}",self.dbottom);
+	osmXMLUrl = osmXMLUrl:gsub("{right}",self.dright);
+	osmXMLUrl = osmXMLUrl:gsub("{top}",self.dtop);
 
 	self:GetUrl(osmXMLUrl,function(data,err)
 		if(err == 200) then
-			local file = ParaIO.open("/xml.osm", "w");
+			--[[local file = ParaIO.open("/xml.osm", "w");
 			file:write(data,#data);
-			file:close();
+			file:close();]]
+
+			local fileExt = ParaIO.open("xml_"..x.."_"..y..".osm", "w");
+			LOG.std(nil,"debug","gisOsmService","xml_"..x.."_"..y..".osm");
+			local ret = fileExt:write(data,#data);
+			fileExt:close();
 
 			_callback(data);
 		else
@@ -87,18 +91,22 @@ function getOsmService:getOsmXMLData(dleft,dbottom,dright,dtop,_callback)
 	end);
 end
 
-function getOsmService:getOsmPNGData(tileX,tileY,_callback)
-	--local filePath  = self.worldName .. "osm/" .. modName .. ".xml";
+function getOsmService:getOsmPNGData(x,y,_callback)
 	local osmPNGUrl = getOsmService.osmPNGUrl();
 
-	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(tileX));
-	osmPNGUrl = osmPNGUrl:gsub("{y}",tostring(tileY));
+	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(x));
+	osmPNGUrl = osmPNGUrl:gsub("{y}",tostring(y));
 
 	self:GetUrl(osmPNGUrl,function(data,err)
 		if(err == 200) then
-			local file = ParaIO.open("/tile.png", "w");
+			--[[local file = ParaIO.open("/tile.png", "w");
 			file:write(data,#data);
-			file:close();
+			file:close();]]
+
+			local fileExt = ParaIO.open("tile_"..x.."_"..y..".png", "w");
+			LOG.std(nil,"debug","gisOsmService","tile_"..x.."_"..y..".png");
+			local ret = fileExt:write(data,#data);
+			fileExt:close();
 
 			_callback(data);
 		else

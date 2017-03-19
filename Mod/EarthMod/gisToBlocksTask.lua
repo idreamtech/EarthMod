@@ -18,6 +18,7 @@ NPL.load("(gl)script/apps/Aries/Creator/Game/Items/ItemColorBlock.lua");
 NPL.load("(gl)script/ide/System/Core/Color.lua");
 NPL.load("(gl)Mod/EarthMod/getOsmService.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
+NPL.load("(gl)Mod/EarthMod/TileManager.lua");
 
 local Color           = commonlib.gettable("System.Core.Color");
 local ItemColorBlock  = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
@@ -31,6 +32,7 @@ local getOsmService   = commonlib.gettable("Mod.EarthMod.getOsmService");
 local EntityManager   = commonlib.gettable("MyCompany.Aries.Game.EntityManager");
 local CommandManager  = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 local EarthMod        = commonlib.gettable("Mod.EarthMod");
+local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
 
 local gisToBlocks = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks"));
 
@@ -397,7 +399,7 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 				row_padding_bytes = 4-row_padding_bytes;
 			end
 
---			local worker_thread_co = coroutine.create(function ()
+			local worker_thread_co = coroutine.create(function ()
 				for iy=1, width do
 					for ix=1, height do
 						pixel = raster:ReadBytes(bytesPerPixel, pixel);
@@ -411,7 +413,7 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 								--end
 								count = count + 1;
 								if((count%block_per_tick) == 0) then
---									coroutine.yield(true);
+									coroutine.yield(true);
 								end
 							end
 						end
@@ -421,17 +423,17 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 					end
 				end
 --				return;
---			end)
+			end)
 
---			local timer = commonlib.Timer:new({callbackFunc = function(timer)
---				local status, result = coroutine.resume(worker_thread_co);
---				if not status then
---					LOG.std(nil, "info", "PNGToBlocks", "finished with %d blocks: %s ", count, tostring(result));
---					timer:Change();
---					raster:close();
---				end
---			end})
---			timer:Change(30,30);
+			local timer = commonlib.Timer:new({callbackFunc = function(timer)
+				local status, result = coroutine.resume(worker_thread_co);
+				if not status then
+					LOG.std(nil, "info", "PNGToBlocks", "finished with %d blocks: %s ", count, tostring(result));
+					timer:Change();
+					raster:close();
+				end
+			end})
+			timer:Change(30,30);
 
 			UndoManager.PushCommand(self);
 		else
@@ -518,10 +520,12 @@ function gisToBlocks:MoreScene()
 	end);
 end
 
-function gisToBlocks:LoadToScene(raster,vector)
+function gisToBlocks:LoadToScene(raster,vector,px,py,pz,x,y)
 	local colors = self.colors;
 
-	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	-- local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+
+	LOG.std(nil, "info", "gisToBlocks", "方块生成位置: px : "..px.." py : "..py.." pz : "..pz);
 
 	if(not px) then
 		return;
@@ -538,12 +542,13 @@ function gisToBlocks:LoadToScene(raster,vector)
 									  pright  = gisToBlocks.pright});
 	EarthMod:SaveWorldData();
 	
+	LOG.std(nil,"debug","gisToBlocks","加载方块和贴图");
 	self:PNGToBlock(raster, px, py, pz);
 	self:OSMToBlock(vector, px, py, pz);
 	CommandManager:RunCommand("/save");
 end
 
-function gisToBlocks:GetData(_callback)
+function gisToBlocks:GetData(x,y,_callback)
 	local raster,vector;
 	local tileX,tileY;
 	local dtop,dbottom,dleft,dright;
@@ -570,12 +575,15 @@ function gisToBlocks:GetData(_callback)
 		dright  = gisToBlocks.dright;
 	end
 
+	self.cache = 'true';
 	if(self.cache == 'true') then
 		GameLogic.SetStatus(L"下载数据中");
-		getOsmService:getOsmPNGData(tileX,tileY,function(raster)
-			getOsmService:getOsmXMLData(dleft,dbottom,dright,dtop,function(vector)
-				raster = ParaIO.open("tile.png", "image");
+		LOG.std(nil,"debug","gisToBlocks","下载数据中");
+		getOsmService:getOsmPNGData(x,y,function(raster)
+			getOsmService:getOsmXMLData(x,y,function(vector)
+				raster = ParaIO.open("tile_"..x.."_"..y..".png", "image");
 				GameLogic.SetStatus(L"下载成功");
+				LOG.std(nil,"debug","gisToBlocks","下载成功");
 				_callback(raster,vector);
 			end);
 		end);
@@ -612,7 +620,7 @@ function gisToBlocks:Undo()
 end
 
 function gisToBlocks:BoundaryCheck()
-	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	--[[local px, py, pz = EntityManager.GetFocus():GetBlockPos();
 	
 	local function common(words)
 		GameLogic.SetStatus(words);
@@ -672,7 +680,7 @@ function gisToBlocks:BoundaryCheck()
 		common(L"上边");
 		gisToBlocks.direction = "top";
 		return true;
-	end
+	end]]
 
 	return false
 end
@@ -686,6 +694,10 @@ function gisToBlocks:Run()
 		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
 		gisToBlocks.dright, gisToBlocks.dbottom = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
 		
+		getOsmService.dleft   = gisToBlocks.dleft;
+		getOsmService.dtop    = gisToBlocks.dtop;
+		getOsmService.dright  = gisToBlocks.dright;
+		getOsmService.dbottom = gisToBlocks.dbottom;
 		getOsmService.zoom = self.zoom;
 		
 		if(self.options == "already") then
@@ -702,8 +714,42 @@ function gisToBlocks:Run()
 			self.add_to_history = true;
 		end
 
-		self:GetData(function(raster,vector)
-			self:LoadToScene(raster,vector);
-		end);
+		-- 根据minlat和minlon计算出左下角的瓦片行列号坐标
+		gisToBlocks.tile_MIN_X , gisToBlocks.tile_MIN_Y   = deg2tile(self.minlon,self.minlat,self.zoom);
+		-- 根据maxlat和maxlon计算出右上角的瓦片行列号坐标
+		gisToBlocks.tile_MAX_X , gisToBlocks.tile_MAX_Y   = deg2tile(self.maxlon,self.maxlat,self.zoom);
+		LOG.std(nil,"debug","gisToBlocks","tile_MIN_X : "..gisToBlocks.tile_MIN_X.." tile_MIN_Y : "..gisToBlocks.tile_MIN_Y);
+		LOG.std(nil,"debug","gisToBlocks","tile_MAX_X : "..gisToBlocks.tile_MAX_X.." tile_MAX_Y : "..gisToBlocks.tile_MAX_Y);
+
+		if not TileManager.GetInstance() then 
+			local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+			local tileManager = TileManager:new({lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,bx = px,by = py,bz = pz})
+		end
+
+		local cols, rows = TileManager.GetInstance():getIterSize();
+		LOG.std(nil,"debug","gisToBlocks","cols : "..cols.." rows : "..rows);
+
+		-- 计算,测试需要,最多只加载指定区域范围内的4个瓦片
+		--local count = 0;
+		for j=1,rows do
+			for i=1,cols do
+				--count = count + 1;
+				local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
+				getOsmService.tileX = tile.ranksID.x;
+				getOsmService.tileY = tile.ranksID.y;
+				--if count == 2 then
+				LOG.std(nil,"debug","gisToBlocks","待获取瓦片的XY坐标: "..tile.ranksID.x.."-"..tile.ranksID.y);
+				self:GetData(tile.ranksID.x,tile.ranksID.y,function(raster,vector)
+					LOG.std(nil,"debug","gisToBlocks","即将加载方块和贴图信息");
+					self:LoadToScene(raster,vector,po.x,po.y,po.z);
+				end);
+				LOG.std(nil,"debug","gisToBlocks","after getData");
+				--return;
+				--end
+				--[[if count == 4 then
+					return;
+				end]]
+			end
+		end
 	end
 end

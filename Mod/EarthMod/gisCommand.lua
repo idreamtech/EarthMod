@@ -29,6 +29,8 @@ Commands["gis"] = {
 	]],
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
 		local lat,lon;
+		-- 深圳大学区域信息
+		local minlat,minlon,maxlat,maxlon=22.5308,113.9250,22.5424,113.9402;
 		options, cmd_text = CmdParser.ParseOptions(cmd_text);
 		--LOG.std(nil,"debug","options",options);
 
@@ -54,7 +56,7 @@ Commands["gis"] = {
 				cache = 'false';
 			end
 
-			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,lat=lat,lon=lon,cache=cache});
+			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,lat=lat,lon=lon,cache=cache,minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon});
 			gisCommand.gis:Run();
 			return;
 		end
