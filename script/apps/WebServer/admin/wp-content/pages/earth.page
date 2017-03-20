@@ -9,13 +9,15 @@ NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
 
 local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 
-local lat = request:get("lat");
-local lon = request:get("lon");
+local minlat = request:get("minlat");
+local minlon = request:get("minlon");
+local maxlat = request:get("maxlat");
+local maxlon = request:get("maxlon");
 
 if(is_ajax()) then
     add_action('wp_ajax_send_coordinate' , function()
         --通知Paracraft UI
-        SelectLocationTask.setCoordinate(lat,lon);
+        SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon);
         response:send();
         return;
     end);
