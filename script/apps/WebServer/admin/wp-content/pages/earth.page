@@ -13,38 +13,48 @@ local lat = request:get("lat");
 local lon = request:get("lon");
 
 if(is_ajax()) then
-	add_action('wp_ajax_send_coordinate' , function()
-		--通知Paracraft UI
-		SelectLocationTask.setCoordinate(lat,lon);
-		response:send();
-		return;
-	end);
+    add_action('wp_ajax_send_coordinate' , function()
+        --通知Paracraft UI
+        SelectLocationTask.setCoordinate(lat,lon);
+        response:send();
+        return;
+    end);
 
-	return;
+    return;
 end
 
 PAGE_NO_SIDE_BAR = true;
-
-wp_enqueue_script("ace",				"/wp-includes/js/ace/ace.js"); 
-wp_enqueue_script("angular",			"/wp-includes/js/angular/angular.min.js");
-wp_enqueue_script("ngStorage",			"/wp-includes/js/angular/ngStorage.js");
-wp_enqueue_script("ngSanitize",			"/wp-includes/js/angular/angular-sanitize.min.js");
-wp_enqueue_script("ui-bootstrap-tpls",	"/wp-includes/js/angular/ui-bootstrap-tpls-1.3.3.min.js");
-wp_enqueue_style("bootstrap-css",		"/wp-includes/js/bootstrap/css/bootstrap.min.css");
-wp_enqueue_script("jquery",				"/wp-includes/js/jquery/jquery.min.js");
-wp_enqueue_style("easyui_icon", 		"/wp-includes/js/jeasyui/themes/icon.css");
-
-wp_enqueue_script("EARTH",              "/wp-content/pages/earth/app.js");
-wp_enqueue_script("leaflet",            "/wp-content/pages/earth/js/leaflet.js");
 wp_enqueue_style("leaflet",             "/wp-content/pages/earth/assets/css/leaflet.css");
-wp_enqueue_script("earthController",    "/wp-content/pages/earth/controllers/earthController.js");
+wp_enqueue_script("jquery",             "/wp-includes/js/jquery/jquery.min.js");
+wp_enqueue_script("leaflet",            "/wp-content/pages/earth/js/leaflet.js");
+wp_enqueue_script("coordtransform",            "/wp-content/pages/earth/js/coordtransform.js");
+wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3-typeahead.min.js");
 
 ?>
 <style>
-	.earth-main{
-		width:1170px;
-	}
-
+    ul{
+        list-style: none;
+        margin: 0px;
+        padding: 0px;
+    }
+    .earth-main{
+        position: relative;
+    }
+    .search{
+        /*position: absolute;*/
+        /*z-index: 999;*/
+        /*border:1px solid #e67b93;*/
+        /*left:80px;*/
+        /*top:20px;*/
+        /*border-radius: 5px;*/
+    }
+    .search-inp{
+        height:30px;
+        width:200px;
+        padding: 10px;
+        border:1px solid #999;
+        border-radius: 5px;
+    }
     .earth-main .spot-light {
         text-align:center;
         margin-top: 0;
@@ -59,47 +69,220 @@ wp_enqueue_script("earthController",    "/wp-content/pages/earth/controllers/ear
     .earth-main button {
         margin-top: 20px;
     }
-
+    .container{
+        width:100% !important;
+        /*margin:0px !important;*/
+        /*padding: 0px !important;*/
+    }
+    .leaflet-marker-icon{
+        width:16px;
+        height:16px;
+    }
+    #map{
+        width:inherit;
+    }
+    /*.query-list{*/
+        /*width:98%;*/
+        /*margin: auto;*/
+        /*border-left:1px solid #000;*/
+        /*border-right:1px solid #000;*/
+        /*border-bottom:1px solid #000;*/
+        /*border:1px solid #000;*/
+        /*border-radius: 5px;*/
+    /*}*/
+    /*.query-list li{
+        width:100%;
+        text-indent: 2px;
+    }*/
+    .typeahead{
+        width:100%;
+        padding: 0px !important;
+        margin: 0px !important;
+    }
+    .typeahead a{
+        width:100%;
+        word-break:keep-all;/* 不换行 */
+        white-space:nowrap;/* 不换行 */
+        overflow:hidden;/* 内容超出宽度时隐藏超出部分的内容 */
+        text-overflow:ellipsis;/* 当对象内文本溢出时显示省略标记(...) ；需与overflow:hidden;一起使用。*/
+    }
 </style>
 
-<div class="earth-main" ng-app="EARTH">
-    <div ng-controller="earthController">
-	    <h2 class="spot-light">
-            请选择坐标位置后，确定
-	    </h2>
+<div class="earth-main">
+        <!-- <div class='search'> -->
+            <!-- <input class='search-inp' data-provide="typeahead" placeholder="请输入校园名称" /> -->
+            <!-- <ul class="query-list"> -->
+                <!-- <li>清华大学</li>
+                <li>北京大学</li>
+                <li>湖南大学</li>
+                <li>湖南科技大学</li>
+                <li>浙江大学</li> -->
+            <!-- </ul> -->
+        <!-- </div> -->
         <div id="map"></div>
-        <button type="button" ng-click="confirm()" class="btn btn-success btn-lg btn-block">确定</button>
-    </div>
+        <!-- <button type="button" ng-click="confirm()" class="btn btn-success btn-lg btn-block">确定</button> -->
 </div>
 
 <script>
-	var shenzheng = [22.54329, 113.94928];
-	console.log(0);
-    var map  = L.map('map').setView(shenzheng, 14);
-    var glat = null;
-    var glon = null;
-
-    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    var marker = null;
-    function onMapClick(e) {
-        if (marker != null) {
-            marker.remove();
+$(function(){
+    $('.navbar').remove();
+    $('.footer').remove();
+})
+   $('#map').height($(window).height());
+   // alert(ipLocation);
+    var hz = {
+        leftBottom:{
+            lat:30.4668,
+            lng:114.3341
+        },
+        rightTop:{
+            lat:30.4840,
+            lng:114.3642
         }
-
-        marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map)
-                .bindPopup('当前坐标，纬度：' + e.latlng.lat.toFixed(4) + ' | 经度：' + e.latlng.lng.toFixed(4))
-                .openPopup();
-
-        glat = e.latlng.lat;
-        glon = e.latlng.lng;
-
-		console.log(glat);
-		console.log(glon);
+    };
+    var tj = {
+        leftBottom:{
+            lat:39.18860,
+            lng:117.10036
+        },
+        rightTop:{
+            lat:39.19362,
+            lng:117.10439
+        }
     }
+    var currentIcon = L.icon({
+        iconUrl: '/wp-content/pages/earth/assets/css/images/3.png',
+        iconSize: [14, 24],
+    })
+    var myIcon = L.icon({
+        iconUrl: '/wp-content/pages/earth/assets/css/images/4.png',
+        iconSize: [14, 24],
+    });
+    var map  = L.map('map',{
+        zoomControl:false
+    });
+    var china = [37.899050079360935, 102.83203125]; 
+    map.setView(china,4);
+    var corner1 = L.latLng(54.559322, -5.767822),
+        corner2 = L.latLng(56.1210604, -3.021240),
+        bounds = L.latLngBounds(corner1, corner2);
+    var rec = L.rectangle(bounds, {color: "#fff", weight: 1}).addTo(map);
+    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+    L.control.scale().addTo(map);
+    L.control.zoom({  
+        position: 'bottomright'  
+    }).addTo(map);  
+    //leaflet自定义一个control
+    L.Control.Search = L.Control.extend({
+        options:{
+            position:"topleft" // 初始化位置
+        },
+        // initialize:function(options){ //初始化
+        //     L.Util.extend(this.options, options);
+        // },
+        onAdd:function(map){ //添加控件
+            var container = L.DomUtil.create("div", "search")
+            var options = this.options;
+            var input = L.DomUtil.create("input", "search-inp");
+            input.placeholder = "请输入校园名称";
+            input.setAttribute('data-provide','typeahead');
+            input.ondblclick = this._ondblclick;
+            container.appendChild(input);
+            return container;
+        },
+        _ondblclick:function(e){
+            e.stopPropagation();// 阻止事件冒泡,双击输入框放大地图事件
+            // console.log(1);
+        }
+    })
+    L.control.search = function (options) {
+        return new L.Control.Search(options);
+    };
+    //启用控件并添加到地图中
+    L.control.search().addTo(map);
+     function renderUniversity(uni){
+        if(uni != null & uni != undefined){
+            rec.remove();
+            corner1 = L.latLng(uni.leftBottom.lat, uni.leftBottom.lng);
+            corner2 = L.latLng(uni.rightTop.lat,uni.rightTop.lng);
+            bounds = L.latLngBounds(corner1, corner2);
+            rec = L.rectangle(bounds, {color: "#ff7800", weight: 1}).addTo(map);
+            map.fitBounds(bounds);
+            console.log(rec.getBounds());
+            var data = rec.getBounds()
+            ajaxData(data);
+        }
+        
+     }
+     function ajaxData(d){
+        var data = {
+            "minlat": d._southWest.lat,
+            "minlon": d._southWest.lng,
+            "maxlat": d._northEast.lat,
+            "maxlon": d._northEast.lng
+        };
+        $.ajax({
+            url:"/ajax/earth?action=send_coordinate",
+            type:"post",
+            dataType:"json",
+            data:data,
+            success:function(res){
+                console.log(response);
+            },
+            error:function(){
+                alert("请求失败")
+            }
 
-    map.on('click', onMapClick);
+        })
+     }
+    // map.locate();
+    // console.log(coordtransform);
+        // console.log(map.locationfound)
+    // map.locationfound(e);
+    // function locationfound(e){
+    //     var gcj02tobd09 = coordtransform.gcj02tobd09(e.latlng.lat,e.latlng.lng);//转化成火星坐标系
+    //     var currentMarker = L.marker(gcj02tobd09,{icon:currentIcon}).addTo(map);
+    // }
+    // function locationerror(e){
+    //     alert('获取位置失败')
+    // }
+    // map.on('locationfound',locationfound)
+    // map.on('locationerror',locationerror)
+
+    // function onMapClick(e) {
+
+    // }
+
+    // map.on('click', onMapClick);
+
+    function searchUniversity(data){
+        if(data != null && data != undefined){
+            if(data == "华中农业大学"){
+                renderUniversity(hz);
+            }else if(data == "天津城市建设管理职业技术学院"){
+                renderUniversity(tj);
+            }else{
+                alert('未查找到结果');
+            }
+        }
+    }
+    //模糊搜索
+    $('.search-inp').typeahead({
+        source: function(query, process) {
+            var data =['华中农业大学','天津城市建设管理职业技术学院'];
+            process(data);
+        }
+    });
+    $('.search-inp').on('keydown',function(e){
+        if(e.which == 13){
+            searchUniversity($('.search-inp').val());
+        }
+    })
+    $('.search').on('click','.typeahead li',function(){
+        searchUniversity($(this).text())
+    })
+
 </script>
 
