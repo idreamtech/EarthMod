@@ -37,14 +37,14 @@ function ItemEarth:OnSelect(itemStack)
 	ItemEarth._super.OnSelect(self,itemStack);
 	GameLogic.SetStatus(L"点击下方按钮选择地图坐标");
 
-	if(EarthMod:GetWorldData("alreadyBlock")) then
+	--[[if(EarthMod:GetWorldData("alreadyBlock")) then
 		LOG.std(nil,"debug","SelectLocationTask.lat",SelectLocationTask.lat);
 		CommandManager:RunCommand("/gis -already " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon);
 		self:boundaryCheck();
-	end
+	end]]
 end
 
-function ItemEarth:TryCreate(itemStack, entityPlayer, x,y,z, side, data, side_region)
+function ItemEarth:TryCreate(itemStack, entityPlayer, x, y, z, side, data, side_region)
 	if(SelectLocationTask.isFirstSelect) then
 		_guihelper.MessageBox(L"您还没有选择地图坐标");
 		return;
@@ -62,7 +62,7 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x,y,z, side, data, side_re
 	--CommandManager:RunCommand("/fog 1000");
 	--CommandManager:RunCommand("/renderdist 128");
 
-	local gisCommandText = "/gis -coordinate " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon;
+	local gisCommandText = "/gis -coordinate " .. SelectLocationTask.minlat .. " " .. SelectLocationTask.minlon.." ".. SelectLocationTask.maxlat .. " " .. SelectLocationTask.maxlon;
 	
 	if(SelectLocationTask.isChange)then
 		SelectLocationTask.isChange = false;
@@ -86,14 +86,14 @@ function ItemEarth:CompareItems(left, right)
 end
 
 function ItemEarth:boundaryCheck()
-	BoundaryTimer = BoundaryTimer or commonlib.Timer:new({callbackFunc = function(timer)
+	--[[BoundaryTimer = BoundaryTimer or commonlib.Timer:new({callbackFunc = function(timer)
 			CommandManager:RunCommand("/gis -boundary");
 			--echo(gisCommand.getMoreTiles);
 			SelectLocationTask.getMoreTiles = gisCommand.getMoreTiles;
 			SelectLocationTask:RefreshPage();
 		end});
 
-	BoundaryTimer:Change(300, 300);
+	BoundaryTimer:Change(300, 300);]]
 end
 
 function ItemEarth:MoreScence()

@@ -60,7 +60,7 @@ function SelectLocationTask:GetItem()
 end
 
 function SelectLocationTask.OnClickSelectLocationScript()
-	_guihelper.MessageBox(L"点击后打开外部浏览器，点击地图选择坐标。", function(res)
+	_guihelper.MessageBox(L"点击后打开内嵌浏览器，输入学校名称，选择学校后，显示学校设定区域信息。", function(res)
 		if(res and res == _guihelper.DialogResult.Yes) then
 			local self = SelectLocationTask.GetInstance();
 			local item = self:GetItem();
@@ -73,7 +73,7 @@ function SelectLocationTask.OnClickSelectLocationScript()
 end
 
 function SelectLocationTask.OnClickGetMoreTiles()
-	_guihelper.MessageBox(L"是否确定生成此区域？", function(res)
+	--[[_guihelper.MessageBox(L"是否确定生成此区域？", function(res)
 		if(res and res == _guihelper.DialogResult.Yes) then
 			local self = SelectLocationTask.GetInstance();
 			local item = self:GetItem();
@@ -82,7 +82,7 @@ function SelectLocationTask.OnClickGetMoreTiles()
 				item:MoreScence();
 			end
 		end
-	end, _guihelper.MessageBoxButtons.YesNo);
+	end, _guihelper.MessageBoxButtons.YesNo);]]
 end
 
 function SelectLocationTask.OnClickConfirm()
@@ -100,16 +100,18 @@ function SelectLocationTask.OnClickCancel()
 	page:CloseWindow();
 end
 
-function SelectLocationTask.setCoordinate(lat,lon)
+function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon)
 	SelectLocationTask.isFirstSelect = false;
 
-	if(lat ~= SelectLocationTask.lat or lon ~=SelectLocationTask.lon) then
+	if(minlat ~= SelectLocationTask.minlat or minlon ~=SelectLocationTask.minlon or maxlat ~= SelectLocationTask.maxlat or maxlon ~=SelectLocationTask.maxlon) then
 		SelectLocationTask.isChange = true;
-		SelectLocationTask.lat      = lat;
-		SelectLocationTask.lon      = lon;
+		SelectLocationTask.minlat   = minlat;
+		SelectLocationTask.minlon   = minlon;
+		SelectLocationTask.maxlat   = maxlat;
+		SelectLocationTask.maxlon   = maxlon;
 	end
 
-	EarthMod:SetWorldData("coordinate",{lat=tostring(lat),lon=tostring(lon)});
+	EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
 	--EarthMod:SaveWorldData();
 
     local self = SelectLocationTask.GetInstance();
@@ -152,8 +154,10 @@ function SelectLocationTask:Run()
 		SelectLocationTask.isFirstSelect = false;
 		SelectLocationTask.isChage       = false;
 
-		SelectLocationTask.lat = coordinate.lat or 0;
-		SelectLocationTask.lon = coordinate.lon or 0;
+		SelectLocationTask.minlat = coordinate.minlat or 0;
+		SelectLocationTask.minlon = coordinate.minlon or 0;
+		SelectLocationTask.maxlat = coordinate.maxlat or 0;
+		SelectLocationTask.maxlon = coordinate.maxlon or 0;
 	end
 
 	self:ShowPage();

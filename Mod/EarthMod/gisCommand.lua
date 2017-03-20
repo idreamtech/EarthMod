@@ -23,22 +23,24 @@ local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager")
 
 Commands["gis"] = {
 	name="gis", 
-	quick_ref="/gis [-coordinate] [lat] [lng] [-cache] [true/false]",
+	quick_ref="/gis [-coordinate] [minlat] [minlng] [maxlat] [maxlng] [-cache] [true/false]",
 	desc=[[
 		
 	]],
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
-		local lat,lon;
+		local lat,lon,minlat,minlon,maxlat,maxlon;
 		-- 深圳大学区域信息
-		local minlat,minlon,maxlat,maxlon=22.5308,113.9250,22.5424,113.9402;
+		-- local minlat,minlon,maxlat,maxlon=22.5308,113.9250,22.5424,113.9402;
 		options, cmd_text = CmdParser.ParseOptions(cmd_text);
 		--LOG.std(nil,"debug","options",options);
 
 		if(options.already or options.coordinate) then
-			lat, cmd_text = CmdParser.ParseString(cmd_text);
-			lon, cmd_text = CmdParser.ParseString(cmd_text);
+			minlat, cmd_text = CmdParser.ParseString(cmd_text);
+			minlon, cmd_text = CmdParser.ParseString(cmd_text);
+			maxlat, cmd_text = CmdParser.ParseString(cmd_text);
+			maxlon, cmd_text = CmdParser.ParseString(cmd_text);
 
-			LOG.std(nil,"debug","lat,lon",{lat,lon});
+			LOG.std(nil,"debug","minlat,minlon,maxlat,maxlon",{minlat,minlon,maxlat,maxlon});
 
 			if(options.already) then
 				optionsType = "already";
@@ -56,7 +58,7 @@ Commands["gis"] = {
 				cache = 'false';
 			end
 
-			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,lat=lat,lon=lon,cache=cache,minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon});
+			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon,cache=cache});
 			gisCommand.gis:Run();
 			return;
 		end
