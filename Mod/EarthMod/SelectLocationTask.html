@@ -16,7 +16,7 @@
     <pe:if condition="<%= SelectLocationTask.isFirstSelect == false and SelectLocationTask.getMoreTiles == false %>">
         <aries:window mode="thin" style='width:366px;height:100px;margin-left:70px;color:#ffffff' title='<%=L"坐标选择" %>'>
             <pe:if condition="<%= SelectLocationTask.isFirstSelect == false %>">
-                <div style="width:336px;base-font-size:14px;font-size:14px;text-align:left;margin-left:55px;margin-top:5px;margin-bottom:5px;">纬度：<%= string.format("%0.4f", SelectLocationTask.lat) %> &lt;&lt;&gt;&gt; 经度：<%= string.format("%0.4f", SelectLocationTask.lon) %></div>
+                <div style="width:336px;base-font-size:14px;font-size:14px;text-align:left;margin-left:55px;margin-top:5px;margin-bottom:5px;">纬度：<%= string.format("%0.4f", SelectLocationTask.minlat) %> &lt;&lt;&gt;&gt; 经度：<%= string.format("%0.4f", SelectLocationTask.minlon) %></div>
                 <input name="editBtn" class="mc_small_button" style="base-font-size:14px;font-size:14px;width:84px;height:35px;margin-left:35px;margin-right:15px;margin-bottom:30px;" value="确定" type="button" onclick="SelectLocationTask.OnClickConfirm()" />
                 <input name="editBtn" class="mc_small_button" style="base-font-size:14px;font-size:14px;width:84px;height:35px;margin-right:15px;margin-bottom:30px;" value="重选" type="button" onclick="SelectLocationTask.OnClickSelectLocationScript()" />
                 <input name="editBtn" class="mc_small_button" style="base-font-size:14px;font-size:14px;width:84px;height:35px;margin-bottom:30px;" value="取消" type="button" onclick="SelectLocationTask.OnClickCancel()" />
@@ -26,7 +26,7 @@
 
     <pe:if condition="<%= SelectLocationTask.isFirstSelect == false and SelectLocationTask.getMoreTiles == true %>">
         <aries:window mode="thin" style='width:450px;margin-left:20px;height:100px;color:#ffffff' title='<%=L"坐标选择" %>'>
-            <div style="width:450px;base-font-size:14px;font-size:14px;text-align:left;margin-left:95px;margin-top:5px;margin-bottom:5px;">纬度：<%= string.format("%0.4f", SelectLocationTask.lat) %> &lt;&lt;&gt;&gt; 经度：<%= string.format("%0.4f", SelectLocationTask.lon) %></div>
+            <div style="width:450px;base-font-size:14px;font-size:14px;text-align:left;margin-left:95px;margin-top:5px;margin-bottom:5px;">纬度：<%= string.format("%0.4f", SelectLocationTask.minlat) %> &lt;&lt;&gt;&gt; 经度：<%= string.format("%0.4f", SelectLocationTask.minlon) %></div>
             <input name="editBtn" class="mc_small_button" style="base-font-size:14px;font-size:14px;width:84px;height:35px;margin-left:35px;margin-right:15px;margin-bottom:30px;" value="确定" type="button" onclick="SelectLocationTask.OnClickConfirm()" />
             <input name="editBtn" class="mc_small_button" style="base-font-size:14px;font-size:14px;width:84px;height:35px;margin-right:15px;margin-bottom:30px;" value="生成此区域" type="button" onclick="SelectLocationTask.OnClickGetMoreTiles()" />
             <input name="editBtn" class="mc_small_button" style="base-font-size:14px;font-size:14px;width:84px;height:35px;margin-right:15px;margin-bottom:30px;" value="重选" type="button" onclick="SelectLocationTask.OnClickSelectLocationScript()" />

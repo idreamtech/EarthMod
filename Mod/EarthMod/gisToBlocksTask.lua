@@ -689,8 +689,8 @@ function gisToBlocks:Run()
 	self.finished = true;
 
 	if(self.options == "already" or self.options == "coordinate") then
-		LOG.std(nil,"debug","self.lon,self.lat",{self.lon,self.lon});
-		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.lon,self.lat,self.zoom);
+		-- LOG.std(nil,"debug","self.lon,self.lat",{self.lon,self.lon});
+		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.minlon,self.minlat,self.zoom);
 		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
 		gisToBlocks.dright, gisToBlocks.dbottom = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
 		
@@ -726,6 +726,7 @@ function gisToBlocks:Run()
 			local tileManager = TileManager:new({lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,bx = px,by = py,bz = pz})
 		end
 
+		-- 获取区域范围瓦片的列数和行数
 		local cols, rows = TileManager.GetInstance():getIterSize();
 		LOG.std(nil,"debug","gisToBlocks","cols : "..cols.." rows : "..rows);
 
