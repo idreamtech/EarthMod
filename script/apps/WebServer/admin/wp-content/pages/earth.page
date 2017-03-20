@@ -74,7 +74,7 @@ wp_enqueue_script("earthController",    "/wp-content/pages/earth/controllers/ear
 
 <script>
 	var shenzheng = [22.54329, 113.94928];
-
+	console.log(0);
     var map  = L.map('map').setView(shenzheng, 14);
     var glat = null;
     var glon = null;
