@@ -74,8 +74,10 @@ end
 function EarthMod:OnWorldLoad()
 	LOG.std(nil, "info", "EarthMod", "OnNewWorld");
 
+	CommandManager:RunCommand("/take 10513");
+
 	if(EarthMod:GetWorldData("alreadyBlock")) then
-		CommandManager:RunCommand("/take 10513");
+		-- CommandManager:RunCommand("/take 10513");
 	end
 end
 -- called when a world is unloaded. 

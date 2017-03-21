@@ -34,13 +34,13 @@ end
 
 -- 传给你左下角的行列号坐标和右上角的行列号坐标，以及当前焦点坐标，然后你返回所有方块对应的几何中心坐标信息
 function TileManager:ctor() -- 左下行列号，右上行列号，焦点坐标（左下点），瓦片大小
-
 	self.tileSize = tileSize or TILE_SIZE
 	self.oPo = {x = self.bx,y = self.by,z = self.bz}
 	self.col = self.rid - self.lid + 1
 	self.row = self.bid - self.tid + 1
 	self.beginPo,self.endPo = {x = self.lid, y = self.bid},{x = self.rid,y = self.tid}
 	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
+	self.firstBlockPo = {x = math.floor(self.oPo.x - self.tileSize / 2),y = self.by,z = math.floor(self.oPo.z - self.tileSize / 2)}
 	self.tiles = {}
 	-- self:getDrawPosition(1,1)
 	curInstance = self
@@ -96,6 +96,45 @@ function TileManager:getInTile(x,y,z)
 	end
 end
 
+-- para: anchor:百分比定位模式（左至右，下至上为0~1，默认为瓦片百分比，absolute为真则为地图定位）
+-- idx idy 为瓦片定位模式对应瓦片的xy下标，id为瓦片总下标定位模式
+--[[
+ getMapPosition()
+ getMapPosition({anchor={x=0,y=0}}) 左下角瓦片中心点
+ getMapPosition({anchor={x=1,y=1}}) 右上角瓦片中心点
+ getMapPosition({anchor={x=0,y=0},absolute=true}) 最左下角block位置点 对于地图
+ getMapPosition({anchor={x=1,y=1},absolute=true}) 最右上角block位置点
+ getMapPosition({idx=2,idy=5}) 获取左下角开始 第2列 第5行的瓦片中心点
+]]
+function TileManager:getMapPosition(para)
+	local anchor = {x = 0.5,y = 0.5}
+	local po,idx,idy,curID = nil,nil,nil,nil
+	local function getPo() if curID and self.tiles[curID] then po = self.tiles[curID].po end end
+	local function getIDPo() curID = idx + (idy - 1) * self.col;getPo() end
+	local function getPerPo()
+		local absolute = para.absolute
+		if absolute then
+			po = {x = math.floor(self.firstBlockPo.x + anchor.x * self.size.width),y = self.firstBlockPo.y,z = math.floor(self.firstBlockPo.z + anchor.y * self.size.height)}
+		else
+			idx = math.ceil(self.col * anchor.x)
+			idy = math.ceil(self.row * anchor.y)
+			getIDPo()
+		end
+	end
+	if not para then para = {absolute = false}; getPerPo() else
+		if para.anchor then
+			anchor = para.anchor
+			getPerPo()
+		elseif para.idx and para.idy then
+			idx = para.idx;idy = para.idy
+			getIDPo()
+		elseif para.id then
+			curID = para.id
+			getPo()
+		end
+	end
+	return po
+end
 
 -- -- parancraft坐标系转gps经纬度
 -- function TileManager:getGPo(x,y,z)
