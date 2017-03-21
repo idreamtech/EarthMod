@@ -366,6 +366,16 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 	end
 end
 
+function math.round(decimal)
+	-- decimal = decimal * 100
+    if decimal % 1 >= 0.5 then 
+            decimal=math.ceil(decimal)
+    else
+            decimal=math.floor(decimal)
+    end
+    return  decimal--  * 0.01
+end
+
 function gisToBlocks:PNGToBlock(raster, px, py, pz)
 	local colors = self.colors;
 	local factor = 1;
@@ -375,6 +385,9 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 		local width         = raster:ReadInt();
 		local height        = raster:ReadInt();
 		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
+
+		-- if bytesPerPixel == 0 then bytesPerPixel = 4 end
+
 		LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
 
 		local block_world = GameLogic.GetBlockWorld();
@@ -387,6 +400,13 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 			self:AddBlock(spx, spy, spz, block_id, block_data);
 		end
 
+		-- local function mixColor(c1,c2)
+		-- 	return {c2[1], c2[2], c2[3], c2[4]}
+		-- 	-- local r,g,b = (c1[1] + c2[1]) / 2, (c1[2] + c2[2]) / 2, (c1[3] + c2[3]) / 2
+		-- 	-- -- 合并颜色 pixel
+		-- 	-- return {r ,g , b}
+		-- end
+
 		--array of {r,g,b,a}
 		local pixel = {};
 
@@ -398,19 +418,26 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 			if(row_padding_bytes > 0) then
 				row_padding_bytes = 4-row_padding_bytes;
 			end
-
+			-- local blocksHistory = {}
 			local worker_thread_co = coroutine.create(function ()
 				for iy=1, width do
 					for ix=1, height do
+						local x,y = math.round(ix / factor), math.round(iy / factor)
 						pixel = raster:ReadBytes(bytesPerPixel, pixel);
+
+						-- if blocksHistory[x] and blocksHistory[x][y] then
+						-- 	pixel = mixColor(blocksHistory[x][y],pixel)
+						-- end
 						if(pixel[4]~=0) then
 							-- transparent pixel does not show up. 
+							-- blocksHistory[x] = blocksHistory[x] or {}
+							-- blocksHistory[x][y] = pixel
 							local block_id, block_data = GetBlockIdFromPixel(pixel, colors);
 							if(block_id) then
-								--LOG.std(nil,"debug","x,y,block_id,block_data",{x,y,block_id,block_data});
-								--if(x>= 10 and x <= 128 and y >= 10 and y <= 128) then
-									CreateBlock_(ix,iy, block_id, block_data);
-								--end
+								-- LOG.std(nil,"debug","x,y,block_id,block_data",{x,y,block_id,block_data});
+								-- if(x>= 10 and x <= 128 and y >= 10 and y <= 128) then
+								CreateBlock_(x, y, block_id, block_data);
+								-- end
 								count = count + 1;
 								if((count%block_per_tick) == 0) then
 									coroutine.yield(true);
@@ -422,7 +449,20 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 						file:ReadBytes(row_padding_bytes, pixel);
 					end
 				end
---				return;
+
+				-- for x,xData in pairs(blocksHistory) do
+				-- 	for y,pixel in pairs(xData) do
+				-- 		local block_id, block_data = GetBlockIdFromPixel(pixel, colors);
+				-- 		if(block_id) then
+				-- 			CreateBlock_(x, y, block_id, block_data);
+				-- 			count = count + 1;
+				-- 			if((count%block_per_tick) == 0) then
+				-- 				coroutine.yield(true);
+				-- 			end
+				-- 		end
+				-- 	end
+				-- end
+				-- return;
 			end)
 
 			local timer = commonlib.Timer:new({callbackFunc = function(timer)
@@ -433,11 +473,19 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 					raster:close();
 				end
 			end})
-			timer:Change(30,30);
+			timer:Change(60,60);
 
 			UndoManager.PushCommand(self);
 		else
 			LOG.std(nil, "error", "PNGToBlocks", "format not supported");
+			for iy=1, width do
+				for ix=1, height do
+					local x,y = math.round(ix / factor), math.round(iy / factor)
+					pixel = raster:ReadBytes(bytesPerPixel, pixel);
+					echo(pixel)
+					-- LOG.std(nil, "error", "bytesPerPixel", pixel[4]);
+				end
+			end
 			raster:close();
 		end
 	end
@@ -731,25 +779,27 @@ function gisToBlocks:Run()
 		LOG.std(nil,"debug","gisToBlocks","cols : "..cols.." rows : "..rows);
 
 		-- 计算,测试需要,最多只加载指定区域范围内的4个瓦片
-		--local count = 0;
+		-- local count = 0;
 		for j=1,rows do
 			for i=1,cols do
-				--count = count + 1;
+				-- count = count + 1;
 				local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
 				getOsmService.tileX = tile.ranksID.x;
 				getOsmService.tileY = tile.ranksID.y;
-				--if count == 2 then
-				LOG.std(nil,"debug","gisToBlocks","待获取瓦片的XY坐标: "..tile.ranksID.x.."-"..tile.ranksID.y);
+				-- if count == 2 then
+				LOG.std(nil,"debug","gisToBlocks","待获取瓦片的XY坐标: "..tile.ranksID.x.."-"..tile.ranksID.y .." po:"..po.x..","..po.y..","..po.z);
 				self:GetData(tile.ranksID.x,tile.ranksID.y,function(raster,vector)
 					LOG.std(nil,"debug","gisToBlocks","即将加载方块和贴图信息");
 					self:LoadToScene(raster,vector,po.x,po.y,po.z);
 				end);
 				LOG.std(nil,"debug","gisToBlocks","after getData");
-				--return;
-				--end
-				--[[if count == 4 then
-					return;
-				end]]
+				-- return;
+				-- end
+				-- if count == 1 then
+					-- local po = TileManager.GetInstance():getMapPosition({anchor={x=1,y=1},absolute=true})
+					-- LOG.std(nil,"debug","gisToBlocks","结尾点坐标po:"..po.x..","..po.y..","..po.z.." size:" .. TileManager.GetInstance().size.width .. "," .. TileManager.GetInstance().size.height);
+					-- return;
+				-- end
 			end
 		end
 	end
