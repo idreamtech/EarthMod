@@ -385,6 +385,9 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 		local width         = raster:ReadInt();
 		local height        = raster:ReadInt();
 		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
+
+		-- if bytesPerPixel == 0 then bytesPerPixel = 4 end
+
 		LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
 
 		local block_world = GameLogic.GetBlockWorld();
@@ -421,6 +424,7 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 					for ix=1, height do
 						local x,y = math.round(ix / factor), math.round(iy / factor)
 						pixel = raster:ReadBytes(bytesPerPixel, pixel);
+
 						-- if blocksHistory[x] and blocksHistory[x][y] then
 						-- 	pixel = mixColor(blocksHistory[x][y],pixel)
 						-- end
@@ -474,6 +478,14 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 			UndoManager.PushCommand(self);
 		else
 			LOG.std(nil, "error", "PNGToBlocks", "format not supported");
+			for iy=1, width do
+				for ix=1, height do
+					local x,y = math.round(ix / factor), math.round(iy / factor)
+					pixel = raster:ReadBytes(bytesPerPixel, pixel);
+					echo(pixel)
+					-- LOG.std(nil, "error", "bytesPerPixel", pixel[4]);
+				end
+			end
 			raster:close();
 		end
 	end
@@ -774,15 +786,15 @@ function gisToBlocks:Run()
 				local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
 				getOsmService.tileX = tile.ranksID.x;
 				getOsmService.tileY = tile.ranksID.y;
-				--if count == 2 then
+				-- if count == 2 then
 				LOG.std(nil,"debug","gisToBlocks","待获取瓦片的XY坐标: "..tile.ranksID.x.."-"..tile.ranksID.y .." po:"..po.x..","..po.y..","..po.z);
 				self:GetData(tile.ranksID.x,tile.ranksID.y,function(raster,vector)
 					LOG.std(nil,"debug","gisToBlocks","即将加载方块和贴图信息");
 					self:LoadToScene(raster,vector,po.x,po.y,po.z);
 				end);
 				LOG.std(nil,"debug","gisToBlocks","after getData");
-				--return;
-				--end
+				-- return;
+				-- end
 				-- if count == 1 then
 					-- local po = TileManager.GetInstance():getMapPosition({anchor={x=1,y=1},absolute=true})
 					-- LOG.std(nil,"debug","gisToBlocks","结尾点坐标po:"..po.x..","..po.y..","..po.z.." size:" .. TileManager.GetInstance().size.width .. "," .. TileManager.GetInstance().size.height);
