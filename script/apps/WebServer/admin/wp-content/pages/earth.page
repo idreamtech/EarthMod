@@ -311,7 +311,7 @@ $(function(){
             }else if(data == "四川大学-望江校区"){
                 renderUniversity(uniData.scwj);
             }else if(data == "四川大学-江安校区"){
-                renderUniversity(uniData.scwj);
+                renderUniversity(uniData.scja);
             }else if(data == "武汉大学"){
                 renderUniversity(uniData.wh);
             }else if(data == "华中科技大学"){
