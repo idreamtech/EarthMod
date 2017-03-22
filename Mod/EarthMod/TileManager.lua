@@ -27,6 +27,16 @@ TileManager.oPo = nil -- 最左下角瓦片位置(paracraft坐标系)
 -- TileManager.gPo = nil -- 地理位置校园左下点(gps系统经纬度)
 TileManager.tiles = {}
 
+function math.round(decimal)
+	-- decimal = decimal * 100
+    if decimal % 1 >= 0.5 then 
+            decimal=math.ceil(decimal)
+    else
+            decimal=math.floor(decimal)
+    end
+    return  decimal--  * 0.01
+end
+
 -- get current instance
 function TileManager.GetInstance()
 	return curInstance;
@@ -34,7 +44,7 @@ end
 
 -- 传给你左下角的行列号坐标和右上角的行列号坐标，以及当前焦点坐标，然后你返回所有方块对应的几何中心坐标信息
 function TileManager:ctor() -- 左下行列号，右上行列号，焦点坐标（左下点），瓦片大小
-	self.tileSize = tileSize or TILE_SIZE
+	self.tileSize = self.tileSize or TILE_SIZE
 	self.oPo = {x = self.bx,y = self.by,z = self.bz}
 	self.col = self.rid - self.lid + 1
 	self.row = self.bid - self.tid + 1

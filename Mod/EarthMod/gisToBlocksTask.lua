@@ -50,6 +50,8 @@ gisToBlocks.concurrent_creation_point_count = 1;
 -- the color schema. can be 1, 2, 16. where 1 is only a single color. 
 gisToBlocks.colors = 32;
 gisToBlocks.zoom   = 17;
+local factor = 1.19 -- 地图缩放比例
+local PngWidth = 256
 
 --RGB, block_id
 local block_colors = {
@@ -92,15 +94,15 @@ local function deg2pixel(lon, lat, zoom)
     local n = 2 ^ zoom
     local lon_deg = tonumber(lon)
     local lat_rad = math.rad(lat)
-    local xtile = math.floor(n * ((lon_deg + 180) / 360) * 256 % 256 + 0.5)
-    local ytile = math.floor(n * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2 * 256 % 256 + 0.5)
+    local xtile = math.floor(n * ((lon_deg + 180) / 360) * PngWidth % PngWidth + 0.5)
+    local ytile = math.floor(n * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2 * PngWidth % PngWidth + 0.5)
     return xtile, ytile
 end
 
 local function pixel2deg(tileX,tileY,pixelX,pixelY,zoom)
 	local n = 2 ^ zoom;
-	local lon_deg = (tileX + pixelX/256) / n * 360.0 - 180.0;
-	local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/256) / n)))
+	local lon_deg = (tileX + pixelX/PngWidth) / n * 360.0 - 180.0;
+	local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/PngWidth) / n)))
 	local lat_deg = lat_rad * 180.0 / math.pi
 	return tostring(lon_deg), tostring(lat_deg)
 end
@@ -335,8 +337,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 	    end
 	end
 
-	local factor = 1;
-	local PNGSize = math.ceil(256/factor);
+	local PNGSize = math.ceil(PngWidth * factor);
 
 	for k,v in pairs(osmBuildingList) do
 		buildingPointList = v.points;
@@ -346,13 +347,13 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 			if (length > 3) then
 				for i = 1, length - 1 do
 					local buildingA = buildingPointList[i];
-					buildingA.cx    = px + math.ceil(buildingA.x/factor) - (256/2);
-					buildingA.cy    = pz - math.ceil(buildingA.y/factor) + PNGSize - (256/2);
+					buildingA.cx    = px + math.ceil(buildingA.x * factor) - (PngWidth/2);
+					buildingA.cy    = pz - math.ceil(buildingA.y * factor) + PNGSize - (PngWidth/2);
 					buildingA.cz    = py+1;
 
 					local buildingB = buildingPointList[i + 1];
-					buildingB.cx    = px + math.ceil(buildingB.x/factor) - (256/2);
-					buildingB.cy    = pz - math.ceil(buildingB.y/factor) + PNGSize - (256/2);
+					buildingB.cx    = px + math.ceil(buildingB.x * factor) - (PngWidth/2);
+					buildingB.cy    = pz - math.ceil(buildingB.y * factor) + PNGSize - (PngWidth/2);
 					buildingB.cz    = py+1;
 
 					if (buildingA.x < buildingB.x) then
@@ -366,19 +367,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 	end
 end
 
-function math.round(decimal)
-	-- decimal = decimal * 100
-    if decimal % 1 >= 0.5 then 
-            decimal=math.ceil(decimal)
-    else
-            decimal=math.floor(decimal)
-    end
-    return  decimal--  * 0.01
-end
-
 function gisToBlocks:PNGToBlock(raster, px, py, pz)
 	local colors = self.colors;
-	local factor = 1;
 
 	if(raster:IsValid()) then
 		local ver           = raster:ReadInt();
@@ -394,19 +384,11 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 
 		local function CreateBlock_(ix, iy, block_id, block_data)
 			local z;
-			spx, spy, spz = px+ix-(256/2), py, pz+iy-(256/2);
+			spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
 			ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
 
 			self:AddBlock(spx, spy, spz, block_id, block_data);
 		end
-
-		-- local function mixColor(c1,c2)
-		-- 	return {c2[1], c2[2], c2[3], c2[4]}
-		-- 	-- local r,g,b = (c1[1] + c2[1]) / 2, (c1[2] + c2[2]) / 2, (c1[3] + c2[3]) / 2
-		-- 	-- -- 合并颜色 pixel
-		-- 	-- return {r ,g , b}
-		-- end
-
 		--array of {r,g,b,a}
 		local pixel = {};
 
@@ -418,20 +400,14 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 			if(row_padding_bytes > 0) then
 				row_padding_bytes = 4-row_padding_bytes;
 			end
-			-- local blocksHistory = {}
 			local worker_thread_co = coroutine.create(function ()
 				for iy=1, width do
 					for ix=1, height do
-						local x,y = math.round(ix / factor), math.round(iy / factor)
+						local x,y = math.round(ix * factor), math.round(iy * factor)
 						pixel = raster:ReadBytes(bytesPerPixel, pixel);
 
-						-- if blocksHistory[x] and blocksHistory[x][y] then
-						-- 	pixel = mixColor(blocksHistory[x][y],pixel)
-						-- end
 						if(pixel[4]~=0) then
 							-- transparent pixel does not show up. 
-							-- blocksHistory[x] = blocksHistory[x] or {}
-							-- blocksHistory[x][y] = pixel
 							local block_id, block_data = GetBlockIdFromPixel(pixel, colors);
 							if(block_id) then
 								-- LOG.std(nil,"debug","x,y,block_id,block_data",{x,y,block_id,block_data});
@@ -449,20 +425,6 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 						file:ReadBytes(row_padding_bytes, pixel);
 					end
 				end
-
-				-- for x,xData in pairs(blocksHistory) do
-				-- 	for y,pixel in pairs(xData) do
-				-- 		local block_id, block_data = GetBlockIdFromPixel(pixel, colors);
-				-- 		if(block_id) then
-				-- 			CreateBlock_(x, y, block_id, block_data);
-				-- 			count = count + 1;
-				-- 			if((count%block_per_tick) == 0) then
-				-- 				coroutine.yield(true);
-				-- 			end
-				-- 		end
-				-- 	end
-				-- end
-				-- return;
 			end)
 
 			local timer = commonlib.Timer:new({callbackFunc = function(timer)
@@ -486,6 +448,139 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 					-- LOG.std(nil, "error", "bytesPerPixel", pixel[4]);
 				end
 			end
+			raster:close();
+		end
+	end
+end
+
+
+function gisToBlocks:mixColor(cs) -- rgb
+	-- 取最深颜色 <   取最浅颜色 >
+	table.sort(cs,function(a,b)
+		if a[1] + a[2] + a[3] > b[1] + b[2] + b[3] then return true end
+		return false
+	end)
+	return cs[1]
+	-- 取平均颜色
+	-- local r,g,b,len = 0,0,0,#cs
+	-- for i,c in pairs(cs) do
+	-- 	r = r + c[1]
+	-- 	g = g + c[2]
+	-- 	b = b + c[3]
+	-- end
+	-- return {r / len ,g / len , b / len}
+end
+
+function gisToBlocks:genMixColor(tb,x,y)
+	if tb[y][x] == nil then
+		if tb[y][x - 1] and tb[y][x + 1] then -- 横缺一
+			return self:mixColor({tb[y][x - 1],tb[y][x + 1]})
+		elseif tb[y - 1][x] and tb[y + 1][x] then -- 竖缺一
+			return self:mixColor({tb[y - 1][x],tb[y + 1][x]})
+		elseif tb[y - 1][x - 1] and tb[y - 1][x + 1] and tb[y + 1][x - 1] and tb[y + 1][x + 1] then -- 中间缺一
+			return self:mixColor({tb[y - 1][x - 1], tb[y - 1][x + 1], tb[y + 1][x - 1], tb[y + 1][x + 1]})
+		else
+			for i = y - 1,y + 1 do
+				if tb[i][x] then return tb[i][x] end
+			end
+			for j = x - 1,x + 1 do
+				if tb[y][j] then return tb[y][j] end
+			end
+		end
+	end
+	return tb[y][x]
+end
+
+-- 扩大地图到1:1 需修改factor为1.19
+function gisToBlocks:PNGToBlockScale(raster, px, py, pz)
+	local colors = self.colors;
+
+	if(raster:IsValid()) then
+		local ver           = raster:ReadInt();
+		local width         = raster:ReadInt();
+		local height        = raster:ReadInt();
+		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
+		LOG.std(nil, "info", "PNGToBlockScale", {ver, width, height, bytesPerPixel});
+		local block_world = GameLogic.GetBlockWorld();
+
+		local function CreateBlock_(ix, iy, block_id, block_data)
+			local z;
+			spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
+			ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
+
+			self:AddBlock(spx, spy, spz, block_id, block_data);
+		end
+
+
+		
+		local pixel = {};
+
+		if(bytesPerPixel >= 3) then
+			local block_per_tick = 100;
+			local count = 0;
+			local row_padding_bytes = (bytesPerPixel*width)%4;
+
+			if(row_padding_bytes > 0) then
+				row_padding_bytes = 4-row_padding_bytes;
+			end
+			local blocksHistory = {}
+			local maxx,maxy = 0,0
+			local worker_thread_co = coroutine.create(function ()
+				for iy=1, width do
+					for ix=1, height do
+						local x,y = math.round(ix * factor), math.round(iy * factor)
+						pixel = raster:ReadBytes(bytesPerPixel, pixel);
+						blocksHistory[y] = blocksHistory[y] or {}
+						blocksHistory[y][x] = {pixel[1],pixel[2],pixel[3],pixel[4]}
+						if x > maxx then maxx = x end
+						if y > maxy then maxy = y end
+					end
+					if(row_padding_bytes > 0) then
+						file:ReadBytes(row_padding_bytes, pixel);
+					end
+				end
+				LOG.std(nil,"info","PNGToBlockScale map size: ",maxx .. "," .. maxy)
+				for x = 1,maxx do
+					for y=1,maxy do
+						blocksHistory[y] = blocksHistory[y] or {}
+						-- fill gap 补色代码
+						if blocksHistory[y][x] == nil then
+							local color = self:genMixColor(blocksHistory,x,y)
+							if color then
+								blocksHistory[y][x] = color
+							else
+								LOG.std(nil,"info","bug","nil block " .. x .. "," .. y)
+							end
+						end
+						-- 绘制代码
+						if blocksHistory[y][x] then
+							local block_id, block_data = GetBlockIdFromPixel(blocksHistory[y][x], colors);
+							if(block_id) then
+								CreateBlock_(x, y, block_id, block_data);
+								count = count + 1;
+								if((count%block_per_tick) == 0) then
+									coroutine.yield(true);
+								end
+							end
+						end
+						--
+					end
+				end
+			end)
+
+			local timer = commonlib.Timer:new({callbackFunc = function(timer)
+				local status, result = coroutine.resume(worker_thread_co);
+				if not status then
+					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d blocks: %s ", count, tostring(result));
+					timer:Change();
+					raster:close();
+				end
+			end})
+			timer:Change(60,60);
+
+			UndoManager.PushCommand(self);
+		else
+			LOG.std(nil, "error", "PNGToBlockScale", "format not supported");
 			raster:close();
 		end
 	end
@@ -563,7 +658,11 @@ function gisToBlocks:MoreScene()
 	LOG.std(nil,"debug","morelat,morelon",{gisToBlocks.morelat,gisToBlocks.morelon});
 
 	self:GetData(function(raster,vector)
-		self:PNGToBlock(raster, px, py, pz);
+		if factor > 1 then
+			self:PNGToBlockScale(raster, px, py, pz);
+		else
+			self:PNGToBlock(raster, px, py, pz);
+		end
 		self:OSMToBlock(vector, px, py, pz);
 	end);
 end
@@ -591,7 +690,11 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,x,y)
 	EarthMod:SaveWorldData();
 	
 	LOG.std(nil,"debug","gisToBlocks","加载方块和贴图");
-	self:PNGToBlock(raster, px, py, pz);
+	if factor > 1 then
+		self:PNGToBlockScale(raster, px, py, pz);
+	else
+		self:PNGToBlock(raster, px, py, pz);
+	end
 	self:OSMToBlock(vector, px, py, pz);
 	CommandManager:RunCommand("/save");
 end
@@ -771,7 +874,7 @@ function gisToBlocks:Run()
 
 		if not TileManager.GetInstance() then 
 			local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-			local tileManager = TileManager:new({lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,bx = px,by = py,bz = pz})
+			local tileManager = TileManager:new({lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,bx = px,by = py,bz = pz,tileSize = math.ceil(PngWidth * factor)})
 		end
 
 		-- 获取区域范围瓦片的列数和行数
