@@ -435,19 +435,19 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 					raster:close();
 				end
 			end})
-			timer:Change(60,60);
+			timer:Change(30,30);
 
 			UndoManager.PushCommand(self);
 		else
 			LOG.std(nil, "error", "PNGToBlocks", "format not supported");
-			for iy=1, width do
-				for ix=1, height do
-					local x,y = math.round(ix / factor), math.round(iy / factor)
-					pixel = raster:ReadBytes(bytesPerPixel, pixel);
-					echo(pixel)
-					-- LOG.std(nil, "error", "bytesPerPixel", pixel[4]);
-				end
-			end
+			-- for iy=1, width do
+			-- 	for ix=1, height do
+			-- 		local x,y = math.round(ix / factor), math.round(iy / factor)
+			-- 		pixel = raster:ReadBytes(bytesPerPixel, pixel);
+			-- 		echo(pixel)
+			-- 		-- LOG.std(nil, "error", "bytesPerPixel", pixel[4]);
+			-- 	end
+			-- end
 			raster:close();
 		end
 	end
@@ -699,7 +699,7 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,x,y)
 	CommandManager:RunCommand("/save");
 end
 
-function gisToBlocks:GetData(x,y,_callback)
+function gisToBlocks:GetData(x,y,i,j,_callback)
 	local raster,vector;
 	local tileX,tileY;
 	local dtop,dbottom,dleft,dright;
@@ -733,6 +733,9 @@ function gisToBlocks:GetData(x,y,_callback)
 		getOsmService:getOsmPNGData(x,y,function(raster)
 			getOsmService:getOsmXMLData(x,y,function(vector)
 				raster = ParaIO.open("tile_"..x.."_"..y..".png", "image");
+				-- local vectorFile = ParaIO.open("xml_"..x.."_"..y..".osm", "r");
+				-- local vector = vectorFile:GetText(0, -1);
+				-- vectorFile:close();
 				GameLogic.SetStatus(L"下载成功");
 				LOG.std(nil,"debug","gisToBlocks","下载成功");
 				_callback(raster,vector);
@@ -899,7 +902,7 @@ function gisToBlocks:Run()
 				getOsmService.tileY = tile.ranksID.y;
 				-- if count == 2 then
 				LOG.std(nil,"debug","gisToBlocks","待获取瓦片的XY坐标: "..tile.ranksID.x.."-"..tile.ranksID.y .." po:"..po.x..","..po.y..","..po.z);
-				self:GetData(tile.ranksID.x,tile.ranksID.y,function(raster,vector)
+				self:GetData(tile.ranksID.x,tile.ranksID.y,i,j,function(raster,vector)
 					LOG.std(nil,"debug","gisToBlocks","即将加载方块和贴图信息");
 					self:LoadToScene(raster,vector,po.x,po.y,po.z);
 				end);
@@ -918,6 +921,5 @@ function gisToBlocks:Run()
 		CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
 		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
 		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
-		--
 	end
 end
