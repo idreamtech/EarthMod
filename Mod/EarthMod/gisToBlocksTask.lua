@@ -19,6 +19,7 @@ NPL.load("(gl)script/ide/System/Core/Color.lua");
 NPL.load("(gl)Mod/EarthMod/getOsmService.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 NPL.load("(gl)Mod/EarthMod/TileManager.lua");
+NPL.load("(gl)script/ide/timer.lua");
 
 local Color           = commonlib.gettable("System.Core.Color");
 local ItemColorBlock  = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
@@ -539,7 +540,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz)
 						file:ReadBytes(row_padding_bytes, pixel);
 					end
 				end
-				LOG.std(nil,"info","PNGToBlockScale map size: ",maxx .. "," .. maxy)
+				-- LOG.std(nil,"info","PNGToBlockScale map size: ",maxx .. "," .. maxy)
 				for x = 1,maxx do
 					for y=1,maxy do
 						blocksHistory[y] = blocksHistory[y] or {}
@@ -576,7 +577,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz)
 					raster:close();
 				end
 			end})
-			timer:Change(60,60);
+			timer:Change(30,30);
 
 			UndoManager.PushCommand(self);
 		else
@@ -663,7 +664,7 @@ function gisToBlocks:MoreScene()
 		else
 			self:PNGToBlock(raster, px, py, pz);
 		end
-		self:OSMToBlock(vector, px, py, pz);
+		-- self:OSMToBlock(vector, px, py, pz);
 	end);
 end
 
@@ -695,7 +696,7 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,x,y)
 	else
 		self:PNGToBlock(raster, px, py, pz);
 	end
-	self:OSMToBlock(vector, px, py, pz);
+	-- self:OSMToBlock(vector, px, py, pz);
 	CommandManager:RunCommand("/save");
 end
 
@@ -730,8 +731,8 @@ function gisToBlocks:GetData(x,y,i,j,_callback)
 	if(self.cache == 'true') then
 		GameLogic.SetStatus(L"下载数据中");
 		LOG.std(nil,"debug","gisToBlocks","下载数据中");
-		getOsmService:getOsmPNGData(x,y,function(raster)
-			getOsmService:getOsmXMLData(x,y,function(vector)
+		getOsmService:getOsmPNGData(x,y,i,j,function(raster)
+			getOsmService:getOsmXMLData(x,y,i,j,function(vector)
 				raster = ParaIO.open("tile_"..x.."_"..y..".png", "image");
 				-- local vectorFile = ParaIO.open("xml_"..x.."_"..y..".osm", "r");
 				-- local vector = vectorFile:GetText(0, -1);
@@ -865,7 +866,7 @@ function gisToBlocks:Run()
 
 	if(self.options == "coordinate") then
 		if(GameLogic.GameMode:CanAddToHistory()) then
-			self.add_to_history = true;
+			self.add_to_history = false;
 		end
 
 		-- 根据minlat和minlon计算出左下角的瓦片行列号坐标
@@ -893,7 +894,7 @@ function gisToBlocks:Run()
 		LOG.std(nil,"debug","gisToBlocks","cols : "..cols.." rows : "..rows);
 
 		-- 计算,测试需要,最多只加载指定区域范围内的4个瓦片
-		-- local count = 0;
+		local count = 0;
 		for j=1,rows do
 			for i=1,cols do
 				-- count = count + 1;
@@ -903,8 +904,9 @@ function gisToBlocks:Run()
 				-- if count == 2 then
 				LOG.std(nil,"debug","gisToBlocks","待获取瓦片的XY坐标: "..tile.ranksID.x.."-"..tile.ranksID.y .." po:"..po.x..","..po.y..","..po.z);
 				self:GetData(tile.ranksID.x,tile.ranksID.y,i,j,function(raster,vector)
-					LOG.std(nil,"debug","gisToBlocks","即将加载方块和贴图信息");
-					self:LoadToScene(raster,vector,po.x,po.y,po.z);
+					count = count + 1;
+					-- LOG.std(nil,"debug","gisToBlocks","即将加载方块和贴图信息");
+					-- self:LoadToScene(raster,vector,po.x,po.y,po.z);
 				end);
 				LOG.std(nil,"debug","gisToBlocks","after getData");
 				-- return;
@@ -916,6 +918,27 @@ function gisToBlocks:Run()
 				-- end
 			end
 		end
+
+		-- timer定时检查图片是否下载完成,count值等于rows*cols乘积时候才执行生成方块操作
+		local loadToSceneTimer = commonlib.Timer:new({callbackFunc = function(loadToSceneTimer)
+			if (count == (cols * rows)) then
+				LOG.std(nil,"debug","gisToBlocks","即将加载方块和贴图信息");
+				for j=1,rows do
+					for i=1,cols do
+						local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
+						local raster = ParaIO.open("tile_"..tile.ranksID.x.."_"..tile.ranksID.y..".png", "image");
+						-- local vectorFile = ParaIO.open("xml_"..x.."_"..y..".osm", "r");
+						-- local vector = vectorFile:GetText(0, -1);
+						-- vectorFile:close();
+						self:LoadToScene(raster,vector,po.x,po.y,po.z);
+					end
+				end
+				loadToSceneTimer:Change();
+			end
+		end});
+
+		loadToSceneTimer:Change(10000,10000);
+
 		-- 人物跳转
 		local po = TileManager.GetInstance():getParaPo() -- TileManager.GetInstance():getMapPosition() 这是瓦片中心
 		CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)

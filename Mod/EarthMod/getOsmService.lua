@@ -74,28 +74,30 @@ function getOsmService:getOsmXMLData(x,y,i,j,_callback)
 	osmXMLUrl = osmXMLUrl:gsub("{right}",self.dright);
 	osmXMLUrl = osmXMLUrl:gsub("{top}",self.dtop);
 
-	-- _callback();
+	_callback();
 
 	-- 使用定时器,错开多次请求OSM节点数据的接口调用,避免出现短时间内请求达到100次峰值之后无法获取到OSM节点数据的情况
-	local downOsmXMLTimer = commonlib.Timer:new({callbackFunc = function(downOsmXMLTimer)
-		if(err == 200) then
-			--[[local file = ParaIO.open("/xml.osm", "w");
-			file:write(data,#data);
-			file:close();]]
+	-- local downOsmXMLTimer = commonlib.Timer:new({callbackFunc = function(downOsmXMLTimer)
+	-- 	self:GetUrl(osmPNGUrl,function(data,err)
+	-- 		if(err == 200) then
+	-- 			--[[local file = ParaIO.open("/xml.osm", "w");
+	-- 			file:write(data,#data);
+	-- 			file:close();]]
 
-			local fileExt = ParaIO.open("xml_"..x.."_"..y..".osm", "w");
-			LOG.std(nil,"debug","gisOsmService","xml_"..x.."_"..y..".osm");
-			local ret = fileExt:write(data,#data);
-			fileExt:close();
+	-- 			local fileExt = ParaIO.open("xml_"..x.."_"..y..".osm", "w");
+	-- 			LOG.std(nil,"debug","gisOsmService","xml_"..x.."_"..y..".osm");
+	-- 			local ret = fileExt:write(data,#data);
+	-- 			fileExt:close();
 
-			_callback(data);
-		else
-			return nil;
-		end
-	end})
+	-- 			_callback(data);
+	-- 		else
+	-- 			return nil;
+	-- 		end
+	-- 	end);
+	-- end})
 
-	-- start the timer after i milliseconds, and stop it immediately.
-	downOsmXMLTimer:Change(i*1000, nil);
+	-- -- start the timer after i milliseconds, and stop it immediately.
+	-- downOsmXMLTimer:Change(i*3000, nil);
 end
 
 function getOsmService:getOsmPNGData(x,y,i,j,_callback)
@@ -127,5 +129,5 @@ function getOsmService:getOsmPNGData(x,y,i,j,_callback)
 	end})
 
 	-- start the timer after i milliseconds, and stop it immediately.
-	downLoadPngTimer:Change(i*1000, nil);
+	downLoadPngTimer:Change(i*5000, nil);
 end
