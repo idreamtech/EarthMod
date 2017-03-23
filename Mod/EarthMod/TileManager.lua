@@ -18,14 +18,14 @@ local TILE_SIZE = 256 -- 默认瓦片大小
 TileManager.tileSize = nil -- 瓦片大小
 TileManager.beginPo = nil
 TileManager.endPo = nil
--- TileManager.gSize = nil
+TileManager.gSize = nil
 TileManager.size = nil
 TileManager.row = nil -- 始终保持奇数
 TileManager.col = nil -- 始终保持奇数
 TileManager.count = 0
 TileManager.oPo = nil -- 最左下角瓦片位置(paracraft坐标系)
--- TileManager.gCen = nil -- 地理位置校园中心点
--- TileManager.gPo = nil -- 地理位置校园左下点(gps系统经纬度)
+TileManager.gCen = nil -- 地理位置校园中心点
+TileManager.gPo = nil -- 地理位置校园左下点(gps系统经纬度)
 TileManager.tiles = {} -- 瓦片合集
 TileManager.blocks = {} -- 砖块合集
 TileManager.mapStack = {} -- 瓦块下载数据
@@ -53,6 +53,7 @@ function TileManager.GetInstance()
 end
 
 -- 传给你左下角的行列号坐标和右上角的行列号坐标，以及当前焦点坐标，然后你返回所有方块对应的几何中心坐标信息
+-- firstPo:地图左下角经纬度 lastPo：地图右上角经纬度
 function TileManager:ctor() -- 左下行列号，右上行列号，焦点坐标（左下点），瓦片大小
 	self.tileSize = self.tileSize or TILE_SIZE
 	self.oPo = {x = self.bx,y = self.by,z = self.bz}
@@ -65,6 +66,7 @@ function TileManager:ctor() -- 左下行列号，右上行列号，焦点坐标�
 	self.gSize = {height = self.lastPo.lat - self.firstPo.lat,width = self.lastPo.lon - self.firstPo.lon}
 	self.gPo = {x = self.firstPo.lon, y = self.firstPo.lat}
 	self.gCen = {x = self.gPo.x + self.gSize.width / 2,y = self.gPo.y + self.gSize.height / 2}
+	echo(self.gSize);echo(self.gPo);echo(self.gCen)
 	--
 	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
 	self.firstBlockPo = {x = math.floor(self.oPo.x - (self.tileSize - 1) / 2),y = self.by,z = math.floor(self.oPo.z - (self.tileSize - 1) / 2)}
@@ -154,7 +156,7 @@ end
 -- para: anchor:百分比定位模式（左至右，下至上为0~1，默认为瓦片百分比，absolute为真则为地图定位）
 -- idx idy 为瓦片定位模式对应瓦片的xy下标，id为瓦片总下标定位模式
 --[[
- getMapPosition()
+ getMapPosition() -- 获取地图全瓦片中心点
  getMapPosition({anchor={x=0,y=0}}) 左下角瓦片中心点
  getMapPosition({anchor={x=1,y=1}}) 右上角瓦片中心点
  getMapPosition({anchor={x=0,y=0},absolute=true}) 最左下角block位置点 对于地图
@@ -214,12 +216,15 @@ function TileManager:getGPo(x,y,z)
 	return {lon = x,lat = z}
 end
 
--- gps经纬度转parancraft坐标系
+-- gps经纬度转parancraft坐标系(不传参数为中心点)
 function TileManager:getParaPo(lon,lat)
 	if lat == nil and lon and type(lon) == "table" then
 		lat = lon.lat;lon = lon.lon
 	end
+	if lon == nil and lat == nil then
+		lon = self.gCen.x;lat = self.gCen.y
+	end
 	local x = (lon - self.gPo.x) / self.gSize.width * self.size.width + self.oPo.x
 	local z = (lat - self.gPo.y) / self.gSize.height * self.size.height + self.oPo.z
-	return {x = x,y = self.oPo.y,z = z}
+	return {x = math.floor(x),y = self.oPo.y,z = math.floor(z)}
 end

@@ -414,10 +414,10 @@ function gisToBlocks:PNGToBlock(raster, px, py, pz)
 								-- if(x>= 10 and x <= 128 and y >= 10 and y <= 128) then
 								CreateBlock_(x, y, block_id, block_data);
 								-- end
-								count = count + 1;
 								if((count%block_per_tick) == 0) then
 									coroutine.yield(true);
 								end
+								count = count + 1;
 							end
 						end
 					end
@@ -557,10 +557,10 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz)
 							local block_id, block_data = GetBlockIdFromPixel(blocksHistory[y][x], colors);
 							if(block_id) then
 								CreateBlock_(x, y, block_id, block_data);
-								count = count + 1;
 								if((count%block_per_tick) == 0) then
 									coroutine.yield(true);
 								end
+								count = count + 1;
 							end
 						end
 						--
@@ -874,7 +874,15 @@ function gisToBlocks:Run()
 
 		if not TileManager.GetInstance() then 
 			local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-			local tileManager = TileManager:new({lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,bx = px,by = py,bz = pz,tileSize = math.ceil(PngWidth * factor)})
+			local firstPo,lastPo = {lat = self.minlat,lon = self.minlon},{lat = self.maxlat,lon = self.maxlon}
+			LOG.std(nil,"debug","gisToBlocks","获取到的地图经纬度");
+			echo(firstPo);echo(lastPo)
+			local tileManager = TileManager:new({
+				lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
+				rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
+				bx = px,by = py,bz = pz,tileSize = math.ceil(PngWidth * factor),
+				firstPo = firstPo,lastPo = lastPo -- 传入地理位置信息
+			})
 		end
 
 		-- 获取区域范围瓦片的列数和行数
@@ -905,5 +913,11 @@ function gisToBlocks:Run()
 				-- end
 			end
 		end
+		-- 人物跳转
+		local po = TileManager.GetInstance():getParaPo() -- TileManager.GetInstance():getMapPosition() 这是瓦片中心
+		CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
+		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
+		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
+		--
 	end
 end
