@@ -22,10 +22,14 @@ TileManager.endPo = nil
 TileManager.size = nil
 TileManager.row = nil -- 始终保持奇数
 TileManager.col = nil -- 始终保持奇数
+TileManager.count = 0
 TileManager.oPo = nil -- 最左下角瓦片位置(paracraft坐标系)
 -- TileManager.gCen = nil -- 地理位置校园中心点
 -- TileManager.gPo = nil -- 地理位置校园左下点(gps系统经纬度)
-TileManager.tiles = {}
+TileManager.tiles = {} -- 瓦片合集
+TileManager.blocks = {} -- 砖块合集
+TileManager.mapStack = {} -- 瓦块下载数据
+TileManager.popCount = 0
 
 function math.round(decimal)
 	-- decimal = decimal * 100
@@ -35,6 +39,12 @@ function math.round(decimal)
             decimal=math.floor(decimal)
     end
     return  decimal--  * 0.01
+end
+
+function handler(obj, method)
+    return function(...)
+       return method(obj,...)
+    end
 end
 
 -- get current instance
@@ -49,9 +59,20 @@ function TileManager:ctor() -- 左下行列号，右上行列号，焦点坐标�
 	self.col = self.rid - self.lid + 1
 	self.row = self.bid - self.tid + 1
 	self.beginPo,self.endPo = {x = self.lid, y = self.bid},{x = self.rid,y = self.tid}
+	-- 物理坐标
+	self.firstPo = self.firstPo or {lat = 28.1742,lon = 112.9331}
+	self.lastPo = self.lastPo or {lat = 28.1864,lon = 112.9446}
+	self.gSize = {height = self.lastPo.lat - self.firstPo.lat,width = self.lastPo.lon - self.firstPo.lon}
+	self.gPo = {x = self.firstPo.lon, y = self.firstPo.lat}
+	self.gCen = {x = self.gPo.x + self.gSize.width / 2,y = self.gPo.y + self.gSize.height / 2}
+	--
 	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
-	self.firstBlockPo = {x = math.floor(self.oPo.x - self.tileSize / 2),y = self.by,z = math.floor(self.oPo.z - self.tileSize / 2)}
+	self.firstBlockPo = {x = math.floor(self.oPo.x - (self.tileSize - 1) / 2),y = self.by,z = math.floor(self.oPo.z - (self.tileSize - 1) / 2)}
+	self.count = self.col * self.row
 	self.tiles = {}
+	self.blocks = {}
+	self.mapStack = {}
+	self.popCount = 0
 	-- self:getDrawPosition(1,1)
 	curInstance = self
 end
@@ -87,10 +108,34 @@ function TileManager:getDrawPosition(idx,idy)
 			po = po, -- 瓦片paracraft坐标
 			ranksID = ranksID,
 			isDrawed = false,
-			rect = {l = po.x - self.tileSize / 2,b = po.y - self.tileSize / 2,r = po.x + self.tileSize / 2,t = po.y + self.tileSize / 2}
+			rect = {l = po.x - self.tileSize / 2,b = po.z - self.tileSize / 2,r = po.x + self.tileSize / 2,t = po.z + self.tileSize / 2}
 		}
 		self.tiles[curID] = tileInfo
 		return po,tileInfo
+	end
+end
+
+-- 添加砖块数据
+function TileManager:pushBlocksData(tile,data)
+	if not tile or not data then assert("error set blocks on TileManager:pushBlocksData");return end
+	local po = {x = (tile.x - 1) * self.tileSize,y = (tile.y - 1) * self.tileSize}
+	for y=1,self.tileSize do
+		self.blocks[y] = self.blocks[y] or {}
+		for x=1,self.tileSize do
+			self.blocks[y + po.y][x + po.x] = data[y][x]
+		end
+	end
+end
+
+-- 检查未绘制的方块并绘制
+function TileManager:fillNullBlock(func)
+	for y=1,self.size.height do
+		for x=1,self.size.width do
+			if not self.blocks[y][x] then
+				local px,py,pz = x + self.oPo.x,self.oPo.y,y + self.oPo.z
+				self.blocks[y][x] = func(self.blocks,x,y,px,py,pz)
+			end
+		end
 	end
 end
 
@@ -146,83 +191,35 @@ function TileManager:getMapPosition(para)
 	return po
 end
 
--- -- parancraft坐标系转gps经纬度
--- function TileManager:getGPo(x,y,z)
--- 	if y == nil and z == nil and x and type(x) == "table" then
--- 		z = x.z;y = x.y; x = x.x
--- 	end
--- 	x = (x - self.oPo.x) / self.size.width * self.gSize.width + self.gPo.x
--- 	z = (z - self.oPo.z) / self.size.height * self.gSize.height + self.gPo.y
--- 	return {lon = x,lat = z}
--- end
-
--- -- gps经纬度转parancraft坐标系
--- function TileManager:getPo(lon,lat)
--- 	if lat == nil and lon and type(lon) == "table" then
--- 		lat = lon.lat;lon = lon.lon
--- 	end
--- 	local x = (lon - self.gPo.x) / self.gSize.width * self.size.width + self.oPo.x
--- 	local z = (lat - self.gPo.y) / self.gSize.height * self.size.height + self.oPo.z
--- 	return {x = x,y = 5,z = z}
--- end
-
---[[
-
-NPL.load("(gl)Mod/EarthMod/TileManager.lua");
-local TileManager = commonlib.gettable("Mod.EarthMod.TileManager");
-
-
-function gisToBlocks:LoadToScene(raster,vector)
-	local colors = self.colors;
-	-- local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-	-- py = 5
-	-- 获取应该绘制的瓦片位置
-	local po = TileManager.curInstance:getDrawPosition({"瓦片对象"},self.tileX,self.tileY)
-	local px, py, pz = po.x,po.y,po.z
-	EntityManager.GetFocus():setBlockPos(px, py, pz)
-	-- 
-
-	 -- _guihelper.MessageBox("人物坐标：" .. px .. "," .. py .. "," .. pz);
-	gisToBlocks.ptop    = pz + 128;
-	gisToBlocks.pbottom = pz - 128;
-	gisToBlocks.pleft   = px - 128;
-	gisToBlocks.pright  = px + 128;
-	...
+function TileManager:push(data)
+	table.insert(self.mapStack,data)
 end
 
+function TileManager:pop()
+	local len = #self.mapStack
+	if len < 1 then return nil,self.popCount end
+	local endData = self.mapStack[len]
+	table.remove(self.mapStack, len)
+	self.popCount = self.popCount + 1
+	return endData,self.popCount
+end
 
-
-function gisToBlocks:Run()
-	...
-	-- 初始化瓦片管理器
-	if TileManager.GetInstance() == nil then
-		TileManager:new(nil,nil,gisToBlocks.dright - gisToBlocks.dleft,gisToBlocks.dtop - gisToBlocks.dbottom)
+-- parancraft坐标系转gps经纬度
+function TileManager:getGPo(x,y,z)
+	if y == nil and z == nil and x and type(x) == "table" then
+		z = x.z;y = x.y; x = x.x
 	end
-	-- 
-	...
+	x = (x - self.oPo.x) / self.size.width * self.gSize.width + self.gPo.x
+	z = (z - self.oPo.z) / self.size.height * self.gSize.height + self.gPo.y
+	return {lon = x,lat = z}
 end
 
-
-
-
--- -- paracraft: o(512,5,16)  center(19199,5,19200) 地图大小 256 * 256
--- -- 深大：（左下）纬度：22.5308 | 经度：113.9250 ~ （右上）纬度：22.5423 | 经度：113.9395
--- -- 湖南大学：（左下）纬度：28.1742 | 经度：112.9331 ~ （右上）纬度lat：28.1864 | 经度lon：112.9446  大约 5 * 7 = 35块瓦片
--- function TileManager:ctor(beginPo,endPo,tileW,tileH)
--- 	self.beginPo = beginPo or {lat = 28.1742,lon = 112.9331}
--- 	self.endPo = endPo or {lat = 28.1864,lon = 112.9446}
--- 	self.gSize = {height = self.endPo.lat - self.beginPo.lat,width = self.endPo.lon - self.beginPo.lon}
--- 	self.row = math.ceil(self.gSize.height / tileH)
--- 	self.col = math.ceil(self.gSize.width / tileW)
--- 	if self.col % 2 == 0 then self.col = self.col + 1 end
--- 	if self.row % 2 == 0 then self.row = self.row + 1 end
--- 	self.size = {width = TILE_SIZE * self.col,height = TILE_SIZE * self.row}
--- 	self.oPo = {x = math.floor(CENPO.x - self.size.width / 2), y = CENPO.y, z = math.floor(CENPO.z - self.size.height / 2)}
--- 	self.tiles = {}
--- 	self.gPo = {x = self.beginPo.lon, y = self.beginPo.lat}
--- 	self.gCen = {x = self.gPo.x + self.gSize.width / 2,y = self.gPo.y + self.gSize.height / 2}
--- 	-- local curID = math.floor(self.row / 2) * self.col + math.ceil(self.col / 2)
--- 	self:getDrawPosition(math.ceil(self.col / 2), math.ceil(self.row / 2))
--- 	curInstance = self
--- end
-]]
+-- gps经纬度转parancraft坐标系
+function TileManager:getParaPo(lon,lat)
+	if lat == nil and lon and type(lon) == "table" then
+		lat = lon.lat;lon = lon.lon
+	end
+	local x = (lon - self.gPo.x) / self.gSize.width * self.size.width + self.oPo.x
+	local z = (lat - self.gPo.y) / self.gSize.height * self.size.height + self.oPo.z
+	return {x = x,y = self.oPo.y,z = z}
+end
