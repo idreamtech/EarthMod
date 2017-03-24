@@ -38,22 +38,22 @@ function ItemEarth:OnSelect(itemStack)
 	GameLogic.SetStatus(L"点击下方按钮调用内嵌浏览器");
 
 	-- call cefBrowser to open website
-	if(not (WebServer:IsStarted())) then
-		GameLogic.SetStatus(L"On Select : Start Server");
-		--start server
-		WebServer:Start("script/apps/WebServer/admin", "127.0.0.1", 8080);
+	-- if(not (WebServer:IsStarted())) then
+	-- 	GameLogic.SetStatus(L"On Select : Start Server");
+	-- 	--start server
+	-- 	WebServer:Start("script/apps/WebServer/admin", "127.0.0.1", 8080);
 
-		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		-- Open a new window
-		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8080/earth", "_lt", 100, 100, 800, 560);
-	else
-		GameLogic.SetStatus(L"On Select : Show Browser");
+	-- 	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+	-- 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+	-- 	-- Open a new window
+	-- 	NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8080/earth", "_lt", 100, 100, 800, 560);
+	-- else
+	-- 	GameLogic.SetStatus(L"On Select : Show Browser");
 
-		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		NplCefWindowManager:Show("my_window", true);
-	end
+	-- 	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+	-- 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+	-- 	NplCefWindowManager:Show("my_window", true);
+	-- end
 
 	--[[if(EarthMod:GetWorldData("alreadyBlock")) then
 		LOG.std(nil,"debug","SelectLocationTask.lat",SelectLocationTask.lat);
@@ -135,25 +135,25 @@ function ItemEarth:GoToMap()
 	self.alreadyBlock = false;
 	CommandManager:RunCommand("/gis -undo");
 
-	-- local url = "npl://earth";
-	-- GameLogic.RunCommand("/open " .. url);
+	local url = "npl://earth";
+	GameLogic.RunCommand("/open " .. url);
 	-- call cefBrowser to open website
-	if(not (WebServer:IsStarted())) then
-		GameLogic.SetStatus(L"GoToMap : Start Server");
-		--start server
-		WebServer:Start("script/apps/WebServer/admin", "127.0.0.1", 8080);
+	-- if(not (WebServer:IsStarted())) then
+	-- 	GameLogic.SetStatus(L"GoToMap : Start Server");
+	-- 	--start server
+	-- 	WebServer:Start("script/apps/WebServer/admin", "127.0.0.1", 8080);
 
-		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		-- Open a new window
-		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8080/earth", "_lt", 100, 100, 800, 560);
-	else
-		GameLogic.SetStatus(L"GoToMap : Show Browser");
+	-- 	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+	-- 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+	-- 	-- Open a new window
+	-- 	NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8080/earth", "_lt", 100, 100, 800, 560);
+	-- else
+	-- 	GameLogic.SetStatus(L"GoToMap : Show Browser");
 
-		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		NplCefWindowManager:Show("my_window", true);
-	end
+	-- 	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+	-- 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+	-- 	NplCefWindowManager:Show("my_window", true);
+	-- end
 end
 
 function ItemEarth:Cancle()

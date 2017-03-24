@@ -25,6 +25,10 @@ SelectLocationTask.isFirstSelect = true;
 SelectLocationTask.is_top_level  = true;
 SelectLocationTask.getMoreTiles  = false;
 
+-- 人物坐标对应经纬度
+SelectLocationTask.playerLon  = nil;
+SelectLocationTask.playerLat  = nil;
+
 function SelectLocationTask:ctor()
 end
 
@@ -160,5 +164,14 @@ function SelectLocationTask:Run()
 		SelectLocationTask.maxlon = coordinate.maxlon or 0;
 	end
 
-	-- self:ShowPage();
+	self:ShowPage();
+end
+
+function SelectLocationTask:setPlayerCoordinate(lon, lat)
+	SelectLocationTask.player_lon = lon;
+	SelectLocationTask.player_lat = lat;
+end
+
+function SelectLocationTask:getPlayerCoordinate()
+	return SelectLocationTask.player_lon, SelectLocationTask.player_lat;
 end

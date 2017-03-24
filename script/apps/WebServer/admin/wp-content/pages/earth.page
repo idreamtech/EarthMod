@@ -22,6 +22,16 @@ if(is_ajax()) then
         return;
     end);
 
+    add_action('wp_ajax_get_player_coordinate' , function()
+        --获取人物坐标
+        local playerLon, playerLat = SelectLocationTask:getPlayerCoordinate();
+        local ret = {};
+        ret["lon"] = playerLon;
+        ret["lat"] = playerLat;
+        response:send_json(ret);
+        return;
+    end);
+
     return;
 end
 
@@ -278,7 +288,7 @@ $(function(){
             dataType:"json",
             data:data,
             success:function(res){
-                console.log(response);
+                console.log(res);
             },
             error:function(){
                 alert("请求失败")
@@ -340,6 +350,46 @@ $(function(){
     $('.search').on('click','.typeahead li',function(){
         searchUniversity($(this).text())
     })
+
+    var marker = null;
+    function getCurrentPostionInParacraft(){
+        $.ajax({
+            url:"/ajax/earth?action=get_player_coordinate",
+            type:"get",
+            dataType:"json",
+            success:function(res){
+                console.log(res);
+                var lon = res.lon;
+                var lat = res.lat;
+                if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
+                    // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
+                    if (marker == null) {
+                        marker = L.marker([lat, lon]).addTo(map);
+                    } else {
+                        marker.setLatLng([lat, lon]);
+                    }
+                }
+            },
+            error:function(){
+                console.log("获取人物当前坐标失败");
+            }
+
+        })
+    }
+
+    // 每一秒更新一次人物坐标信息
+    setInterval("getCurrentPostionInParacraft()",1000);
+
+    // 在地图上矩形选框内点击时候,触发marker位置移动,并通知pararcraft中的人物进行跳转
+    function onMapClick(e) {
+        // e.latlng.lat, e.latlng.lng
+        // 判断点击区域是否在矩形区域内
+
+        console.log(1);
+        console.log(2);
+    }
+
+    map.on('click', onMapClick);
 
 </script>
 

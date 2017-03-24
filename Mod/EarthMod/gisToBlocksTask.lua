@@ -12,14 +12,15 @@ local task = Tasks.gisToBlocks:new({options="coordinate",lat=lat,lon=lon,cache=c
 task:Run();
 -------------------------------------------------------
 ]]
+NPL.load("(gl)script/ide/timer.lua");
+NPL.load("(gl)script/ide/System/Core/Color.lua");
 NPL.load("(gl)Mod/EarthMod/main.lua");
+NPL.load("(gl)Mod/EarthMod/TileManager.lua");
+NPL.load("(gl)Mod/EarthMod/getOsmService.lua");
+NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Tasks/UndoManager.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Items/ItemColorBlock.lua");
-NPL.load("(gl)script/ide/System/Core/Color.lua");
-NPL.load("(gl)Mod/EarthMod/getOsmService.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
-NPL.load("(gl)Mod/EarthMod/TileManager.lua");
-NPL.load("(gl)script/ide/timer.lua");
 
 local Color           = commonlib.gettable("System.Core.Color");
 local ItemColorBlock  = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
@@ -34,6 +35,7 @@ local EntityManager   = commonlib.gettable("MyCompany.Aries.Game.EntityManager")
 local CommandManager  = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 local EarthMod        = commonlib.gettable("Mod.EarthMod");
 local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
+local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 
 local gisToBlocks = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks"));
 
@@ -878,7 +880,10 @@ function gisToBlocks:Run()
 
 		if not TileManager.GetInstance() then 
 			local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-			local firstPo,lastPo = {lat = self.minlat,lon = self.minlon},{lat = self.maxlat,lon = self.maxlon}
+			-- local px, py, pz = GameLogic.GetPlayerPosition();
+			local firstLon, firstLat = pixel2deg(gisToBlocks.tile_MIN_X,gisToBlocks.tile_MIN_Y,0,0,self.zoom);
+			local lastLon, lastLat = pixel2deg(gisToBlocks.tile_MAX_X,gisToBlocks.tile_MAX_Y,0,0,self.zoom);
+			local firstPo, lastPo = {lat = firstLat,lon = firstLon},{lat = lastLat,lon = lastLon};
 			LOG.std(nil,"debug","gisToBlocks","获取到的地图经纬度");
 			echo(firstPo);echo(lastPo)
 			local tileManager = TileManager:new({
@@ -940,9 +945,27 @@ function gisToBlocks:Run()
 		loadToSceneTimer:Change(10000,10000);
 
 		-- 人物跳转
-		local po = TileManager.GetInstance():getParaPo() -- TileManager.GetInstance():getMapPosition() 这是瓦片中心
-		CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
+		-- local po = TileManager.GetInstance():getParaPo() -- TileManager.GetInstance():getMapPosition() 这是瓦片中心
+		-- CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
 		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
 		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
+		LOG.std(nil,GameLogic.GetPlayerPosition())
+		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
+
+		-- 更新SelectLocationTask.player_lon和SelectLocationTask.player_lat(人物当前所处经纬度)信息
+		local sltInstance = SelectLocationTask.GetInstance();
+		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
+		-- timer定时更新人物坐标信息
+		local playerLocationTimer = playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
+				-- 获取人物坐标信息
+				local x, y, z = EntityManager.GetFocus():GetBlockPos();
+				local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
+				LOG.std(nil,"RunFunction","Role position:",x .. "," .. y .. "," .. z)
+				LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
+				LOG.std(nil,"RunFunction 获取到人物的人物坐标信息","经度：" .. player_latLon.lon,"纬度：" .. player_latLon.lat)
+				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
+		end});
+
+		playerLocationTimer:Change(1000,1000);
 	end
 end

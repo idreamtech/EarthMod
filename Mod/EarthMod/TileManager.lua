@@ -211,8 +211,8 @@ function TileManager:getGPo(x,y,z)
 	if y == nil and z == nil and x and type(x) == "table" then
 		z = x.z;y = x.y; x = x.x
 	end
-	x = (x - self.oPo.x) / self.size.width * self.gSize.width + self.gPo.x
-	z = (z - self.oPo.z) / self.size.height * self.gSize.height + self.gPo.y
+	x = (x - self.firstBlockPo.x) / self.size.width * self.gSize.width + self.gPo.x
+	z = (z - self.firstBlockPo.z) / self.size.height * self.gSize.height + self.gPo.y
 	return {lon = x,lat = z}
 end
 
@@ -224,7 +224,7 @@ function TileManager:getParaPo(lon,lat)
 	if lon == nil and lat == nil then
 		lon = self.gCen.x;lat = self.gCen.y
 	end
-	local x = (lon - self.gPo.x) / self.gSize.width * self.size.width + self.oPo.x
-	local z = (lat - self.gPo.y) / self.gSize.height * self.size.height + self.oPo.z
-	return {x = math.floor(x),y = self.oPo.y,z = math.floor(z)}
+	local x = (lon - self.gPo.x) / self.gSize.width * self.size.width + self.firstBlockPo.x
+	local z = (lat - self.gPo.y) / self.gSize.height * self.size.height + self.firstBlockPo.z
+	return {x = math.floor(x),y = self.firstBlockPo.y,z = math.floor(z)}
 end
