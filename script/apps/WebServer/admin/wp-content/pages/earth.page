@@ -136,10 +136,6 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 </div>
 
 <script>
-$(function(){
-    $('.navbar').remove();
-    $('.footer').remove();
-})
    $('#map').height($(window).height());
    // alert(ipLocation);
    var uniData = {
@@ -377,8 +373,7 @@ $(function(){
         })
     }
 
-    // 每一秒更新一次人物坐标信息
-    setInterval("getCurrentPostionInParacraft()",1000);
+    
 
     // 在地图上矩形选框内点击时候,触发marker位置移动,并通知pararcraft中的人物进行跳转
     function onMapClick(e) {
@@ -390,6 +385,14 @@ $(function(){
     }
 
     map.on('click', onMapClick);
+
+    $(function(){
+        $('.navbar').remove();
+        $('.footer').remove();
+
+        // 每一秒更新一次人物坐标信息
+        setInterval("getCurrentPostionInParacraft()",1000);
+    })
 
 </script>
 

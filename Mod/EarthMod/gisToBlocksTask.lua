@@ -53,7 +53,7 @@ gisToBlocks.concurrent_creation_point_count = 1;
 -- the color schema. can be 1, 2, 16. where 1 is only a single color. 
 gisToBlocks.colors = 32;
 gisToBlocks.zoom   = 17;
-local factor = 1.19 -- 地图缩放比例
+local factor = 1 -- 地图缩放比例
 local PngWidth = 256
 
 --RGB, block_id
@@ -882,7 +882,7 @@ function gisToBlocks:Run()
 			local px, py, pz = EntityManager.GetFocus():GetBlockPos();
 			-- local px, py, pz = GameLogic.GetPlayerPosition();
 			local firstLon, firstLat = pixel2deg(gisToBlocks.tile_MIN_X,gisToBlocks.tile_MIN_Y,0,0,self.zoom);
-			local lastLon, lastLat = pixel2deg(gisToBlocks.tile_MAX_X,gisToBlocks.tile_MAX_Y,0,0,self.zoom);
+			local lastLon, lastLat = pixel2deg(gisToBlocks.tile_MAX_X,gisToBlocks.tile_MAX_Y,255,255,self.zoom);
 			local firstPo, lastPo = {lat = firstLat,lon = firstLon},{lat = lastLat,lon = lastLon};
 			LOG.std(nil,"debug","gisToBlocks","获取到的地图经纬度");
 			echo(firstPo);echo(lastPo)
