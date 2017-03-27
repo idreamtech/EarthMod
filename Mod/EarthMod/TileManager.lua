@@ -98,8 +98,9 @@ end
 function TileManager:deg2pixel(lon, lat)
     local lon_deg = tonumber(lon)
     local lat_rad = math.rad(lat)
-    local xtile = self.zoomN * ((lon_deg + 180) / 360) * self.tileSize % self.tileSize + 0.5
-    local ytile = self.zoomN * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2 * self.tileSize % self.tileSize + 0.5
+    local xtile = self.zoomN * ((lon_deg + 180) / 360)
+    local ytile = self.zoomN * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2
+	LOG.std(nil,"RunFunction","瓦片行列号",xtile .. "," .. ytile)
     return self:getTilePo(xtile, ytile)
 end
 
@@ -241,12 +242,9 @@ function TileManager:getGPo(x,y,z)
 	local dx = (x - self.firstBlockPo.x) / self.tileSize + self.beginPo.x
 	local dz = self.beginPo.y - (z - self.firstBlockPo.z) / self.tileSize + 1
 	return self:pixel2deg(self:getTilePo(dx - locDt.x,dz - locDt.z))
-	-- x = (x - self.firstBlockPo.x) / self.size.width * self.gSize.width + self.gPo.x
-	-- z = (z - self.firstBlockPo.z) / self.size.height * self.gSize.height + self.gPo.y
-	-- {lon = x,lat = z}
 end
 
--- gps经纬度转parancraft坐标系(不传参数为中心点)
+-- gps经纬度转parancraft坐标系(不传参数为中心点) -32907218 5 15222780
 function TileManager:getParaPo(lon,lat)
 	if lat == nil and lon and type(lon) == "table" then
 		lat = lon.lat;lon = lon.lon
@@ -255,13 +253,19 @@ function TileManager:getParaPo(lon,lat)
 		lon = self.gCen.x;lat = self.gCen.y
 	end
 	local tileX,tileZ,x,z = self:deg2pixel(lon,lat)
+	LOG.std(nil,"RunFunction","人物跳转瓦片号",tileX .. "," .. tileZ .. " | " .. x .. "," .. z)
+	echo(self.beginPo)
 	local dx = (tileX - self.beginPo.x + locDt.x) * self.tileSize + x + self.firstBlockPo.x
-	local dz = (self.beginPo.y - tileZ - 1 + locDt.z) * self.tileSize + z + self.firstBlockPo.z
-	return {x = dx,y = self.firstBlockPo.y,z = dz}
+	local dz = (self.beginPo.y - tileZ - locDt.z + 1) * self.tileSize - z + self.firstBlockPo.z
+	return {x = math.round(dx),y = self.firstBlockPo.y,z = math.round(dz)}
 	-- local x = (lon - self.gPo.x) / self.gSize.width * self.size.width + self.firstBlockPo.x
 	-- local z = (lat - self.gPo.y) / self.gSize.height * self.size.height + self.firstBlockPo.z
 	-- return {x = math.floor(x),y = self.firstBlockPo.y,z = math.floor(z)}
 end
+
+--[[
+
+]]
 
 -- 获取人物面向朝向
 function TileManager:getForward(needStr) -- 正北为0度，东南西为90 180 270
