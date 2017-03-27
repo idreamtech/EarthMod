@@ -262,3 +262,37 @@ function TileManager:getParaPo(lon,lat)
 	-- local z = (lat - self.gPo.y) / self.gSize.height * self.size.height + self.firstBlockPo.z
 	-- return {x = math.floor(x),y = self.firstBlockPo.y,z = math.floor(z)}
 end
+
+-- 获取人物面向朝向
+function TileManager:getForward(needStr) -- 正北为0度，东南西为90 180 270
+	local player = ParaScene.GetPlayer()
+	local facing = player:GetFacing() + 3 -- 0 ~ 6 0 指向西
+	local ro = (facing * 60 + 270) % 360 -- 转换为指向旋转度
+	if needStr then
+		local dt = 10 -- 定位精度（方向的夹角差）
+		local tb = {{"北","东"},{"东","南"},{"南","西"},{"西","北"}}
+		local a = ro / 90
+		local id = math.ceil(a)
+		local b = ro - math.floor(a) * 90
+		local s1,s2,s = tb[id][1],tb[id][2],nil
+		if b <= dt then s = s1
+		elseif b >= 90 - dt then s = s2
+		else s = s1 .. s2 end
+		return ro,s
+	end
+	return ro
+end
+-- 设置人物面向朝向
+function TileManager:setForward(degree)
+	local player = ParaScene.GetPlayer()
+	local r = (degree - 270) / 60
+	player:SetFacing(r)
+end
+
+--[[
+-- Object Browsser: CSceneObject->CTerrainTileRoot->listSolidObj->0 下面的Properties标签页
+local player = ParaScene.GetPlayer()
+local facing = player:GetFacing()
+echo(facing)
+player:SetFacing(1)
+]]

@@ -960,7 +960,8 @@ function gisToBlocks:Run()
 				-- 获取人物坐标信息
 				local x, y, z = EntityManager.GetFocus():GetBlockPos();
 				local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
-				LOG.std(nil,"RunFunction 获取到人物的人物坐标信息","经度：" .. player_latLon.lon,"纬度：" .. player_latLon.lat)
+				local ro,str = TileManager.GetInstance():getForward(true)
+				LOG.std(nil,"RunFunction 人物信息","经度：" .. player_latLon.lon .. " 纬度：" .. player_latLon.lat,"人物朝向：" .. math.floor(ro) .. "° " .. str)
 				LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
 				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
 		end});
