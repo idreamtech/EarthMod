@@ -317,7 +317,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 
 								--buildingPoint = {id = item.id; x = item.lon; y = item.lat; z = 1; }
 								xpos, ypos = deg2pixel(item.lon, item.lat, 17);
-
+								
 								buildingPoint = {id = item.id; x = xpos; y = ypos; z = 1; }
 								buildingPointCount = buildingPointCount + 1;
 								buildingPointList[buildingPointCount] = buildingPoint;
@@ -882,10 +882,11 @@ function gisToBlocks:Run()
 			local px, py, pz = EntityManager.GetFocus():GetBlockPos();
 			-- local px, py, pz = GameLogic.GetPlayerPosition();
 			local firstLon, firstLat = pixel2deg(gisToBlocks.tile_MIN_X,gisToBlocks.tile_MIN_Y,0,0,self.zoom);
-			local lastLon, lastLat = pixel2deg(gisToBlocks.tile_MAX_X,gisToBlocks.tile_MAX_Y,0,0,self.zoom);
+			local lastLon, lastLat = pixel2deg(gisToBlocks.tile_MAX_X,gisToBlocks.tile_MAX_Y,255,255,self.zoom);
 			local firstPo, lastPo = {lat = firstLat,lon = firstLon},{lat = lastLat,lon = lastLon};
 			LOG.std(nil,"debug","gisToBlocks","获取到的地图经纬度");
 			echo(firstPo);echo(lastPo)
+			echo(self.minlon .. "," .. self.minlat);echo(self.maxlon .. "," .. self.maxlat)
 			local tileManager = TileManager:new({
 				lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
 				rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
@@ -949,7 +950,6 @@ function gisToBlocks:Run()
 		-- CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
 		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
 		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
-		LOG.std(nil,GameLogic.GetPlayerPosition())
 		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
 
 		-- 更新SelectLocationTask.player_lon和SelectLocationTask.player_lat(人物当前所处经纬度)信息
@@ -960,9 +960,8 @@ function gisToBlocks:Run()
 				-- 获取人物坐标信息
 				local x, y, z = EntityManager.GetFocus():GetBlockPos();
 				local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
-				LOG.std(nil,"RunFunction","Role position:",x .. "," .. y .. "," .. z)
-				LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
 				LOG.std(nil,"RunFunction 获取到人物的人物坐标信息","经度：" .. player_latLon.lon,"纬度：" .. player_latLon.lat)
+				LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
 				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
 		end});
 

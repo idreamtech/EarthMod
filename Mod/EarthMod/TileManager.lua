@@ -13,6 +13,8 @@ local TileManager = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonli
 -- local gisToBlocksTask = commonlib.gettable("Mod.EarthMod.gisToBlocksTask");
 local curInstance;
 local TILE_SIZE = 256 -- 默认瓦片大小
+local zoom = 17 -- OSM级数
+local locDt = {x = 0.08,z = -0.08} -- OSM与实际显示位置偏移
 -- local CENPO = {x=19199,y=5,z=19200} -- paracraft中心点位置
 
 TileManager.tileSize = nil -- 瓦片大小
@@ -30,15 +32,16 @@ TileManager.tiles = {} -- 瓦片合集
 TileManager.blocks = {} -- 砖块合集
 TileManager.mapStack = {} -- 瓦块下载数据
 TileManager.popCount = 0
+TileManager.zoomN = nil
 
 function math.round(decimal)
 	-- decimal = decimal * 100
     if decimal % 1 >= 0.5 then 
-            decimal=math.ceil(decimal)
+    	decimal = math.ceil(decimal)
     else
-            decimal=math.floor(decimal)
+    	decimal = math.floor(decimal)
     end
-    return  decimal--  * 0.01
+    return decimal--  * 0.01
 end
 
 function handler(obj, method)
@@ -60,13 +63,12 @@ function TileManager:ctor() -- 左下行列号，右上行列号，焦点坐标�
 	self.col = self.rid - self.lid + 1
 	self.row = self.bid - self.tid + 1
 	self.beginPo,self.endPo = {x = self.lid, y = self.bid},{x = self.rid,y = self.tid}
-	-- 物理坐标
-	self.firstPo = self.firstPo or {lat = 28.1742,lon = 112.9331}
-	self.lastPo = self.lastPo or {lat = 28.1864,lon = 112.9446}
-	self.gSize = {height = self.lastPo.lat - self.firstPo.lat,width = self.lastPo.lon - self.firstPo.lon}
-	self.gPo = {x = self.firstPo.lon, y = self.firstPo.lat}
-	self.gCen = {x = self.gPo.x + self.gSize.width / 2,y = self.gPo.y + self.gSize.height / 2}
-	echo(self.gSize);echo(self.gPo);echo(self.gCen)
+	-- 物理坐标（相对于瓦片,即实际地图）
+
+	-- self.gSize = {height = self.lastPo.lat - self.firstPo.lat,width = self.lastPo.lon - self.firstPo.lon}
+	-- self.gPo = {x = self.firstPo.lon, y = self.firstPo.lat}
+	-- self.gCen = {x = self.gPo.x + self.gSize.width / 2,y = self.gPo.y + self.gSize.height / 2}
+	-- echo(self.gSize);echo(self.gPo);echo(self.gCen)
 	--
 	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
 	self.firstBlockPo = {x = math.floor(self.oPo.x - (self.tileSize - 1) / 2),y = self.by,z = math.floor(self.oPo.z - (self.tileSize - 1) / 2)}
@@ -75,6 +77,7 @@ function TileManager:ctor() -- 左下行列号，右上行列号，焦点坐标�
 	self.blocks = {}
 	self.mapStack = {}
 	self.popCount = 0
+	self.zoomN = 2 ^ zoom
 	-- self:getDrawPosition(1,1)
 	curInstance = self
 end
@@ -82,6 +85,30 @@ end
 -- 获取总需绘制行列数（返回列数，行数）
 function TileManager:getIterSize()
 	return self.col,self.row
+end
+
+-- 计算瓦片位置(返回行列号和像素点坐标)
+function TileManager:getTilePo(tx,ty)
+	local Xt,Yt = math.floor(tx), math.floor(ty)
+    local Xp,Yp = math.floor((tx - Xt) * self.tileSize), math.floor((ty - Yt) * self.tileSize)
+    return Xt, Yt, Xp, Yp
+end
+
+-- 经纬度转瓦片行列式
+function TileManager:deg2pixel(lon, lat)
+    local lon_deg = tonumber(lon)
+    local lat_rad = math.rad(lat)
+    local xtile = self.zoomN * ((lon_deg + 180) / 360) * self.tileSize % self.tileSize + 0.5
+    local ytile = self.zoomN * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2 * self.tileSize % self.tileSize + 0.5
+    return self:getTilePo(xtile, ytile)
+end
+
+-- 瓦片行列式转经纬度(参数：瓦片ID，瓦片中所在像素位置，缩放级数)
+function TileManager:pixel2deg(tileX, tileY, pixelX, pixelY)
+	local lon_deg = (tileX + pixelX / self.tileSize) / self.zoomN * 360.0 - 180.0;
+	local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/self.tileSize) / self.zoomN)))
+	local lat_deg = lat_rad * 180.0 / math.pi
+	return {lon = lon_deg, lat = lat_deg}
 end
 
 -- 遍历绘制瓦片，函数func参数为瓦片中心点位置和瓦片对象，返回结果成功则表示绘制成功瓦片，如果该瓦片之前被绘制过则不执行func
@@ -211,9 +238,12 @@ function TileManager:getGPo(x,y,z)
 	if y == nil and z == nil and x and type(x) == "table" then
 		z = x.z;y = x.y; x = x.x
 	end
-	x = (x - self.firstBlockPo.x) / self.size.width * self.gSize.width + self.gPo.x
-	z = (z - self.firstBlockPo.z) / self.size.height * self.gSize.height + self.gPo.y
-	return {lon = x,lat = z}
+	local dx = (x - self.firstBlockPo.x) / self.tileSize + self.beginPo.x
+	local dz = self.beginPo.y - (z - self.firstBlockPo.z) / self.tileSize + 1
+	return self:pixel2deg(self:getTilePo(dx - locDt.x,dz - locDt.z))
+	-- x = (x - self.firstBlockPo.x) / self.size.width * self.gSize.width + self.gPo.x
+	-- z = (z - self.firstBlockPo.z) / self.size.height * self.gSize.height + self.gPo.y
+	-- {lon = x,lat = z}
 end
 
 -- gps经纬度转parancraft坐标系(不传参数为中心点)
@@ -224,7 +254,11 @@ function TileManager:getParaPo(lon,lat)
 	if lon == nil and lat == nil then
 		lon = self.gCen.x;lat = self.gCen.y
 	end
-	local x = (lon - self.gPo.x) / self.gSize.width * self.size.width + self.firstBlockPo.x
-	local z = (lat - self.gPo.y) / self.gSize.height * self.size.height + self.firstBlockPo.z
-	return {x = math.floor(x),y = self.firstBlockPo.y,z = math.floor(z)}
+	local tileX,tileZ,x,z = self:deg2pixel(lon,lat)
+	local dx = (tileX - self.beginPo.x + locDt.x) * self.tileSize + x + self.firstBlockPo.x
+	local dz = (self.beginPo.y - tileZ - 1 + locDt.z) * self.tileSize + z + self.firstBlockPo.z
+	return {x = dx,y = self.firstBlockPo.y,z = dz}
+	-- local x = (lon - self.gPo.x) / self.gSize.width * self.size.width + self.firstBlockPo.x
+	-- local z = (lat - self.gPo.y) / self.gSize.height * self.size.height + self.firstBlockPo.z
+	-- return {x = math.floor(x),y = self.firstBlockPo.y,z = math.floor(z)}
 end
