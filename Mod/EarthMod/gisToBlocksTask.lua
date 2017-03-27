@@ -924,7 +924,7 @@ function gisToBlocks:Run()
 				-- end
 			end
 		end
-
+		SelectLocationTask.isDownLoaded = nil
 		-- timer定时检查图片是否下载完成,count值等于rows*cols乘积时候才执行生成方块操作
 		local loadToSceneTimer = commonlib.Timer:new({callbackFunc = function(loadToSceneTimer)
 			if (count == (cols * rows)) then
@@ -940,6 +940,7 @@ function gisToBlocks:Run()
 					end
 				end
 				loadToSceneTimer:Change();
+				SelectLocationTask.isDownLoaded = true
 			end
 		end});
 
@@ -956,16 +957,39 @@ function gisToBlocks:Run()
 		local sltInstance = SelectLocationTask.GetInstance();
 		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
 		-- timer定时更新人物坐标信息
-		local playerLocationTimer = playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
-				-- 获取人物坐标信息
-				local x, y, z = EntityManager.GetFocus():GetBlockPos();
-				local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
-				local ro,str = TileManager.GetInstance():getForward(true)
-				LOG.std(nil,"RunFunction 人物信息","经度：" .. player_latLon.lon .. " 纬度：" .. player_latLon.lat,"人物朝向：" .. math.floor(ro) .. "° " .. str)
-				LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
-				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
-		end});
-
-		playerLocationTimer:Change(1000,1000);
+		local function refrushPlayerInfo()
+			local playerLocationTimer = playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
+					-- 获取人物坐标信息
+					if SelectLocationTask.player_curLon and SelectLocationTask.player_curLat then
+						local curLon,curLat = SelectLocationTask.player_curLon,SelectLocationTask.player_curLat
+						SelectLocationTask.player_lon = curLon
+						SelectLocationTask.player_lat = curLat
+						local po = TileManager.GetInstance():getParaPo(curLon,curLat)
+						CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
+						LOG.std(nil,"RunFunction","人物跳转开始",po.x .. " " .. po.y .. " " .. po.z)
+						SelectLocationTask.player_curLon = nil
+						SelectLocationTask.player_curLat = nil
+						SelectLocationTask.player_curState = po
+					else
+						local x, y, z = EntityManager.GetFocus():GetBlockPos();
+						if SelectLocationTask.player_curState then
+							if SelectLocationTask.player_curState.x == x and SelectLocationTask.player_curState.z == z then
+								SelectLocationTask.player_curState = nil
+							else
+								x,y,z = SelectLocationTask.player_curState.x,SelectLocationTask.player_curState.y,SelectLocationTask.player_curState.z
+							end
+						end
+						local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
+						local ro,str = TileManager.GetInstance():getForward(true)
+						local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
+						local poInfo = "经度:" .. lon .. " 纬度:" .. lat
+						local foInfo = "人物朝向: " .. ron .. "° " .. str
+						GameLogic.AddBBS("statusBar", poInfo .. " " .. foInfo, 15000, "223 81 145"); -- 显示提示条
+						sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
+					end
+			end});
+			playerLocationTimer:Change(1000,1000);
+		end
+		refrushPlayerInfo()
 	end
 end

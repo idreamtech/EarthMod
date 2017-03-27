@@ -13,6 +13,8 @@ local minlat = request:get("minlat");
 local minlon = request:get("minlon");
 local maxlat = request:get("maxlat");
 local maxlon = request:get("maxlon");
+local curLat = request:get("curLat");
+local curLon = request:get("curLon");
 
 if(is_ajax()) then
     add_action('wp_ajax_send_coordinate' , function()
@@ -29,6 +31,13 @@ if(is_ajax()) then
         ret["lon"] = playerLon;
         ret["lat"] = playerLat;
         response:send_json(ret);
+        return;
+    end);
+
+    add_action('wp_ajax_set_player_coordinate' , function()
+        --设置人物坐标
+        SelectLocationTask:setPlayerLocation(curLon, curLat);
+        response:send();
         return;
     end);
 
@@ -382,14 +391,36 @@ $(function(){
 
     // 在地图上矩形选框内点击时候,触发marker位置移动,并通知pararcraft中的人物进行跳转
     function onMapClick(e) {
-        // e.latlng.lat, e.latlng.lng
         // 判断点击区域是否在矩形区域内
-
-        console.log(1);
-        console.log(2);
+        if (e.latlng.lng != null && e.latlng.lat != null && typeof(e.latlng.lng) != "undefined" && typeof(e.latlng.lat) != "undefined") {
+            console.log("获取到位置信息：")
+            console.log(e.latlng.lat)
+            console.log(e.latlng.lng)
+            // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
+            if (marker == null) {
+                marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map);
+            } else {
+                marker.setLatLng([e.latlng.lat, e.latlng.lng]);
+            }
+            var data = {
+                "curLat": e.latlng.lat,
+                "curLon": e.latlng.lng
+            }
+            $.ajax({
+                url:"/ajax/earth?action=set_player_coordinate",
+                type:"post",
+                dataType:"json",
+                data:data,
+                success:function(res){
+                    console.log(res);                    
+                },
+                error:function(){
+                    console.log("设置人物当前坐标失败");
+                }
+            })
+        }
     }
 
     map.on('click', onMapClick);
 
 </script>
-
