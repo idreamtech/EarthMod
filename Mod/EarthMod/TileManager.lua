@@ -33,6 +33,7 @@ TileManager.blocks = {} -- 砖块合集
 TileManager.mapStack = {} -- 瓦块下载数据
 TileManager.popCount = 0
 TileManager.zoomN = nil
+TileManager.state = nil -- 0:未更新, 1:更新过, 2:数据过时
 
 function math.round(decimal)
 	-- decimal = decimal * 100
@@ -147,24 +148,37 @@ end
 
 -- 添加砖块数据
 function TileManager:pushBlocksData(tile,data)
-	if not tile or not data then assert("error set blocks on TileManager:pushBlocksData");return end
+	if not tile then assert("error set blocks on TileManager:pushBlocksData");return end
+	local defaultColor = nil
+	if not data then
+
+		defaultColor = {181,208,208,255} -- 大海颜色(测试数据，需要修复纯色无法加载bug)
+	end
 	local po = {x = (tile.x - 1) * self.tileSize,y = (tile.y - 1) * self.tileSize}
 	for y=1,self.tileSize do
-		self.blocks[y] = self.blocks[y] or {}
 		for x=1,self.tileSize do
-			self.blocks[y + po.y][x + po.x] = data[y][x]
+			self.blocks[y + po.y] = self.blocks[y + po.y] or {}
+			self.blocks[y + po.y][x + po.x] = defaultColor or data[y][x]
+			-- if data[y][x] == nil then
+			-- 	echo("error 有空数据！" .. (x + po.x) .. "," .. (y + po.y))
+			-- end
 		end
 	end
 end
 
 -- 检查未绘制的方块并绘制
 function TileManager:fillNullBlock(func)
+	if not self.blocks then return end
 	for y=1,self.size.height do
 		for x=1,self.size.width do
-			if not self.blocks[y][x] then
-				local px,py,pz = x + self.oPo.x,self.oPo.y,y + self.oPo.z
-				self.blocks[y][x] = func(self.blocks,x,y,px,py,pz)
+			if self.blocks[y] and self.blocks[y][x] then
+				local px,py,pz = x + self.firstBlockPo.x,self.firstBlockPo.y,y + self.firstBlockPo.z
+				func(self.blocks[y][x],x,y,px,py,pz)
 			end
+			-- if self.blocks[y] and (not self.blocks[y][x]) then
+			-- 	local px,py,pz = x + self.oPo.x,self.oPo.y,y + self.oPo.z
+			-- 	self.blocks[y][x] = func(self.blocks,x,y,px,py,pz)
+			-- end
 		end
 	end
 end

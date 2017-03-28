@@ -476,18 +476,18 @@ end
 
 function gisToBlocks:genMixColor(tb,x,y)
 	if tb[y][x] == nil then
-		if tb[y][x - 1] and tb[y][x + 1] then -- 横缺一
+		if tb[y] and tb[y][x - 1] and tb[y][x + 1] then -- 横缺一
 			return self:mixColor({tb[y][x - 1],tb[y][x + 1]})
-		elseif tb[y - 1][x] and tb[y + 1][x] then -- 竖缺一
+		elseif tb[y - 1] and tb[y + 1] and tb[y - 1][x] and tb[y + 1][x] then -- 竖缺一
 			return self:mixColor({tb[y - 1][x],tb[y + 1][x]})
-		elseif tb[y - 1][x - 1] and tb[y - 1][x + 1] and tb[y + 1][x - 1] and tb[y + 1][x + 1] then -- 中间缺一
+		elseif tb[y - 1] and tb[y + 1] and tb[y - 1][x - 1] and tb[y - 1][x + 1] and tb[y + 1][x - 1] and tb[y + 1][x + 1] then -- 中间缺一
 			return self:mixColor({tb[y - 1][x - 1], tb[y - 1][x + 1], tb[y + 1][x - 1], tb[y + 1][x + 1]})
 		else
 			for i = y - 1,y + 1 do
-				if tb[i][x] then return tb[i][x] end
+				if tb[i] and tb[i][x] then return tb[i][x] end
 			end
 			for j = x - 1,x + 1 do
-				if tb[y][j] then return tb[y][j] end
+				if tb[y] and tb[y][j] then return tb[y][j] end
 			end
 		end
 	end
@@ -495,9 +495,8 @@ function gisToBlocks:genMixColor(tb,x,y)
 end
 
 -- 扩大地图到1:1 需修改factor为1.19
-function gisToBlocks:PNGToBlockScale(raster, px, py, pz)
+function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 	local colors = self.colors;
-
 	if(raster:IsValid()) then
 		local ver           = raster:ReadInt();
 		local width         = raster:ReadInt();
@@ -559,33 +558,76 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz)
 						if blocksHistory[y][x] then
 							local block_id, block_data = GetBlockIdFromPixel(blocksHistory[y][x], colors);
 							if(block_id) then
+								if x == 1 and y == 1 then LOG.std(nil,"info","draw",x .. "," .. y);echo(block_data) end
 								CreateBlock_(x, y, block_id, block_data);
+								count = count + 1;
 								if((count%block_per_tick) == 0) then
 									coroutine.yield(true);
 								end
-								count = count + 1;
 							end
 						end
 						--
 					end
 				end
+				TileManager.GetInstance():pushBlocksData(tile, blocksHistory)
 			end)
 
 			local timer = commonlib.Timer:new({callbackFunc = function(timer)
 				local status, result = coroutine.resume(worker_thread_co);
-				if not status then
-					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d blocks: %s ", count, tostring(result));
+				if (not status) then
 					timer:Change();
 					raster:close();
+
+					self.curTimes = self.curTimes + 1
+					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, self.curTimes + self.passTimes, self.totalCounts);
+					self:fillingGap()
 				end
 			end})
 			timer:Change(30,30);
 
 			UndoManager.PushCommand(self);
 		else
-			LOG.std(nil, "error", "PNGToBlockScale", "format not supported");
+			LOG.std(nil, "error", "PNGToBlockScale", "format not supported process: %d / %d", self.curTimes + self.passTimes, self.totalCounts);
 			raster:close();
+			-- -- test
+			-- echo("_______________________test ParaIO.open(Image)_________________________________")
+			-- echo("file: tile_"..tile.ranksID.x.."_"..tile.ranksID.y..".png")
+			-- local raster = ParaIO.open("tile_"..tile.ranksID.x.."_"..tile.ranksID.y..".png", "image");
+			-- local ver           = raster:ReadInt();
+			-- local width         = raster:ReadInt();
+			-- local height        = raster:ReadInt();
+			-- local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
+			-- echo({ver, width, height, bytesPerPixel})
+			-- local pixel = {}
+			-- for i = 1,10 do
+			-- 	pixel = raster:ReadBytes(4, pixel)
+			-- 	echo(pixel)
+			-- end
+			-- raster:close();
+			-- echo("_______________________test end_______________________________________________")
+			-- --
+			TileManager.GetInstance():pushBlocksData(tile)
+			self.passTimes = self.passTimes + 1
+			self:fillingGap()
 		end
+	end
+end
+
+-- 填充所有块
+function gisToBlocks:fillingGap()
+	if self.curTimes + self.passTimes >= self.totalCounts then
+		echo("填补色块 " .. self.curTimes .. "," .. self.passTimes .. "," .. self.totalCounts)
+		local ct = 0
+		TileManager.GetInstance():fillNullBlock(function(block,x,y,px,py,pz)
+			local data = BlockEngine:GetBlockData(px,py,pz)
+			if data == 0 then
+				-- LOG.std(nil, "info", "PNGToBlockScale", "filling gap %d,%d .. (%d,%d,%d)",x,y,px,py,pz);
+				ct = ct + 1
+				local block_id, block_data = GetBlockIdFromPixel(block, self.colors);
+				self:AddBlock(px, py, pz, block_id, block_data);
+			end
+		end)
+		echo("填补色块：" .. ct)
 	end
 end
 
@@ -670,7 +712,7 @@ function gisToBlocks:MoreScene()
 	end);
 end
 
-function gisToBlocks:LoadToScene(raster,vector,px,py,pz,x,y)
+function gisToBlocks:LoadToScene(raster,vector,px,py,pz,tile)
 	local colors = self.colors;
 
 	-- local px, py, pz = EntityManager.GetFocus():GetBlockPos();
@@ -694,9 +736,9 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,x,y)
 	
 	LOG.std(nil,"debug","gisToBlocks","加载方块和贴图");
 	if factor > 1 then
-		self:PNGToBlockScale(raster, px, py, pz);
+		self:PNGToBlockScale(raster, px, py, pz, tile);
 	else
-		self:PNGToBlock(raster, px, py, pz);
+		self:PNGToBlock(raster, px, py, pz, tile);
 	end
 	-- self:OSMToBlock(vector, px, py, pz);
 	CommandManager:RunCommand("/save");
@@ -838,12 +880,14 @@ function gisToBlocks:BoundaryCheck()
 		gisToBlocks.direction = "top";
 		return true;
 	end]]
-
 	return false
 end
 
 function gisToBlocks:Run()
 	self.finished = true;
+	-- echo("读取方块数据")
+	-- echo(BlockEngine:GetBlockData(19213,100,19799));
+	-- echo(BlockEngine:GetBlockEntityData(19213,100,19799))
 
 	if(self.options == "already" or self.options == "coordinate") then
 		-- LOG.std(nil,"debug","self.lon,self.lat",{self.lon,self.lon});
@@ -898,7 +942,9 @@ function gisToBlocks:Run()
 		-- 获取区域范围瓦片的列数和行数
 		local cols, rows = TileManager.GetInstance():getIterSize();
 		LOG.std(nil,"debug","gisToBlocks","cols : "..cols.." rows : "..rows);
-
+		self.totalCounts = cols * rows
+		self.curTimes = 0
+		self.passTimes = 0
 		-- 计算,测试需要,最多只加载指定区域范围内的4个瓦片
 		local count = 0;
 		for j=1,rows do
@@ -936,7 +982,7 @@ function gisToBlocks:Run()
 						-- local vectorFile = ParaIO.open("xml_"..x.."_"..y..".osm", "r");
 						-- local vector = vectorFile:GetText(0, -1);
 						-- vectorFile:close();
-						self:LoadToScene(raster,vector,po.x,po.y,po.z);
+						self:LoadToScene(raster,vector,po.x,po.y,po.z,tile);
 					end
 				end
 				loadToSceneTimer:Change();
