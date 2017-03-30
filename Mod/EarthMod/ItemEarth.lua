@@ -104,14 +104,14 @@ function ItemEarth:CompareItems(left, right)
 end
 
 function ItemEarth:boundaryCheck()
-	--[[BoundaryTimer = BoundaryTimer or commonlib.Timer:new({callbackFunc = function(timer)
+	BoundaryTimer = BoundaryTimer or commonlib.Timer:new({callbackFunc = function(timer)
 			CommandManager:RunCommand("/gis -boundary");
 			--echo(gisCommand.getMoreTiles);
 			SelectLocationTask.getMoreTiles = gisCommand.getMoreTiles;
 			SelectLocationTask:RefreshPage();
 		end});
 
-	BoundaryTimer:Change(300, 300);]]
+	BoundaryTimer:Change(300, 300);
 end
 
 function ItemEarth:MoreScence()
