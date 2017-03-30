@@ -193,6 +193,10 @@ function gisToBlocks:ctor()
 end
 
 function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data)
+	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	if spx == px and spy == py and spz == pz then
+		CommandManager:RunCommand("/goto " .. px .. " " .. py .. " " .. pz) -- 当画到脚下那块时人物跳起来
+	end
 	if(self.add_to_history) then
 		local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 		local from_data, from_entity_data;
@@ -513,8 +517,6 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 			self:AddBlock(spx, spy, spz, block_id, block_data);
 		end
 
-
-		
 		local pixel = {};
 
 		if(bytesPerPixel >= 3) then
@@ -724,7 +726,7 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,tile)
 	-- self:OSMToBlock(vector, px, py, pz);
 	CommandManager:RunCommand("/save");
 
-	self.isDrawing = false
+	-- self.isDrawing = false
 end
 
 function gisToBlocks:GetData(x,y,i,j,_callback)
@@ -802,7 +804,7 @@ function gisToBlocks:Undo()
 end
 
 function gisToBlocks:BoundaryCheck()
-	if self.isDrawing then return false end
+	-- if self.isDrawing then return false end
 	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
 	local cx,cy = TileManager.GetInstance():getInTile(px, py, pz) -- self.gx,self.gy
 	if type(cx) == "table" then cy = cx.y;cx = cx.x end
@@ -812,176 +814,29 @@ function gisToBlocks:BoundaryCheck()
 			self:downloadMap(x,y)
 		end
 	end
-	local function common(words)
-		GameLogic.SetStatus(words);
-	end
-
-	local fxn,fxx,fyn,fyx = cx - 1,cx + 1,cy - 1,cy + 1
-	if fxn < 1 then fxn = 1 end
-	if fxx > self.cols then fxx = self.cols end
-	if fyn < 1 then fyn = 1 end
-	if fyx > self.rows then fyx = self.rows end
-	for x = fxn,fxx do
-		for y = fyn,fyx do
+	for x = cx - 1,cx + 1 do -- 九宫格绘制
+		for y = cy - 1,cy + 1 do
 			checkAddMap(x,y)
 		end
 	end
-
-	-- if(gisToBlocks.ptop and pz >= gisToBlocks.ptop) then
-	-- 	-- local toplat = gisToBlocks.dright - abslat;
-	-- 	-- local toplon = gisToBlocks.dtop + abslon;
-	-- 	-- LOG.std(nil,"debug","toplat,toplon",{toplat,toplon});
-	-- 	if cy < self.rows and (not self.isDrawing) then
-	-- 		common(L"上边");
-	-- 		LOG.std(nil,"debug","上边",cy .. "<" .. self.rows)
-	-- 		cy = cy + 1
-	-- 		self.gx,self.gy = cx,cy
-	-- 	end
-	-- 	if cx < self.cols then checkAddMap(cx + 1,cy) end
-	-- 	checkAddMap(cx,cy)
-	-- 	if cx > 1 then checkAddMap(cx - 1,cy) end
-	-- 	return true;
-	-- end
-	-- local abslat = math.abs(gisToBlocks.dleft - gisToBlocks.dright)/2;
-	-- local abslon = math.abs(gisToBlocks.dtop  - gisToBlocks.dbottom)/2;
-	--lefttop
-	-- if(gisToBlocks.pleft and gisToBlocks.ptop and px <= gisToBlocks.pleft and pz >= gisToBlocks.ptop) then
-	-- 	-- local lefttoplat = gisToBlocks.dleft - abslat;
-	-- 	-- local lefttoplon = gisToBlocks.dtop + abslat;
-	-- 	-- LOG.std(nil,"debug","lefttoplat,lefttoplon",{lefttoplat,lefttoplon});
-	-- 	if cx > 1 and cy < self.rows and (not self.isDrawing) then
-	-- 		common(L"左上边");
-	-- 		cx = cx - 1
-	-- 		cy = cy + 1
-	-- 	end
-	-- 	checkAddMap()
-	-- 	return true;
-	-- end
-
-	-- --righttop
-	-- if(gisToBlocks.pright and gisToBlocks.ptop and px >= gisToBlocks.pright and pz >= gisToBlocks.ptop) then
-	-- 	-- local righttoplat = gisToBlocks.dright + abslat;
-	-- 	-- local righttoplon = gisToBlocks.dtop + abslon;
-	-- 	-- LOG.std(nil,"debug","rightttoplat,righttoplon",{righttoplat,righttoplon});
-	-- 	if cx < self.cols and cy < self.rows and (not self.isDrawing) then
-	-- 		common(L"右上边");
-	-- 		cx = cx + 1
-	-- 		cy = cy + 1
-	-- 	end
-	-- 	checkAddMap()
-	-- 	return true;
-	-- end
-
-	-- --leftbottom
-	-- if(gisToBlocks.pleft and gisToBlocks.pbottom and px <= gisToBlocks.pleft and pz <= gisToBlocks.pbottom) then
-	-- 	-- local leftbottomlat = gisToBlocks.dleft - abslat;
-	-- 	-- local leftbottomlon = gisToBlocks.dbottom - abslon;
-	-- 	-- LOG.std(nil,"debug","leftbottomlat,leftbottomlon",{leftbottomlat,leftbottomlon});
-	-- 	if cx > 1 and cy > 1 and (not self.isDrawing) then -- cx < self.cols  cy < self.rows  cy > 1
-	-- 		common(L"左下边");
-	-- 		cx = cx - 1
-	-- 		cy = cy - 1
-	-- 	end
-	-- 	checkAddMap()
-	-- 	return true;
-	-- end
-
-	-- --rightbottom
-	-- if(gisToBlocks.pright and gisToBlocks.pbottom and px >= gisToBlocks.pright and pz <= gisToBlocks.pbottom) then
-	-- 	-- local rightbottomlat = gisToBlocks.dright + abslat;
-	-- 	-- local rightbottomlon = gisToBlocks.dbottom - abslon;
-	-- 	-- LOG.std(nil,"debug","rightbottomlat,rightbottomlon",{rightbottomlat,rightbottomlon});
-	-- 	if cx < self.cols and cy > 1 and (not self.isDrawing) then
-	-- 		common(L"右下边");
-	-- 		cx = cx + 1
-	-- 		cy = cy - 1
-	-- 	end
-	-- 	checkAddMap()
-	-- 	return true;
-	-- end
-
-	--leftside
-	-- if(gisToBlocks.pleft and px <= gisToBlocks.pleft) then
-	-- 	-- local leftlat = gisToBlocks.dleft - abslat;
-	-- 	-- local leftlon = gisToBlocks.dtop - abslon;
-	-- 	-- LOG.std(nil,"debug","leftlat,leftlon",{leftlat,leftlon});
-	-- 	if cx > 1 and (not self.isDrawing) then
-	-- 		common(L"左边");
-	-- 		LOG.std(nil,"debug","左边",cx .. "> 1")
-	-- 		cx = cx - 1
-	-- 		self.gx,self.gy = cx,cy
-	-- 	end
-	-- 	if cy < self.rows then checkAddMap(cx,cy + 1) end
-	-- 	checkAddMap(cx,cy)
-	-- 	if cy > 1 then checkAddMap(cx,cy - 1) end
-	-- 	return true;
-	-- end
-	
-	-- --rightside
-	-- if(gisToBlocks.pright and px >= gisToBlocks.pright) then
-	-- 	-- local rightlat = gisToBlocks.dright + abslat;
-	-- 	-- local rightlon = gisToBlocks.dtop - abslon;
-	-- 	-- LOG.std(nil,"debug","rightlat,rightlon",{rightlat,rightlon});
-	-- 	if cx < self.cols and (not self.isDrawing) then
-	-- 		common(L"右边");
-	-- 		LOG.std(nil,"debug","右边",cx .. "<" .. self.cols)
-	-- 		cx = cx + 1
-	-- 		self.gx,self.gy = cx,cy
-	-- 	end
-	-- 	if cy < self.rows then checkAddMap(cx,cy + 1) end
-	-- 	checkAddMap(cx,cy)
-	-- 	if cy > 1 then checkAddMap(cx,cy - 1) end
-	-- 	return true;
-	-- end
-
-	-- --bottomside
-	-- if(gisToBlocks.pbottom and pz <= gisToBlocks.pbottom) then
-	-- 	-- local bottomlat = gisToBlocks.dright - abslat;   
-	-- 	-- local bottomlon = gisToBlocks.dbottom - abslon;
-	-- 	-- LOG.std(nil,"debug","bottomlat,bottomlon",{bottomlat,bottomlon});
-	-- 	if cy > 1 and (not self.isDrawing) then
-	-- 		common(L"下边");
-	-- 		LOG.std(nil,"debug","下边",cy .. "> 1")
-	-- 		cy = cy - 1
-	-- 		self.gx,self.gy = cx,cy
-	-- 	end
-	-- 	if cx < self.cols then checkAddMap(cx + 1,cy) end
-	-- 	checkAddMap(cx,cy)
-	-- 	if cx > 1 then checkAddMap(cx - 1,cy) end
-	-- 	return true;
-	-- end
-
-	-- --topsile
-	-- if(gisToBlocks.ptop and pz >= gisToBlocks.ptop) then
-	-- 	-- local toplat = gisToBlocks.dright - abslat;
-	-- 	-- local toplon = gisToBlocks.dtop + abslon;
-	-- 	-- LOG.std(nil,"debug","toplat,toplon",{toplat,toplon});
-	-- 	if cy < self.rows and (not self.isDrawing) then
-	-- 		common(L"上边");
-	-- 		LOG.std(nil,"debug","上边",cy .. "<" .. self.rows)
-	-- 		cy = cy + 1
-	-- 		self.gx,self.gy = cx,cy
-	-- 	end
-	-- 	if cx < self.cols then checkAddMap(cx + 1,cy) end
-	-- 	checkAddMap(cx,cy)
-	-- 	if cx > 1 then checkAddMap(cx - 1,cy) end
-	-- 	return true;
-	-- end
-
-	return false
+	return true
 end
 
 function gisToBlocks:downloadMap(i,j)
-	local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
-	if not tile.isDrawed then
-		TileManager.GetInstance():push(tile)
+	self.pushMapFlag[i] = self.pushMapFlag[i] or {}
+	if not self.pushMapFlag[i][j] then
+		local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
+		if tile and (not tile.isDrawed) then
+			LOG.std(nil,"debug","gosToBlocks","添加绘制任务 " .. tile.x .. "," .. tile.y);
+			TileManager.GetInstance():push(tile)
+			self.pushMapFlag[i][j] = true
+		end
 	end
 end
 
-function gisToBlocks:drawNextTile()
-	local tile,count = TileManager.GetInstance():pop()
-	if tile then
-		LOG.std(nil,"debug","gosToBlocks","next draw " .. tile.x .. "," .. tile.y);
+function gisToBlocks:startDrawTiles()
+	local function onDraw(tile)
+		LOG.std(nil,"debug","gosToBlocks","绘制地图： " .. tile.x .. "," .. tile.y);
 		tile.isDrawed = true
 		local po = tile.po
 		getOsmService.tileX = tile.ranksID.x;
@@ -990,8 +845,21 @@ function gisToBlocks:drawNextTile()
 			LOG.std(nil,"debug","gosToBlocks","getData");
 			self:LoadToScene(raster,vector,po.x,po.y,po.z,tile);
 		end);
-		LOG.std(nil,"debug","gosToBlocks","end draw");
+		LOG.std(nil,"debug","gosToBlocks","绘制完成一张");
 	end
+	local timerGet = commonlib.Timer:new({callbackFunc = function(timer)
+		tile,popCount = TileManager.GetInstance():pop()
+		if tile and (not tile.isDrawed) then
+			onDraw(tile)
+		-- else
+			-- LOG.std(nil,"nextRaster","等待绘制地图" .. popCount .. ".. " .. timer.lastTick, timer.id .. "," .. timer.delta)
+		end
+		if popCount >= TileManager.GetInstance().count then
+			LOG.std(nil,"nextRaster","绘制完成所有地图，绘制次数",popCount)
+			timer:Change()
+		end
+	end})
+	timerGet:Change(2000,2000); -- 每秒获取一次图片状态
 end
 
 function gisToBlocks:Run()
@@ -1053,10 +921,12 @@ function gisToBlocks:Run()
 		self.totalCounts = self.cols * self.rows
 		self.curTimes = 0
 		self.passTimes = 0
+		self.pushMapFlag = {}
 		self:downloadMap(1,1)
 		self:downloadMap(1,2)
 		self:downloadMap(2,2)
 		self:downloadMap(2,1)
+		self:startDrawTiles()
 		-- 计算,测试需要,最多只加载指定区域范围内的4个瓦片
 		-- local count = 0;
 		-- for j=1,rows do
@@ -1102,6 +972,7 @@ function gisToBlocks:Run()
 		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
 		-- timer定时更新人物坐标信息
 		self:refrushPlayerInfo()
+		SelectLocationTask.isDownLoaded = true
 	end
 end
 
@@ -1116,7 +987,7 @@ function gisToBlocks:refrushPlayerInfo()
 				SelectLocationTask.player_lat = curLat
 				local po = TileManager.GetInstance():getParaPo(curLon,curLat)
 				CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
-				LOG.std(nil,"RunFunction","人物跳转开始",po.x .. " " .. po.y .. " " .. po.z)
+				echo("人物跳转开始");echo(po)
 				SelectLocationTask.player_curLon = nil
 				SelectLocationTask.player_curLat = nil
 				SelectLocationTask.player_curState = po

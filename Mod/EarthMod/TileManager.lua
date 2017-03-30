@@ -121,6 +121,7 @@ end
 
 -- 获取瓦片应该绘制的位置
 function TileManager:getDrawPosition(idx,idy)
+	if idx < 1 or idx > self.col or idy < 1 or idy > self.row then return nil end
 	local po = {x = self.oPo.x + (idx - 1) * self.tileSize,y = self.oPo.y,z = self.oPo.z + (idy - 1) * self.tileSize}
 	local curID = idx + (idy - 1) * self.col
 	local ranksID = {x = self.beginPo.x + idx - 1,y = self.beginPo.y - idy + 1}
@@ -183,6 +184,7 @@ end
 
 -- 获取瓦片对象
 function TileManager:getTile(idx,idy)
+	if idx < 1 or idx > self.col or idy < 1 or idy > self.row then return nil end
 	local curID = idx + (idy - 1) * self.col
 	return self.tiles[curID]
 end
@@ -310,14 +312,14 @@ function TileManager:Save()
 	--
 	local json = commonlib.Json.Encode(tileData)
 	EarthMod:SetWorldData("tileData",json);
-	echo("Saved Data:" .. json)
+	-- EarthMod:SaveWorldData();
 end
 -- 读取参数
 function TileManager:Load()
 	local json = EarthMod:GetWorldData("tileData")
 	if not json then return nil end
 	local tileData = commonlib.Json.Decode(json)
-	echo(tileData)
+	-- echo(tileData)
 	-- get data
 	self.tiles = tileData.tiles
 	self.blocks = tileData.blocks
