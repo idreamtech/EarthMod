@@ -392,11 +392,11 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
             console.log(e.latlng.lat)
             console.log(e.latlng.lng)
             // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
-            if (marker == null) {
-                marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map);
-            } else {
-                marker.setLatLng([e.latlng.lat, e.latlng.lng]);
-            }
+            // if (marker == null) {
+            //     marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map);
+            // } else {
+            //     marker.setLatLng([e.latlng.lat, e.latlng.lng]);
+            // }
             var data = {
                 "curLat": e.latlng.lat,
                 "curLon": e.latlng.lng

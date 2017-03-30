@@ -193,6 +193,10 @@ function gisToBlocks:ctor()
 end
 
 function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data)
+	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	if spx == px and spy == py and spz == pz then
+		CommandManager:RunCommand("/goto " .. px .. " " .. py .. " " .. pz) -- 当画到脚下那块时人物跳起来
+	end
 	if(self.add_to_history) then
 		local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 		local from_data, from_entity_data;
@@ -476,18 +480,18 @@ end
 
 function gisToBlocks:genMixColor(tb,x,y)
 	if tb[y][x] == nil then
-		if tb[y][x - 1] and tb[y][x + 1] then -- 横缺一
+		if tb[y] and tb[y][x - 1] and tb[y][x + 1] then -- 横缺一
 			return self:mixColor({tb[y][x - 1],tb[y][x + 1]})
-		elseif tb[y - 1][x] and tb[y + 1][x] then -- 竖缺一
+		elseif tb[y - 1] and tb[y + 1] and tb[y - 1][x] and tb[y + 1][x] then -- 竖缺一
 			return self:mixColor({tb[y - 1][x],tb[y + 1][x]})
-		elseif tb[y - 1][x - 1] and tb[y - 1][x + 1] and tb[y + 1][x - 1] and tb[y + 1][x + 1] then -- 中间缺一
+		elseif tb[y - 1] and tb[y + 1] and tb[y - 1][x - 1] and tb[y - 1][x + 1] and tb[y + 1][x - 1] and tb[y + 1][x + 1] then -- 中间缺一
 			return self:mixColor({tb[y - 1][x - 1], tb[y - 1][x + 1], tb[y + 1][x - 1], tb[y + 1][x + 1]})
 		else
 			for i = y - 1,y + 1 do
-				if tb[i][x] then return tb[i][x] end
+				if tb[i] and tb[i][x] then return tb[i][x] end
 			end
 			for j = x - 1,x + 1 do
-				if tb[y][j] then return tb[y][j] end
+				if tb[y] and tb[y][j] then return tb[y][j] end
 			end
 		end
 	end
@@ -495,9 +499,8 @@ function gisToBlocks:genMixColor(tb,x,y)
 end
 
 -- 扩大地图到1:1 需修改factor为1.19
-function gisToBlocks:PNGToBlockScale(raster, px, py, pz)
+function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 	local colors = self.colors;
-
 	if(raster:IsValid()) then
 		local ver           = raster:ReadInt();
 		local width         = raster:ReadInt();
@@ -514,12 +517,10 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz)
 			self:AddBlock(spx, spy, spz, block_id, block_data);
 		end
 
-
-		
 		local pixel = {};
 
 		if(bytesPerPixel >= 3) then
-			local block_per_tick = 100;
+			local block_per_tick = 300;
 			local count = 0;
 			local row_padding_bytes = (bytesPerPixel*width)%4;
 
@@ -559,118 +560,142 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz)
 						if blocksHistory[y][x] then
 							local block_id, block_data = GetBlockIdFromPixel(blocksHistory[y][x], colors);
 							if(block_id) then
+								if x == 1 and y == 1 then LOG.std(nil,"info","draw",x .. "," .. y);echo(block_data) end
 								CreateBlock_(x, y, block_id, block_data);
+								count = count + 1;
 								if((count%block_per_tick) == 0) then
 									coroutine.yield(true);
 								end
-								count = count + 1;
 							end
 						end
 						--
 					end
 				end
+				TileManager.GetInstance():pushBlocksData(tile, blocksHistory)
 			end)
 
 			local timer = commonlib.Timer:new({callbackFunc = function(timer)
 				local status, result = coroutine.resume(worker_thread_co);
-				if not status then
-					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d blocks: %s ", count, tostring(result));
+				if (not status) then
 					timer:Change();
 					raster:close();
+
+					self.curTimes = self.curTimes + 1
+					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, self.curTimes + self.passTimes, self.totalCounts);
+					self:fillingGap()
 				end
 			end})
 			timer:Change(30,30);
 
 			UndoManager.PushCommand(self);
 		else
-			LOG.std(nil, "error", "PNGToBlockScale", "format not supported");
+			LOG.std(nil, "error", "PNGToBlockScale", "format not supported process: %d / %d", self.curTimes + self.passTimes, self.totalCounts);
 			raster:close();
+			self.passTimes = self.passTimes + 1
 		end
 	end
 end
 
-function gisToBlocks:MoreScene()
-	LOG.std(nil,"debug","direction",gisToBlocks.direction);
-	LOG.std(nil,"debug","{dleft,dtop,dright.dbottom}",{gisToBlocks.dleft,gisToBlocks.dtop,gisToBlocks.dright,gisToBlocks.dbottom});
-
-	self.options = "already";
-	echo(self.options);
-
-	local abslat = math.abs(gisToBlocks.dleft - gisToBlocks.dright)/2;
-	local abslon = math.abs(gisToBlocks.dtop  - gisToBlocks.dbottom)/2;
-
-	echo(tostring(abslat));
-	echo(tostring(abslon));
-
-	local direction = gisToBlocks.direction;
-
-	if(direction == "top") then
-		px, py, pz = gisToBlocks.pleft + 128, 5 , gisToBlocks.ptop + 128;
-		gisToBlocks.morelat = gisToBlocks.dright - abslat;
-		gisToBlocks.morelon = gisToBlocks.dtop + abslon;
-	end
-
-	if(direction == "bottom") then
-		px, py, pz = gisToBlocks.pleft + 128 , 5 , gisToBlocks.pbottom - 128;
-		gisToBlocks.morelat = gisToBlocks.dright - abslat;   
-		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
-	end
-
-	if(direction == "left") then
-		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.ptop - 128;
-		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
-		gisToBlocks.morelon = gisToBlocks.dtop - abslon;
-	end
-
-	if(direction == "right") then
-		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.ptop - 128;
-		gisToBlocks.morelat = gisToBlocks.dright + abslat;
-		gisToBlocks.morelon = gisToBlocks.dtop - abslon;
-	end
-
-	if(direction == "lefttop") then
-		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.ptop + 128;
-		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
-		gisToBlocks.morelon = gisToBlocks.dtop + abslat;
-	end
-
-	if(direction == "righttop") then
-		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.ptop + 128;
-		gisToBlocks.morelat = gisToBlocks.dright + abslat;
-		gisToBlocks.morelon = gisToBlocks.dtop + abslon;
-	end
-
-	if(direction == "leftbottom") then
-		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.pbottom - 128;
-		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
-		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
-	end
-
-	if(direction == "rightbottom") then
-		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.pbottom - 128;
-		gisToBlocks.morelat = gisToBlocks.dright + abslat;
-		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
-	end
-
-	gisToBlocks.mTileX,gisToBlocks.mTileY = deg2tile(gisToBlocks.morelat,gisToBlocks.morelon,self.zoom);
-
-	gisToBlocks.mdleft , gisToBlocks.mdtop    = pixel2deg(gisToBlocks.mTileX,gisToBlocks.mTileY,0,0,self.zoom);
-	gisToBlocks.mdright, gisToBlocks.mdbottom = pixel2deg(gisToBlocks.mTileX,gisToBlocks.mTileY,255,255,self.zoom);
-
-	echo({px,py,pz});
-	LOG.std(nil,"debug","morelat,morelon",{gisToBlocks.morelat,gisToBlocks.morelon});
-
-	self:GetData(function(raster,vector)
-		if factor > 1 then
-			self:PNGToBlockScale(raster, px, py, pz);
-		else
-			self:PNGToBlock(raster, px, py, pz);
+-- 填充所有块
+function gisToBlocks:fillingGap()
+	-- if self.curTimes + self.passTimes >= self.totalCounts then
+	-- 	echo("填补色块 " .. self.curTimes .. "," .. self.passTimes .. "," .. self.totalCounts)
+	local ct = 0
+	TileManager.GetInstance():fillNullBlock(function(block,x,y,px,py,pz)
+		local data = BlockEngine:GetBlockData(px,py,pz)
+		if data == 0 then
+			-- LOG.std(nil, "info", "PNGToBlockScale", "filling gap %d,%d .. (%d,%d,%d)",x,y,px,py,pz);
+			ct = ct + 1
+			local block_id, block_data = GetBlockIdFromPixel(block, self.colors);
+			self:AddBlock(px, py, pz, block_id, block_data);
 		end
-		-- self:OSMToBlock(vector, px, py, pz);
-	end);
+	end)
+	echo("填补色块：" .. ct)
+	-- end
 end
 
-function gisToBlocks:LoadToScene(raster,vector,px,py,pz,x,y)
+-- function gisToBlocks:MoreScene()
+-- 	LOG.std(nil,"debug","direction",gisToBlocks.direction);
+-- 	LOG.std(nil,"debug","{dleft,dtop,dright.dbottom}",{gisToBlocks.dleft,gisToBlocks.dtop,gisToBlocks.dright,gisToBlocks.dbottom});
+
+-- 	self.options = "already";
+-- 	echo(self.options);
+
+-- 	local abslat = math.abs(gisToBlocks.dleft - gisToBlocks.dright)/2;
+-- 	local abslon = math.abs(gisToBlocks.dtop  - gisToBlocks.dbottom)/2;
+
+-- 	echo(tostring(abslat));
+-- 	echo(tostring(abslon));
+
+-- 	local direction = gisToBlocks.direction;
+
+-- 	if(direction == "top") then
+-- 		px, py, pz = gisToBlocks.pleft + 128, 5 , gisToBlocks.ptop + 128;
+-- 		gisToBlocks.morelat = gisToBlocks.dright - abslat;
+-- 		gisToBlocks.morelon = gisToBlocks.dtop + abslon;
+-- 	end
+
+-- 	if(direction == "bottom") then
+-- 		px, py, pz = gisToBlocks.pleft + 128 , 5 , gisToBlocks.pbottom - 128;
+-- 		gisToBlocks.morelat = gisToBlocks.dright - abslat;   
+-- 		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
+-- 	end
+
+-- 	if(direction == "left") then
+-- 		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.ptop - 128;
+-- 		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
+-- 		gisToBlocks.morelon = gisToBlocks.dtop - abslon;
+-- 	end
+
+-- 	if(direction == "right") then
+-- 		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.ptop - 128;
+-- 		gisToBlocks.morelat = gisToBlocks.dright + abslat;
+-- 		gisToBlocks.morelon = gisToBlocks.dtop - abslon;
+-- 	end
+
+-- 	if(direction == "lefttop") then
+-- 		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.ptop + 128;
+-- 		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
+-- 		gisToBlocks.morelon = gisToBlocks.dtop + abslat;
+-- 	end
+
+-- 	if(direction == "righttop") then
+-- 		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.ptop + 128;
+-- 		gisToBlocks.morelat = gisToBlocks.dright + abslat;
+-- 		gisToBlocks.morelon = gisToBlocks.dtop + abslon;
+-- 	end
+
+-- 	if(direction == "leftbottom") then
+-- 		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.pbottom - 128;
+-- 		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
+-- 		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
+-- 	end
+
+-- 	if(direction == "rightbottom") then
+-- 		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.pbottom - 128;
+-- 		gisToBlocks.morelat = gisToBlocks.dright + abslat;
+-- 		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
+-- 	end
+
+-- 	gisToBlocks.mTileX,gisToBlocks.mTileY = deg2tile(gisToBlocks.morelat,gisToBlocks.morelon,self.zoom);
+
+-- 	gisToBlocks.mdleft , gisToBlocks.mdtop    = pixel2deg(gisToBlocks.mTileX,gisToBlocks.mTileY,0,0,self.zoom);
+-- 	gisToBlocks.mdright, gisToBlocks.mdbottom = pixel2deg(gisToBlocks.mTileX,gisToBlocks.mTileY,255,255,self.zoom);
+
+-- 	echo({px,py,pz});
+-- 	LOG.std(nil,"debug","morelat,morelon",{gisToBlocks.morelat,gisToBlocks.morelon});
+
+-- 	-- self:GetData(function(raster,vector)
+-- 	-- 	if factor > 1 then
+-- 	-- 		self:PNGToBlockScale(raster, px, py, pz);
+-- 	-- 	else
+-- 	-- 		self:PNGToBlock(raster, px, py, pz);
+-- 	-- 	end
+-- 	-- 	-- self:OSMToBlock(vector, px, py, pz);
+-- 	-- end);
+-- end
+
+function gisToBlocks:LoadToScene(raster,vector,px,py,pz,tile)
 	local colors = self.colors;
 
 	-- local px, py, pz = EntityManager.GetFocus():GetBlockPos();
@@ -694,12 +719,14 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,x,y)
 	
 	LOG.std(nil,"debug","gisToBlocks","加载方块和贴图");
 	if factor > 1 then
-		self:PNGToBlockScale(raster, px, py, pz);
+		self:PNGToBlockScale(raster, px, py, pz, tile);
 	else
-		self:PNGToBlock(raster, px, py, pz);
+		self:PNGToBlock(raster, px, py, pz, tile);
 	end
 	-- self:OSMToBlock(vector, px, py, pz);
 	CommandManager:RunCommand("/save");
+
+	-- self.isDrawing = false
 end
 
 function gisToBlocks:GetData(x,y,i,j,_callback)
@@ -777,73 +804,69 @@ function gisToBlocks:Undo()
 end
 
 function gisToBlocks:BoundaryCheck()
-	--[[local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-	
-	local function common(words)
-		GameLogic.SetStatus(words);
+	-- if self.isDrawing then return false end
+	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	local cx,cy = TileManager.GetInstance():getInTile(px, py, pz) -- self.gx,self.gy
+	if type(cx) == "table" then cy = cx.y;cx = cx.x end
+	local function checkAddMap(x,y)
+		local tile = TileManager.GetInstance():getTile(x,y)
+		if (not tile) or (not tile.isDrawed) then
+			self:downloadMap(x,y)
+		end
 	end
-
-	--lefttop
-	if(gisToBlocks.pleft and gisToBlocks.ptop and px <= gisToBlocks.pleft and pz >= gisToBlocks.ptop) then
-		common(L"左上边");
-		gisToBlocks.direction = "lefttop";
-		return true;
+	for x = cx - 1,cx + 1 do -- 九宫格绘制
+		for y = cy - 1,cy + 1 do
+			checkAddMap(x,y)
+		end
 	end
+	return true
+end
 
-	--righttop
-	if(gisToBlocks.pright and gisToBlocks.ptop and px >= gisToBlocks.pright and pz >= gisToBlocks.ptop) then
-		common(L"右上边");
-		gisToBlocks.direction = "righttop";
-		return true;
+function gisToBlocks:downloadMap(i,j)
+	self.pushMapFlag[i] = self.pushMapFlag[i] or {}
+	if not self.pushMapFlag[i][j] then
+		local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
+		if tile and (not tile.isDrawed) then
+			LOG.std(nil,"debug","gosToBlocks","添加绘制任务 " .. tile.x .. "," .. tile.y);
+			TileManager.GetInstance():push(tile)
+			self.pushMapFlag[i][j] = true
+		end
 	end
+end
 
-	--leftbottom
-	if(gisToBlocks.pleft and gisToBlocks.pbottom and px <= gisToBlocks.pleft and pz <= gisToBlocks.pbottom) then
-		common(L"左下边");
-		gisToBlocks.direction = "leftbottom";
-		return true;
+function gisToBlocks:startDrawTiles()
+	local function onDraw(tile)
+		LOG.std(nil,"debug","gosToBlocks","绘制地图： " .. tile.x .. "," .. tile.y);
+		tile.isDrawed = true
+		local po = tile.po
+		getOsmService.tileX = tile.ranksID.x;
+		getOsmService.tileY = tile.ranksID.y;
+		self:GetData(tile.ranksID.x,tile.ranksID.y,tile.x,tile.y,function(raster,vector)
+			LOG.std(nil,"debug","gosToBlocks","getData");
+			self:LoadToScene(raster,vector,po.x,po.y,po.z,tile);
+		end);
+		LOG.std(nil,"debug","gosToBlocks","绘制完成一张");
 	end
-
-	--rightbottom
-	if(gisToBlocks.pright and gisToBlocks.pbottom and px >= gisToBlocks.pright and pz <= gisToBlocks.pbottom) then
-		common(L"右下边");
-		gisToBlocks.direction = "rightbottom";
-		return true;
-	end
-
-	--leftside
-	if(gisToBlocks.pleft and px <= gisToBlocks.pleft) then
-		common(L"左边");
-		gisToBlocks.direction = "left";
-		return true;
-	end
-	
-	--rightside
-	if(gisToBlocks.pright and px >= gisToBlocks.pright) then
-		common(L"右边");
-		gisToBlocks.direction = "right";
-		return true;
-	end
-
-	--bottomside
-	if(gisToBlocks.pbottom and pz <= gisToBlocks.pbottom) then
-		common(L"下边");
-		gisToBlocks.direction = "bottom";
-		return true;
-	end
-
-	--topsile
-	if(gisToBlocks.ptop and pz >= gisToBlocks.ptop) then
-		common(L"上边");
-		gisToBlocks.direction = "top";
-		return true;
-	end]]
-
-	return false
+	local timerGet = commonlib.Timer:new({callbackFunc = function(timer)
+		tile,popCount = TileManager.GetInstance():pop()
+		if tile and (not tile.isDrawed) then
+			onDraw(tile)
+		-- else
+			-- LOG.std(nil,"nextRaster","等待绘制地图" .. popCount .. ".. " .. timer.lastTick, timer.id .. "," .. timer.delta)
+		end
+		if popCount >= TileManager.GetInstance().count then
+			LOG.std(nil,"nextRaster","绘制完成所有地图，绘制次数",popCount)
+			timer:Change()
+		end
+	end})
+	timerGet:Change(2000,2000); -- 每秒获取一次图片状态
 end
 
 function gisToBlocks:Run()
 	self.finished = true;
+	-- echo("读取方块数据")
+	-- echo(BlockEngine:GetBlockData(19213,100,19799));
+	-- echo(BlockEngine:GetBlockEntityData(19213,100,19799))
 
 	if(self.options == "already" or self.options == "coordinate") then
 		-- LOG.std(nil,"debug","self.lon,self.lat",{self.lon,self.lon});
@@ -877,74 +900,65 @@ function gisToBlocks:Run()
 		gisToBlocks.tile_MAX_X , gisToBlocks.tile_MAX_Y   = deg2tile(self.maxlon,self.maxlat,self.zoom);
 		LOG.std(nil,"debug","gisToBlocks","tile_MIN_X : "..gisToBlocks.tile_MIN_X.." tile_MIN_Y : "..gisToBlocks.tile_MIN_Y);
 		LOG.std(nil,"debug","gisToBlocks","tile_MAX_X : "..gisToBlocks.tile_MAX_X.." tile_MAX_Y : "..gisToBlocks.tile_MAX_Y);
-
-		if not TileManager.GetInstance() then 
-			local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-			-- local px, py, pz = GameLogic.GetPlayerPosition();
-			local firstLon, firstLat = pixel2deg(gisToBlocks.tile_MIN_X,gisToBlocks.tile_MIN_Y,0,0,self.zoom);
-			local lastLon, lastLat = pixel2deg(gisToBlocks.tile_MAX_X,gisToBlocks.tile_MAX_Y,255,255,self.zoom);
-			local firstPo, lastPo = {lat = firstLat,lon = firstLon},{lat = lastLat,lon = lastLon};
-			LOG.std(nil,"debug","gisToBlocks","获取到的地图经纬度");
-			echo(firstPo);echo(lastPo)
-			echo(self.minlon .. "," .. self.minlat);echo(self.maxlon .. "," .. self.maxlat)
-			local tileManager = TileManager:new({
-				lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
-				rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
-				bx = px,by = py,bz = pz,tileSize = math.ceil(PngWidth * factor),
-				firstPo = firstPo,lastPo = lastPo -- 传入地理位置信息
-			})
-		end
-
+		-- 初始化地图数据
+		local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+		-- local firstLon, firstLat = pixel2deg(gisToBlocks.tile_MIN_X,gisToBlocks.tile_MIN_Y,0,0,self.zoom);
+		-- local lastLon, lastLat = pixel2deg(gisToBlocks.tile_MAX_X,gisToBlocks.tile_MAX_Y,255,255,self.zoom);
+		-- local firstPo, lastPo = {lat = firstLat,lon = firstLon},{lat = lastLat,lon = lastLon};
+		-- LOG.std(nil,"debug","gisToBlocks","获取到的地图经纬度");
+		-- echo(firstPo);echo(lastPo)
+		-- echo(self.minlon .. "," .. self.minlat);echo(self.maxlon .. "," .. self.maxlat)
+		local tileManager = TileManager.GetInstance():init({
+			lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
+			rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
+			bx = px,by = py,bz = pz,tileSize = math.ceil(PngWidth * factor),
+			-- firstPo = firstPo,lastPo = lastPo -- 传入地理位置信息
+		})
+		--
 		-- 获取区域范围瓦片的列数和行数
-		local cols, rows = TileManager.GetInstance():getIterSize();
-		LOG.std(nil,"debug","gisToBlocks","cols : "..cols.." rows : "..rows);
-
+		self.cols, self.rows = TileManager.GetInstance():getIterSize();
+		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);
+		self.totalCounts = self.cols * self.rows
+		self.curTimes = 0
+		self.passTimes = 0
+		self.pushMapFlag = {}
+		self:downloadMap(1,1)
+		self:downloadMap(1,2)
+		self:downloadMap(2,2)
+		self:downloadMap(2,1)
+		self:startDrawTiles()
 		-- 计算,测试需要,最多只加载指定区域范围内的4个瓦片
-		local count = 0;
-		for j=1,rows do
-			for i=1,cols do
-				-- count = count + 1;
-				local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
-				getOsmService.tileX = tile.ranksID.x;
-				getOsmService.tileY = tile.ranksID.y;
-				-- if count == 2 then
-				LOG.std(nil,"debug","gisToBlocks","待获取瓦片的XY坐标: "..tile.ranksID.x.."-"..tile.ranksID.y .." po:"..po.x..","..po.y..","..po.z);
-				self:GetData(tile.ranksID.x,tile.ranksID.y,i,j,function(raster,vector)
-					count = count + 1;
-					-- LOG.std(nil,"debug","gisToBlocks","即将加载方块和贴图信息");
-					-- self:LoadToScene(raster,vector,po.x,po.y,po.z);
-				end);
-				LOG.std(nil,"debug","gisToBlocks","after getData");
-				-- return;
-				-- end
-				-- if count == 1 then
-					-- local po = TileManager.GetInstance():getMapPosition({anchor={x=1,y=1},absolute=true})
-					-- LOG.std(nil,"debug","gisToBlocks","结尾点坐标po:"..po.x..","..po.y..","..po.z.." size:" .. TileManager.GetInstance().size.width .. "," .. TileManager.GetInstance().size.height);
-					-- return;
-				-- end
-			end
-		end
-		SelectLocationTask.isDownLoaded = nil
-		-- timer定时检查图片是否下载完成,count值等于rows*cols乘积时候才执行生成方块操作
-		local loadToSceneTimer = commonlib.Timer:new({callbackFunc = function(loadToSceneTimer)
-			if (count == (cols * rows)) then
-				LOG.std(nil,"debug","gisToBlocks","即将加载方块和贴图信息");
-				for j=1,rows do
-					for i=1,cols do
-						local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
-						local raster = ParaIO.open("tile_"..tile.ranksID.x.."_"..tile.ranksID.y..".png", "image");
-						-- local vectorFile = ParaIO.open("xml_"..x.."_"..y..".osm", "r");
-						-- local vector = vectorFile:GetText(0, -1);
-						-- vectorFile:close();
-						self:LoadToScene(raster,vector,po.x,po.y,po.z);
-					end
-				end
-				loadToSceneTimer:Change();
-				SelectLocationTask.isDownLoaded = true
-			end
-		end});
-
-		loadToSceneTimer:Change(10000,10000);
+		-- local count = 0;
+		-- for j=1,rows do
+		-- 	for i=1,cols do
+		-- 		local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
+		-- 		getOsmService.tileX = tile.ranksID.x;
+		-- 		getOsmService.tileY = tile.ranksID.y;
+		-- 		LOG.std(nil,"debug","gisToBlocks","待获取瓦片的XY坐标: "..tile.ranksID.x.."-"..tile.ranksID.y .." po:"..po.x..","..po.y..","..po.z);
+		-- 		self:GetData(tile.ranksID.x,tile.ranksID.y,i,j,function(raster,vector)
+		-- 			count = count + 1;
+		-- 			self:LoadToScene(raster,vector,po.x,po.y,po.z, tile);
+		-- 		end);
+		-- 		LOG.std(nil,"debug","gisToBlocks","after getData");
+		-- 	end
+		-- end
+		-- SelectLocationTask.isDownLoaded = nil
+		-- -- timer定时检查图片是否下载完成,count值等于rows*cols乘积时候才执行生成方块操作
+		-- local loadToSceneTimer = commonlib.Timer:new({callbackFunc = function(loadToSceneTimer)
+		-- 	if (count == (cols * rows)) then
+		-- 		LOG.std(nil,"debug","gisToBlocks","即将加载方块和贴图信息");
+		-- 		for j=1,rows do
+		-- 			for i=1,cols do
+		-- 				local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
+		-- 				local raster = ParaIO.open("tile_"..tile.ranksID.x.."_"..tile.ranksID.y..".png", "image");
+		-- 				self:LoadToScene(raster,vector,po.x,po.y,po.z,tile);
+		-- 			end
+		-- 		end
+		-- 		loadToSceneTimer:Change();
+		-- 		SelectLocationTask.isDownLoaded = true
+		-- 	end
+		-- end});
+		-- loadToSceneTimer:Change(10000,10000);
 
 		-- 人物跳转
 		-- local po = TileManager.GetInstance():getParaPo() -- TileManager.GetInstance():getMapPosition() 这是瓦片中心
@@ -957,39 +971,43 @@ function gisToBlocks:Run()
 		local sltInstance = SelectLocationTask.GetInstance();
 		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
 		-- timer定时更新人物坐标信息
-		local function refrushPlayerInfo()
-			local playerLocationTimer = playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
-					-- 获取人物坐标信息
-					if SelectLocationTask.player_curLon and SelectLocationTask.player_curLat then
-						local curLon,curLat = SelectLocationTask.player_curLon,SelectLocationTask.player_curLat
-						SelectLocationTask.player_lon = curLon
-						SelectLocationTask.player_lat = curLat
-						local po = TileManager.GetInstance():getParaPo(curLon,curLat)
-						CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
-						LOG.std(nil,"RunFunction","人物跳转开始",po.x .. " " .. po.y .. " " .. po.z)
-						SelectLocationTask.player_curLon = nil
-						SelectLocationTask.player_curLat = nil
-						SelectLocationTask.player_curState = po
-					else
-						local x, y, z = EntityManager.GetFocus():GetBlockPos();
-						if SelectLocationTask.player_curState then
-							if SelectLocationTask.player_curState.x == x and SelectLocationTask.player_curState.z == z then
-								SelectLocationTask.player_curState = nil
-							else
-								x,y,z = SelectLocationTask.player_curState.x,SelectLocationTask.player_curState.y,SelectLocationTask.player_curState.z
-							end
-						end
-						local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
-						local ro,str = TileManager.GetInstance():getForward(true)
-						local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
-						local poInfo = "经度:" .. lon .. " 纬度:" .. lat
-						local foInfo = "人物朝向: " .. ron .. "° " .. str
-						GameLogic.AddBBS("statusBar", poInfo .. " " .. foInfo, 15000, "223 81 145"); -- 显示提示条
-						sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
-					end
-			end});
-			playerLocationTimer:Change(1000,1000);
-		end
-		refrushPlayerInfo()
+		self:refrushPlayerInfo()
+		SelectLocationTask.isDownLoaded = true
 	end
+end
+
+-- 更新人物信息
+function gisToBlocks:refrushPlayerInfo()
+	local sltInstance = SelectLocationTask.GetInstance();
+	local playerLocationTimer = playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
+			-- 获取人物坐标信息
+			if SelectLocationTask.player_curLon and SelectLocationTask.player_curLat then
+				local curLon,curLat = SelectLocationTask.player_curLon,SelectLocationTask.player_curLat
+				SelectLocationTask.player_lon = curLon
+				SelectLocationTask.player_lat = curLat
+				local po = TileManager.GetInstance():getParaPo(curLon,curLat)
+				CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
+				echo("人物跳转开始");echo(po)
+				SelectLocationTask.player_curLon = nil
+				SelectLocationTask.player_curLat = nil
+				SelectLocationTask.player_curState = po
+			else
+				local x, y, z = EntityManager.GetFocus():GetBlockPos();
+				if SelectLocationTask.player_curState then
+					if SelectLocationTask.player_curState.x == x and SelectLocationTask.player_curState.z == z then
+						SelectLocationTask.player_curState = nil
+					else
+						x,y,z = SelectLocationTask.player_curState.x,SelectLocationTask.player_curState.y,SelectLocationTask.player_curState.z
+					end
+				end
+				local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
+				local ro,str = TileManager.GetInstance():getForward(true)
+				local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
+				local poInfo = "经度:" .. lon .. " 纬度:" .. lat
+				local foInfo = "人物朝向: " .. ron .. "° " .. str
+				GameLogic.AddBBS("statusBar", poInfo .. " " .. foInfo, 15000, "223 81 145"); -- 显示提示条
+				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
+			end
+	end});
+	playerLocationTimer:Change(1000,1000);
 end
