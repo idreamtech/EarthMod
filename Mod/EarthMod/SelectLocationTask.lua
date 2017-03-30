@@ -171,7 +171,7 @@ function SelectLocationTask:Run()
 		SelectLocationTask.maxlon = coordinate.maxlon or 0;
 	end
 
-	self:ShowPage();
+	-- self:ShowPage();
 end
 
 function SelectLocationTask:setPlayerCoordinate(lon, lat)
