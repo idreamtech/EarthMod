@@ -15,11 +15,13 @@ NPL.load("(gl)Mod/EarthMod/ItemEarth.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 NPL.load("(gl)script/apps/WebServer/WebServer.lua");
 NPL.load("(gl)Mod/EarthMod/TileManager.lua");
+NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
 
 local EarthMod       = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
 local gisCommand     = commonlib.gettable("Mod.EarthMod.gisCommand");
 local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
+local MapBlock = commonlib.gettable("Mod.EarthMod.MapBlock");
 
 --LOG.SetLogLevel("DEBUG");
 EarthMod:Property({"Name", "EarthMod"});
@@ -66,6 +68,8 @@ function EarthMod:init()
 		end
 		return xmlRoot;
 	end)
+
+	MapBlock:init()
 end
 
 function EarthMod:OnLogin()
@@ -81,11 +85,15 @@ function EarthMod:OnWorldLoad()
 	if(EarthMod:GetWorldData("alreadyBlock")) then
 		-- CommandManager:RunCommand("/take 10513");
 	end
+	
+	MapBlock:OnWorldLoad();
+
 	assert("TileManager new")
 	TileManager:new() -- 初始化并加载数据
 	if not TileManager.GetInstance():Load() then -- 加载配置
 		-- gisToBlocks:refrushPlayerInfo()
 	end
+
 end
 -- called when a world is unloaded. 
 

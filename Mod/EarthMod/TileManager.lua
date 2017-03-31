@@ -134,7 +134,7 @@ function TileManager:getDrawPosition(idx,idy)
 			po = po, -- 瓦片paracraft坐标
 			ranksID = ranksID,
 			isDrawed = false,
-			state = 0, -- 0:未更新, 1:更新过, 2:数据过时
+			isUpdated = false,
 			rect = {l = po.x - self.tileSize / 2,b = po.z - self.tileSize / 2,r = po.x + self.tileSize / 2,t = po.z + self.tileSize / 2}
 		}
 		self.tiles[curID] = tileInfo

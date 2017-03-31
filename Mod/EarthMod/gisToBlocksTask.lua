@@ -21,14 +21,15 @@ NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Tasks/UndoManager.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Items/ItemColorBlock.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
+NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
 
 local Color           = commonlib.gettable("System.Core.Color");
 local ItemColorBlock  = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
 local UndoManager     = commonlib.gettable("MyCompany.Aries.Game.UndoManager");
 local GameLogic       = commonlib.gettable("MyCompany.Aries.Game.GameLogic");
 local BlockEngine     = commonlib.gettable("MyCompany.Aries.Game.BlockEngine");
-local block_types     = commonlib.gettable("MyCompany.Aries.Game.block_types");
-local names           = commonlib.gettable("MyCompany.Aries.Game.block_types.names");
+-- local block_types     = commonlib.gettable("MyCompany.Aries.Game.block_types");
+-- local names           = commonlib.gettable("MyCompany.Aries.Game.block_types.names");
 local TaskManager     = commonlib.gettable("MyCompany.Aries.Game.TaskManager");
 local getOsmService   = commonlib.gettable("Mod.EarthMod.getOsmService");
 local EntityManager   = commonlib.gettable("MyCompany.Aries.Game.EntityManager");
@@ -36,6 +37,7 @@ local CommandManager  = commonlib.gettable("MyCompany.Aries.Game.CommandManager"
 local EarthMod        = commonlib.gettable("Mod.EarthMod");
 local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
 local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
+local MapBlock = commonlib.gettable("Mod.EarthMod.MapBlock");
 
 local gisToBlocks = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks"));
 
@@ -57,24 +59,24 @@ local factor = 1 -- 地图缩放比例
 local PngWidth = 256
 
 --RGB, block_id
-local block_colors = {
-	{221, 221, 221,	block_types.names.White_Wool},
-	{219,125,62,	block_types.names.Orange_Wool},
-	{179,80, 188,	block_types.names.Magenta_Wool},
-	{107, 138, 201,	block_types.names.Light_Blue_Wool},
-	{177,166,39,	block_types.names.Yellow_Wool},
-	{65, 174, 56,	block_types.names.Lime_Wool},
-	{208, 132, 153,	block_types.names.Pink_Wool},
-	{64, 64, 64,	block_types.names.Gray_Wool},
-	{154, 161, 161,	block_types.names.Light_Gray_Wool},
-	{46, 110, 137,	block_types.names.Cyan_Wool},
-	{126,61,181,	block_types.names.Purple_Wool},
-	{46,56,141,		block_types.names.Blue_Wool},
-	{79,50,31,		block_types.names.Brown_Wool},
-	{53,70,27,		block_types.names.Green_Wool},
-	{150, 52, 48,	block_types.names.Red_Wool},
-	{25, 22, 22,	block_types.names.Black_Wool},
-}
+-- local block_colors = {
+-- 	{221, 221, 221,	block_types.names.White_Wool},
+-- 	{219,125,62,	block_types.names.Orange_Wool},
+-- 	{179,80, 188,	block_types.names.Magenta_Wool},
+-- 	{107, 138, 201,	block_types.names.Light_Blue_Wool},
+-- 	{177,166,39,	block_types.names.Yellow_Wool},
+-- 	{65, 174, 56,	block_types.names.Lime_Wool},
+-- 	{208, 132, 153,	block_types.names.Pink_Wool},
+-- 	{64, 64, 64,	block_types.names.Gray_Wool},
+-- 	{154, 161, 161,	block_types.names.Light_Gray_Wool},
+-- 	{46, 110, 137,	block_types.names.Cyan_Wool},
+-- 	{126,61,181,	block_types.names.Purple_Wool},
+-- 	{46,56,141,		block_types.names.Blue_Wool},
+-- 	{79,50,31,		block_types.names.Brown_Wool},
+-- 	{53,70,27,		block_types.names.Green_Wool},
+-- 	{150, 52, 48,	block_types.names.Red_Wool},
+-- 	{25, 22, 22,	block_types.names.Black_Wool},
+-- }
 
 local function tile2deg(x, y, z)
     local n = 2 ^ z
@@ -129,62 +131,62 @@ local function GetColorDist2BGR(colorRGB, blockRGB)
 	return ((colorRGB[3]-blockRGB[1])^2) + ((colorRGB[2]-blockRGB[2])^2) + ((colorRGB[1]-blockRGB[3])^2);
 end
 
--- find the closest color
-local function FindClosetBlockColor(pixelRGB)
-	local closest_block_color;
-	local smallestDist = 100000;
-	local smallestDistIndex = -1;
-	for i = 1, #block_colors do
-		local curDist = GetColorDistBGR(pixelRGB, block_colors[i]);
-		-- local curDist = GetColorDist2BGR(pixelRGB, block_colors[i]);
+-- -- find the closest color
+-- local function FindClosetBlockColor(pixelRGB)
+-- 	local closest_block_color;
+-- 	local smallestDist = 100000;
+-- 	local smallestDistIndex = -1;
+-- 	for i = 1, #block_colors do
+-- 		local curDist = GetColorDistBGR(pixelRGB, block_colors[i]);
+-- 		-- local curDist = GetColorDist2BGR(pixelRGB, block_colors[i]);
 
-		if (curDist < smallestDist) then
-			smallestDist = curDist
-			smallestDistIndex = i;
-		end
-	end
-	return block_colors[smallestDistIndex];
-end
+-- 		if (curDist < smallestDist) then
+-- 			smallestDist = curDist
+-- 			smallestDistIndex = i;
+-- 		end
+-- 	end
+-- 	return block_colors[smallestDistIndex];
+-- end
 
 -- @param pixel: {r,g,b,a}
 -- @param colors: 1, 2, 3, 16
 local function GetBlockIdFromPixel(pixel, colors)
-	if(colors == 1) then
-		return block_types.names.White_Wool;
-	elseif(colors == 2) then
-		if((pixel[1]+pixel[2]+pixel[3]) > 128) then
-			return block_types.names.White_Wool;
-		else
-			return block_types.names.Black_Wool;
-		end
-	elseif(colors == 3) then
-		local total = pixel[1]+pixel[2]+pixel[3];
-		if(total > 400) then
-			return block_types.names.White_Wool;
-		elseif(total > 128) then
-			return block_types.names.Brown_Wool;
-		else
-			return block_types.names.Black_Wool;
-		end
-	elseif(colors == 4) then
-		local total = pixel[1]+pixel[2]+pixel[3];
-		if(total > 500) then
-			return block_types.names.White_Wool;
-		elseif(total > 400) then
-			return block_types.names.Light_Gray_Wool;
-		elseif(total > 128) then
-			return block_types.names.Brown_Wool;
-		elseif(total > 64) then
-			return block_types.names.Gray_Wool;
-		else
-			return block_types.names.Black_Wool;
-		end
-	elseif(colors <= 16) then
-		local block_color = FindClosetBlockColor(pixel);
-		return block_color[4];
-	else  -- for 65535 colors, use color block
-		return block_types.names.ColorBlock, ItemColorBlock:ColorToData(Color.RGBA_TO_DWORD(pixel[3],pixel[2],pixel[1], 0));
-	end
+	return "2333", ItemColorBlock:ColorToData(Color.RGBA_TO_DWORD(pixel[3],pixel[2],pixel[1], 0));
+	-- if(colors == 1) then
+	-- 	return block_types.names.White_Wool;
+	-- elseif(colors == 2) then
+	-- 	if((pixel[1]+pixel[2]+pixel[3]) > 128) then
+	-- 		return block_types.names.White_Wool;
+	-- 	else
+	-- 		return block_types.names.Black_Wool;
+	-- 	end
+	-- elseif(colors == 3) then
+	-- 	local total = pixel[1]+pixel[2]+pixel[3];
+	-- 	if(total > 400) then
+	-- 		return block_types.names.White_Wool;
+	-- 	elseif(total > 128) then
+	-- 		return block_types.names.Brown_Wool;
+	-- 	else
+	-- 		return block_types.names.Black_Wool;
+	-- 	end
+	-- elseif(colors == 4) then
+	-- 	local total = pixel[1]+pixel[2]+pixel[3];
+	-- 	if(total > 500) then
+	-- 		return block_types.names.White_Wool;
+	-- 	elseif(total > 400) then
+	-- 		return block_types.names.Light_Gray_Wool;
+	-- 	elseif(total > 128) then
+	-- 		return block_types.names.Brown_Wool;
+	-- 	elseif(total > 64) then
+	-- 		return block_types.names.Gray_Wool;
+	-- 	else
+	-- 		return block_types.names.Black_Wool;
+	-- 	end
+	-- elseif(colors <= 16) then
+	-- 	local block_color = FindClosetBlockColor(pixel);
+	-- 	return block_color[4];
+	-- else  -- for 65535 colors, use color block -- block_types.names.ColorBlock 替换为自定义的MapBlock
+	-- end
 end
 
 function gisToBlocks:ctor()
@@ -192,7 +194,7 @@ function gisToBlocks:ctor()
 	self.history = {};
 end
 
-function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data)
+function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data, tile)
 	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
 	if spx == px and spy == py and spz == pz then
 		CommandManager:RunCommand("/goto " .. px .. " " .. py .. " " .. pz) -- 当画到脚下那块时人物跳起来
@@ -210,11 +212,9 @@ function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data)
 		--LOG.std(nil,"debug","AddBlock",{x,y,z,block_id,from_id,from_data,from_entity_data});
 		self.history[#(self.history)+1] = {spx,spy,spz, block_id, from_id, from_data, from_entity_data};
 	end
-	local block_template = block_types.get(block_id);
-
-	if(block_template) then
-		block_template:Create(spx,spy,spz, false, block_data);
-	end
+	local isUpdate = nil
+	if tile then isUpdate = tile.isUpdated end
+	MapBlock:addBlock(spx,spy,spz,block_data,isUpdate)
 end
 
 function gisToBlocks:drawpixel(cx, cy, cz)
@@ -513,8 +513,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 			local z;
 			spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
 			ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
-
-			self:AddBlock(spx, spy, spz, block_id, block_data);
+			self:AddBlock(spx, spy, spz, block_id, block_data, tile);
 		end
 
 		local pixel = {};
@@ -579,7 +578,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 				if (not status) then
 					timer:Change();
 					raster:close();
-
+					tile.isUpdated = true
 					self.curTimes = self.curTimes + 1
 					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, self.curTimes + self.passTimes, self.totalCounts);
 					self:fillingGap()
