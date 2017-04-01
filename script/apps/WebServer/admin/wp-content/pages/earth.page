@@ -147,72 +147,72 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 <script>
    $('#map').height($(window).height());
    // alert(ipLocation);
-   var uniData = {
-    hz:{
-        leftBottom:{
-            lat:30.4668,
-            lng:114.3341
-        },
-        rightTop:{
-            lat:30.4840,
-            lng:114.3642
-        }
-    },
-    tj:{
-        leftBottom:{
-            lat:39.18860,
-            lng:117.10036
-        },
-        rightTop:{
-            lat:39.19362,
-            lng:117.10439
-        }
-    },
-    scwj:{
-        leftBottom:{
-            lat:30.6264,
-            lng:104.0741
-        },
-        rightTop:{
-            lat:30.6418,
-            lng:104.0898
-        }
-    },
-    scja:{
-        leftBottom:{
-            lat:30.5533,
-            lng:103.9860
-        },
-        rightTop:{
-            lat:30.5674,
-            lng:104.0112
-        }
-    },
-    wh:{
-        leftBottom:{
-            // lat:30.5219,
-            // lng:114.3486
-            lat:30.54319,
-            lng:114.36768
-        },
-        rightTop:{
-            // lat:30.5484,
-            // lng:114.3722
-            lat:30.50541,
-            lng:114.43351
-        }
-    },
-    hzkj:{
-        leftBottom:{
-            lat:30.5079,
-            lng:114.3939
-        },
-        rightTop:{
-            lat:30.5262,
-            lng:114.4323
-        }
-    }
-   }
+   // var uniData = {
+   //  hz:{
+   //      leftBottom:{
+   //          lat:30.4668,
+   //          lng:114.3341
+   //      },
+   //      rightTop:{
+   //          lat:30.4840,
+   //          lng:114.3642
+   //      }
+   //  },
+   //  tj:{
+   //      leftBottom:{
+   //          lat:39.18860,
+   //          lng:117.10036
+   //      },
+   //      rightTop:{
+   //          lat:39.19362,
+   //          lng:117.10439
+   //      }
+   //  },
+   //  scwj:{
+   //      leftBottom:{
+   //          lat:30.6264,
+   //          lng:104.0741
+   //      },
+   //      rightTop:{
+   //          lat:30.6418,
+   //          lng:104.0898
+   //      }
+   //  },
+   //  scja:{
+   //      leftBottom:{
+   //          lat:30.5533,
+   //          lng:103.9860
+   //      },
+   //      rightTop:{
+   //          lat:30.5674,
+   //          lng:104.0112
+   //      }
+   //  },
+   //  wh:{
+   //      leftBottom:{
+   //          // lat:30.5219,
+   //          // lng:114.3486
+   //          lat:30.54319,
+   //          lng:114.36768
+   //      },
+   //      rightTop:{
+   //          // lat:30.5484,
+   //          // lng:114.3722
+   //          lat:30.50541,
+   //          lng:114.43351
+   //      }
+   //  },
+   //  hzkj:{
+   //      leftBottom:{
+   //          lat:30.5079,
+   //          lng:114.3939
+   //      },
+   //      rightTop:{
+   //          lat:30.5262,
+   //          lng:114.4323
+   //      }
+   //  }
+   // }
     
     var currentIcon = L.icon({
         iconUrl: '/wp-content/pages/earth/assets/css/images/3.png',
@@ -265,12 +265,12 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
         return new L.Control.Search(options);
     };
     //启用控件并添加到地图中
-        
+    L.control.search().addTo(map);
      function renderUniversity(uni){
         if(uni != null & uni != undefined){
             rec.remove();
-            corner1 = L.latLng(uni.leftBottom.lat, uni.leftBottom.lng);
-            corner2 = L.latLng(uni.rightTop.lat,uni.rightTop.lng);
+            corner1 = L.latLng(uni.southWestLat, uni.southWestLng);
+            corner2 = L.latLng(uni.northEastLat,uni.northEastLng);
             bounds = L.latLngBounds(corner1, corner2);
             rec = L.rectangle(bounds, {color: "#ff7800", weight: 1}).addTo(map);
             map.fitBounds(bounds);
@@ -321,39 +321,42 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 
     // map.on('click', onMapClick);
 
-    function searchUniversity(data){
-        if(data != null && data != undefined){
-            if(data == "华中农业大学"){
-                renderUniversity(uniData.hz);
-            }else if(data == "天津城市建设管理职业技术学院"){
-                renderUniversity(uniData.tj);
-            }else if(data == "四川大学-望江校区"){
-                renderUniversity(uniData.scwj);
-            }else if(data == "四川大学-江安校区"){
-                renderUniversity(uniData.scja);
-            }else if(data == "武汉大学"){
-                renderUniversity(uniData.wh);
-            }else if(data == "华中科技大学"){
-                renderUniversity(uniData.hzkj);
-            }else{
-                alert('未查找到结果');
-            }
-        }
-    }
+    // function searchUniversity(data){
+    //     if(data != null && data != undefined){
+    //         if(data == "华中农业大学"){
+    //             renderUniversity(uniData.hz);
+    //         }else if(data == "天津城市建设管理职业技术学院"){
+    //             renderUniversity(uniData.tj);
+    //         }else if(data == "四川大学-望江校区"){
+    //             renderUniversity(uniData.scwj);
+    //         }else if(data == "四川大学-江安校区"){
+    //             renderUniversity(uniData.scja);
+    //         }else if(data == "武汉大学"){
+    //             renderUniversity(uniData.wh);
+    //         }else if(data == "华中科技大学"){
+    //             renderUniversity(uniData.hzkj);
+    //         }else{
+    //             alert('未查找到结果');
+    //         }
+    //     }
+    // }
     //模糊搜索
-    $('.search-inp').typeahead({
-        source: function(query, process) {
-            var data =['华中农业大学','天津城市建设管理职业技术学院','四川大学-望江校区','武汉大学','四川大学-江安校区','华中科技大学'];
-            process(data);
-        }
-    });
+    // $('.search-inp').typeahead({
+    //     source: function(query, process) {
+    //         var data =['华中农业大学','天津城市建设管理职业技术学院','四川大学-望江校区','武汉大学','四川大学-江安校区','华中科技大学'];
+    //         process(data);
+    //     }
+    // });
     $('.search-inp').on('keydown',function(e){
         if(e.which == 13){
-            searchUniversity($('.search-inp').val());
+            // searchUniversity($('.search-inp').val());
+            getSchoolByName($('.search-inp').val())
         }
     })
     $('.search').on('click','.typeahead li',function(){
-        searchUniversity($(this).text())
+        // searchUniversity($(this).text());
+        getSchoolByName($(this).text())
+
     })
 
     var marker = null;
@@ -423,7 +426,40 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
         // 每一秒更新一次人物坐标信息
         setInterval("getCurrentPostionInParacraft()",1000);
     })
-
+    //获取所有学校
+    function getAllSchool(){
+        var urlStr = "http://127.0.0.1:8098/api/wiki/models/school/getAllSchool";
+        var arr = [];
+            $.ajax({
+                url:urlStr,
+                type:"get",
+                dataType:"json",
+                success:function(res){
+                    console.log(res);
+                    if(res && res.error && res.data && res.error.id == 0){
+                        // 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
+                        // res.data是数组
+                        console.log(res.data);
+                        for(var i=0;i<res.data.length;i++){
+                            if(res.data[i].schoolName){
+                                arr.push(res.data[i].schoolName)
+                            }
+                        }
+                        $('.search-inp').typeahead({
+                            source: function(query, process) {
+                                process(arr);
+                            }
+                        });
+                    }else{
+                        alert("学校信息不存在")
+                    }
+                },
+                error:function(err){
+                    console.log(err.statusText);
+                }
+            })
+    }
+    getAllSchool();
     // 请求学校经纬度信息
     function getSchoolByName(schoolName){
         var urlStr = "http://127.0.0.1:8098/api/wiki/models/school/getSchoolByName";
@@ -439,6 +475,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                         // 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
                         // res.data是数组
                         console.log(res.data);
+                        renderUniversity(res.data[0]);
                     }else{
                         alert("学校信息不存在")
                     }
