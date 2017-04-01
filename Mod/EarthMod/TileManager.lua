@@ -31,6 +31,9 @@ TileManager.mapStack = {} -- 瓦块下载数据
 TileManager.popCount = 0
 TileManager.zoomN = nil
 TileManager.isLoaded = nil
+TileManager.curTimes = 0
+TileManager.passTimes = 0
+TileManager.pushMapFlag = {}
 
 function math.round(decimal)
 	-- decimal = decimal * 100
@@ -60,6 +63,9 @@ function TileManager:ctor()
 	self.popCount = 0
 	self.zoomN = 2 ^ zoom
 	self.isLoaded = nil
+	self.curTimes = 0
+	self.passTimes = 0
+	self.pushMapFlag = {}
 	curInstance = self
 end
 
@@ -318,6 +324,9 @@ function TileManager:Save()
 	tileData.size = self.size
 	tileData.firstBlockPo = self.firstBlockPo
 	tileData.count = self.count
+	tileData.curTimes = self.curTimes
+	tileData.passTimes = self.passTimes
+	tileData.pushMapFlag = self.pushMapFlag
 	--
 	DBStore.GetInstance():saveTable(self:db(),tileData)
 	-- 
@@ -341,6 +350,9 @@ function TileManager:Load()
 		self.size = tileData.size
 		self.firstBlockPo = tileData.firstBlockPo
 		self.count = tileData.count
+		self.curTimes = tileData.curTimes
+		self.passTimes = tileData.passTimes
+		self.pushMapFlag = tileData.pushMapFlag
 		self.isLoaded = true
 	end)
 	-- echo(tileData)

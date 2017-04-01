@@ -579,10 +579,9 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 					timer:Change();
 					raster:close();
 					tile.isUpdated = true
-					self.curTimes = self.curTimes + 1
-					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, self.curTimes + self.passTimes, self.totalCounts);
+					TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes + 1
+					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
 					self:fillingGap()
-					self.curCounts = self.curCounts + 1
 					self:saveOnFinish()
 				end
 			end})
@@ -590,17 +589,15 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 
 			UndoManager.PushCommand(self);
 		else
-			LOG.std(nil, "error", "PNGToBlockScale", "format not supported process: %d / %d", self.curTimes + self.passTimes, self.totalCounts);
+			LOG.std(nil, "error", "PNGToBlockScale", "format not supported process: %d / %d", TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
 			raster:close();
-			self.passTimes = self.passTimes + 1
+			TileManager.GetInstance().passTimes = TileManager.GetInstance().passTimes + 1
 		end
 	end
 end
 
 -- 填充所有块
 function gisToBlocks:fillingGap()
-	-- if self.curTimes + self.passTimes >= self.totalCounts then
-	-- 	echo("填补色块 " .. self.curTimes .. "," .. self.passTimes .. "," .. self.totalCounts)
 	local ct = 0
 	TileManager.GetInstance():fillNullBlock(function(block,x,y,px,py,pz)
 		local data = BlockEngine:GetBlockData(px,py,pz)
@@ -823,13 +820,13 @@ function gisToBlocks:BoundaryCheck()
 end
 
 function gisToBlocks:downloadMap(i,j)
-	self.pushMapFlag[i] = self.pushMapFlag[i] or {}
-	if not self.pushMapFlag[i][j] then
+	TileManager.GetInstance().pushMapFlag[i] = TileManager.GetInstance().pushMapFlag[i] or {}
+	if not TileManager.GetInstance().pushMapFlag[i][j] then
 		local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
 		if tile and (not tile.isDrawed) then
 			LOG.std(nil,"debug","gosToBlocks","添加绘制任务 " .. tile.x .. "," .. tile.y);
 			TileManager.GetInstance():push(tile)
-			self.pushMapFlag[i][j] = true
+			TileManager.GetInstance().pushMapFlag[i][j] = true
 		end
 	end
 end
@@ -918,16 +915,12 @@ function gisToBlocks:Run()
 		-- 获取区域范围瓦片的列数和行数
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
 		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);
-		self.totalCounts = self.cols * self.rows
-		self.curCounts = 0
-		self.curTimes = 0
-		self.passTimes = 0
-		self.pushMapFlag = {}
 		self:downloadMap(1,1)
 		self:downloadMap(1,2)
 		self:downloadMap(2,2)
 		self:downloadMap(2,1)
 		self:startDrawTiles()
+		self:initWorld()
 		-- 计算,测试需要,最多只加载指定区域范围内的4个瓦片
 		-- local count = 0;
 		-- for j=1,rows do
@@ -960,14 +953,14 @@ function gisToBlocks:Run()
 		-- 	end
 		-- end});
 		-- loadToSceneTimer:Change(10000,10000);
+	end
+end
 
-		-- 人物跳转
-		-- local po = TileManager.GetInstance():getParaPo() -- TileManager.GetInstance():getMapPosition() 这是瓦片中心
-		-- CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
+function gisToBlocks:initWorld()
+	if not SelectLocationTask.isDownLoaded then
 		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
 		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
 		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
-
 		-- 更新SelectLocationTask.player_lon和SelectLocationTask.player_lat(人物当前所处经纬度)信息
 		local sltInstance = SelectLocationTask.GetInstance();
 		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
@@ -1006,7 +999,7 @@ function gisToBlocks:refrushPlayerInfo()
 				local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
 				local poInfo = "经度:" .. lon .. " 纬度:" .. lat
 				local foInfo = "人物朝向: " .. ron .. "° " .. str
-				local fiInfo = "已加载:" .. self.curCounts .. "/" .. self.totalCounts
+				local fiInfo = "已加载:" .. TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count
 				GameLogic.AddBBS("statusBar", poInfo .. " " .. foInfo .. " " .. fiInfo, 15000, "223 81 145"); -- 显示提示条
 				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
 			end
