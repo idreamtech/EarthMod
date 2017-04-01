@@ -5,11 +5,12 @@ Date: 2017-3-16
 Desc: Earth Mod
 ------------------------------------------------------------
 ]]
-NPL.load("(gl)script/ide/Json.lua");
 NPL.load("(gl)Mod/EarthMod/main.lua");
+NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 local EarthMod = commonlib.gettable("Mod.EarthMod");
-local TileManager = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod.TileManager"));
+local TileManager = commonlib.inherit(nil,commonlib.gettable("Mod.EarthMod.TileManager"));
 -- local gisToBlocksTask = commonlib.gettable("Mod.EarthMod.gisToBlocksTask");
+local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 local curInstance;
 local TILE_SIZE = 256 -- 默认瓦片大小
 local zoom = 17 -- OSM级数
@@ -30,6 +31,9 @@ TileManager.mapStack = {} -- 瓦块下载数据
 TileManager.popCount = 0
 TileManager.zoomN = nil
 TileManager.isLoaded = nil
+TileManager.curTimes = 0
+TileManager.passTimes = 0
+TileManager.pushMapFlag = {}
 
 function math.round(decimal)
 	-- decimal = decimal * 100
@@ -59,6 +63,9 @@ function TileManager:ctor()
 	self.popCount = 0
 	self.zoomN = 2 ^ zoom
 	self.isLoaded = nil
+	self.curTimes = 0
+	self.passTimes = 0
+	self.pushMapFlag = {}
 	curInstance = self
 end
 
@@ -75,6 +82,10 @@ function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐
 	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
 	self.firstBlockPo = {x = math.floor(self.oPo.x - (self.tileSize - 1) / 2),y = para.by,z = math.floor(self.oPo.z - (self.tileSize - 1) / 2)}
 	self.count = self.col * self.row
+end
+
+function TileManager:db()
+	return DBStore.GetInstance():ConfigDB()
 end
 
 -- 获取总需绘制行列数（返回列数，行数）
@@ -134,7 +145,7 @@ function TileManager:getDrawPosition(idx,idy)
 			po = po, -- 瓦片paracraft坐标
 			ranksID = ranksID,
 			isDrawed = false,
-			state = 0, -- 0:未更新, 1:更新过, 2:数据过时
+			isUpdated = false,
 			rect = {l = po.x - self.tileSize / 2,b = po.z - self.tileSize / 2,r = po.x + self.tileSize / 2,t = po.z + self.tileSize / 2}
 		}
 		self.tiles[curID] = tileInfo
@@ -173,6 +184,10 @@ function TileManager:getInTile(x,y,z)
 		z = x.z;y = x.y; x = x.x
 	end
 	for i,one in pairs(self.tiles) do
+		if one and (not one.rect) then
+			echo(one)
+			assert(1)
+		end
 		if x >= one.rect.l and x <= one.rect.r and z <= one.rect.t and z >= one.rect.b then
 			return one
 		end
@@ -309,31 +324,40 @@ function TileManager:Save()
 	tileData.size = self.size
 	tileData.firstBlockPo = self.firstBlockPo
 	tileData.count = self.count
+	tileData.curTimes = self.curTimes
+	tileData.passTimes = self.passTimes
+	tileData.pushMapFlag = self.pushMapFlag
 	--
-	local json = commonlib.Json.Encode(tileData)
-	EarthMod:SetWorldData("tileData",json);
+	DBStore.GetInstance():saveTable(self:db(),tileData)
+	-- 
+	-- EarthMod:SetWorldData("tileData",json);
 	-- EarthMod:SaveWorldData();
 end
 -- 读取参数
 function TileManager:Load()
-	local json = EarthMod:GetWorldData("tileData")
-	if not json then return nil end
-	local tileData = commonlib.Json.Decode(json)
+	-- local json = EarthMod:GetWorldData("tileData")
+	-- if not json then return nil end
+	-- local tileData = commonlib.Json.Decode(json)
+	DBStore.GetInstance():loadTable(self:db(),function(tileData)
+		self.tiles = tileData.tiles
+		self.blocks = tileData.blocks
+		self.tileSize = tileData.tileSize
+		self.oPo = tileData.oPo
+		self.col = tileData.col
+		self.row = tileData.row
+		self.beginPo = tileData.beginPo
+		self.endPo = tileData.endPo
+		self.size = tileData.size
+		self.firstBlockPo = tileData.firstBlockPo
+		self.count = tileData.count
+		self.curTimes = tileData.curTimes
+		self.passTimes = tileData.passTimes
+		self.pushMapFlag = tileData.pushMapFlag
+		self.isLoaded = true
+	end)
 	-- echo(tileData)
 	-- get data
-	self.tiles = tileData.tiles
-	self.blocks = tileData.blocks
-	self.tileSize = tileData.tileSize
-	self.oPo = tileData.oPo
-	self.col = tileData.col
-	self.row = tileData.row
-	self.beginPo = tileData.beginPo
-	self.endPo = tileData.endPo
-	self.size = tileData.size
-	self.firstBlockPo = tileData.firstBlockPo
-	self.count = tileData.count
-	self.isLoaded = true
-	return true
+	-- return true
 	--
 end
 

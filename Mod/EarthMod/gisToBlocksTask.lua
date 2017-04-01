@@ -21,14 +21,15 @@ NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Tasks/UndoManager.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Items/ItemColorBlock.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
+NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
 
 local Color           = commonlib.gettable("System.Core.Color");
 local ItemColorBlock  = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
 local UndoManager     = commonlib.gettable("MyCompany.Aries.Game.UndoManager");
 local GameLogic       = commonlib.gettable("MyCompany.Aries.Game.GameLogic");
 local BlockEngine     = commonlib.gettable("MyCompany.Aries.Game.BlockEngine");
-local block_types     = commonlib.gettable("MyCompany.Aries.Game.block_types");
-local names           = commonlib.gettable("MyCompany.Aries.Game.block_types.names");
+-- local block_types     = commonlib.gettable("MyCompany.Aries.Game.block_types");
+-- local names           = commonlib.gettable("MyCompany.Aries.Game.block_types.names");
 local TaskManager     = commonlib.gettable("MyCompany.Aries.Game.TaskManager");
 local getOsmService   = commonlib.gettable("Mod.EarthMod.getOsmService");
 local EntityManager   = commonlib.gettable("MyCompany.Aries.Game.EntityManager");
@@ -36,6 +37,7 @@ local CommandManager  = commonlib.gettable("MyCompany.Aries.Game.CommandManager"
 local EarthMod        = commonlib.gettable("Mod.EarthMod");
 local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
 local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
+local MapBlock = commonlib.gettable("Mod.EarthMod.MapBlock");
 
 local gisToBlocks = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks"));
 
@@ -53,28 +55,28 @@ gisToBlocks.concurrent_creation_point_count = 1;
 -- the color schema. can be 1, 2, 16. where 1 is only a single color. 
 gisToBlocks.colors = 32;
 gisToBlocks.zoom   = 17;
-local factor = 1 -- 地图缩放比例
+local factor = 1.19 -- 地图缩放比例
 local PngWidth = 256
 
 --RGB, block_id
-local block_colors = {
-	{221, 221, 221,	block_types.names.White_Wool},
-	{219,125,62,	block_types.names.Orange_Wool},
-	{179,80, 188,	block_types.names.Magenta_Wool},
-	{107, 138, 201,	block_types.names.Light_Blue_Wool},
-	{177,166,39,	block_types.names.Yellow_Wool},
-	{65, 174, 56,	block_types.names.Lime_Wool},
-	{208, 132, 153,	block_types.names.Pink_Wool},
-	{64, 64, 64,	block_types.names.Gray_Wool},
-	{154, 161, 161,	block_types.names.Light_Gray_Wool},
-	{46, 110, 137,	block_types.names.Cyan_Wool},
-	{126,61,181,	block_types.names.Purple_Wool},
-	{46,56,141,		block_types.names.Blue_Wool},
-	{79,50,31,		block_types.names.Brown_Wool},
-	{53,70,27,		block_types.names.Green_Wool},
-	{150, 52, 48,	block_types.names.Red_Wool},
-	{25, 22, 22,	block_types.names.Black_Wool},
-}
+-- local block_colors = {
+-- 	{221, 221, 221,	block_types.names.White_Wool},
+-- 	{219,125,62,	block_types.names.Orange_Wool},
+-- 	{179,80, 188,	block_types.names.Magenta_Wool},
+-- 	{107, 138, 201,	block_types.names.Light_Blue_Wool},
+-- 	{177,166,39,	block_types.names.Yellow_Wool},
+-- 	{65, 174, 56,	block_types.names.Lime_Wool},
+-- 	{208, 132, 153,	block_types.names.Pink_Wool},
+-- 	{64, 64, 64,	block_types.names.Gray_Wool},
+-- 	{154, 161, 161,	block_types.names.Light_Gray_Wool},
+-- 	{46, 110, 137,	block_types.names.Cyan_Wool},
+-- 	{126,61,181,	block_types.names.Purple_Wool},
+-- 	{46,56,141,		block_types.names.Blue_Wool},
+-- 	{79,50,31,		block_types.names.Brown_Wool},
+-- 	{53,70,27,		block_types.names.Green_Wool},
+-- 	{150, 52, 48,	block_types.names.Red_Wool},
+-- 	{25, 22, 22,	block_types.names.Black_Wool},
+-- }
 
 local function tile2deg(x, y, z)
     local n = 2 ^ z
@@ -129,62 +131,62 @@ local function GetColorDist2BGR(colorRGB, blockRGB)
 	return ((colorRGB[3]-blockRGB[1])^2) + ((colorRGB[2]-blockRGB[2])^2) + ((colorRGB[1]-blockRGB[3])^2);
 end
 
--- find the closest color
-local function FindClosetBlockColor(pixelRGB)
-	local closest_block_color;
-	local smallestDist = 100000;
-	local smallestDistIndex = -1;
-	for i = 1, #block_colors do
-		local curDist = GetColorDistBGR(pixelRGB, block_colors[i]);
-		-- local curDist = GetColorDist2BGR(pixelRGB, block_colors[i]);
+-- -- find the closest color
+-- local function FindClosetBlockColor(pixelRGB)
+-- 	local closest_block_color;
+-- 	local smallestDist = 100000;
+-- 	local smallestDistIndex = -1;
+-- 	for i = 1, #block_colors do
+-- 		local curDist = GetColorDistBGR(pixelRGB, block_colors[i]);
+-- 		-- local curDist = GetColorDist2BGR(pixelRGB, block_colors[i]);
 
-		if (curDist < smallestDist) then
-			smallestDist = curDist
-			smallestDistIndex = i;
-		end
-	end
-	return block_colors[smallestDistIndex];
-end
+-- 		if (curDist < smallestDist) then
+-- 			smallestDist = curDist
+-- 			smallestDistIndex = i;
+-- 		end
+-- 	end
+-- 	return block_colors[smallestDistIndex];
+-- end
 
 -- @param pixel: {r,g,b,a}
 -- @param colors: 1, 2, 3, 16
 local function GetBlockIdFromPixel(pixel, colors)
-	if(colors == 1) then
-		return block_types.names.White_Wool;
-	elseif(colors == 2) then
-		if((pixel[1]+pixel[2]+pixel[3]) > 128) then
-			return block_types.names.White_Wool;
-		else
-			return block_types.names.Black_Wool;
-		end
-	elseif(colors == 3) then
-		local total = pixel[1]+pixel[2]+pixel[3];
-		if(total > 400) then
-			return block_types.names.White_Wool;
-		elseif(total > 128) then
-			return block_types.names.Brown_Wool;
-		else
-			return block_types.names.Black_Wool;
-		end
-	elseif(colors == 4) then
-		local total = pixel[1]+pixel[2]+pixel[3];
-		if(total > 500) then
-			return block_types.names.White_Wool;
-		elseif(total > 400) then
-			return block_types.names.Light_Gray_Wool;
-		elseif(total > 128) then
-			return block_types.names.Brown_Wool;
-		elseif(total > 64) then
-			return block_types.names.Gray_Wool;
-		else
-			return block_types.names.Black_Wool;
-		end
-	elseif(colors <= 16) then
-		local block_color = FindClosetBlockColor(pixel);
-		return block_color[4];
-	else  -- for 65535 colors, use color block
-		return block_types.names.ColorBlock, ItemColorBlock:ColorToData(Color.RGBA_TO_DWORD(pixel[3],pixel[2],pixel[1], 0));
-	end
+	return "2333", ItemColorBlock:ColorToData(Color.RGBA_TO_DWORD(pixel[3],pixel[2],pixel[1], 0));
+	-- if(colors == 1) then
+	-- 	return block_types.names.White_Wool;
+	-- elseif(colors == 2) then
+	-- 	if((pixel[1]+pixel[2]+pixel[3]) > 128) then
+	-- 		return block_types.names.White_Wool;
+	-- 	else
+	-- 		return block_types.names.Black_Wool;
+	-- 	end
+	-- elseif(colors == 3) then
+	-- 	local total = pixel[1]+pixel[2]+pixel[3];
+	-- 	if(total > 400) then
+	-- 		return block_types.names.White_Wool;
+	-- 	elseif(total > 128) then
+	-- 		return block_types.names.Brown_Wool;
+	-- 	else
+	-- 		return block_types.names.Black_Wool;
+	-- 	end
+	-- elseif(colors == 4) then
+	-- 	local total = pixel[1]+pixel[2]+pixel[3];
+	-- 	if(total > 500) then
+	-- 		return block_types.names.White_Wool;
+	-- 	elseif(total > 400) then
+	-- 		return block_types.names.Light_Gray_Wool;
+	-- 	elseif(total > 128) then
+	-- 		return block_types.names.Brown_Wool;
+	-- 	elseif(total > 64) then
+	-- 		return block_types.names.Gray_Wool;
+	-- 	else
+	-- 		return block_types.names.Black_Wool;
+	-- 	end
+	-- elseif(colors <= 16) then
+	-- 	local block_color = FindClosetBlockColor(pixel);
+	-- 	return block_color[4];
+	-- else  -- for 65535 colors, use color block -- block_types.names.ColorBlock 替换为自定义的MapBlock
+	-- end
 end
 
 function gisToBlocks:ctor()
@@ -192,7 +194,7 @@ function gisToBlocks:ctor()
 	self.history = {};
 end
 
-function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data)
+function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data, tile)
 	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
 	if spx == px and spy == py and spz == pz then
 		CommandManager:RunCommand("/goto " .. px .. " " .. py .. " " .. pz) -- 当画到脚下那块时人物跳起来
@@ -210,11 +212,9 @@ function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data)
 		--LOG.std(nil,"debug","AddBlock",{x,y,z,block_id,from_id,from_data,from_entity_data});
 		self.history[#(self.history)+1] = {spx,spy,spz, block_id, from_id, from_data, from_entity_data};
 	end
-	local block_template = block_types.get(block_id);
-
-	if(block_template) then
-		block_template:Create(spx,spy,spz, false, block_data);
-	end
+	local isUpdate = nil
+	if tile then isUpdate = tile.isUpdated end
+	MapBlock:addBlock(spx,spy,spz,block_data,isUpdate)
 end
 
 function gisToBlocks:drawpixel(cx, cy, cz)
@@ -374,92 +374,92 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 	end
 end
 
-function gisToBlocks:PNGToBlock(raster, px, py, pz)
-	local colors = self.colors;
+-- function gisToBlocks:PNGToBlock(raster, px, py, pz)
+-- 	local colors = self.colors;
 
-	if(raster:IsValid()) then
-		local ver           = raster:ReadInt();
-		local width         = raster:ReadInt();
-		local height        = raster:ReadInt();
-		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
+-- 	if(raster:IsValid()) then
+-- 		local ver           = raster:ReadInt();
+-- 		local width         = raster:ReadInt();
+-- 		local height        = raster:ReadInt();
+-- 		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
 
-		-- if bytesPerPixel == 0 then bytesPerPixel = 4 end
+-- 		-- if bytesPerPixel == 0 then bytesPerPixel = 4 end
 
-		LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
+-- 		LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
 
-		local block_world = GameLogic.GetBlockWorld();
+-- 		local block_world = GameLogic.GetBlockWorld();
 
-		local function CreateBlock_(ix, iy, block_id, block_data)
-			local z;
-			spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
-			ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
+-- 		local function CreateBlock_(ix, iy, block_id, block_data)
+-- 			local z;
+-- 			spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
+-- 			ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
 
-			self:AddBlock(spx, spy, spz, block_id, block_data);
-		end
-		--array of {r,g,b,a}
-		local pixel = {};
+-- 			self:AddBlock(spx, spy, spz, block_id, block_data);
+-- 		end
+-- 		--array of {r,g,b,a}
+-- 		local pixel = {};
 
-		if(bytesPerPixel >= 3) then
-			local block_per_tick = 100;
-			local count = 0;
-			local row_padding_bytes = (bytesPerPixel*width)%4;
+-- 		if(bytesPerPixel >= 3) then
+-- 			local block_per_tick = 100;
+-- 			local count = 0;
+-- 			local row_padding_bytes = (bytesPerPixel*width)%4;
 
-			if(row_padding_bytes > 0) then
-				row_padding_bytes = 4-row_padding_bytes;
-			end
-			local worker_thread_co = coroutine.create(function ()
-				for iy=1, width do
-					for ix=1, height do
-						local x,y = math.round(ix * factor), math.round(iy * factor)
-						pixel = raster:ReadBytes(bytesPerPixel, pixel);
+-- 			if(row_padding_bytes > 0) then
+-- 				row_padding_bytes = 4-row_padding_bytes;
+-- 			end
+-- 			local worker_thread_co = coroutine.create(function ()
+-- 				for iy=1, width do
+-- 					for ix=1, height do
+-- 						local x,y = math.round(ix * factor), math.round(iy * factor)
+-- 						pixel = raster:ReadBytes(bytesPerPixel, pixel);
 
-						if(pixel[4]~=0) then
-							-- transparent pixel does not show up. 
-							local block_id, block_data = GetBlockIdFromPixel(pixel, colors);
-							if(block_id) then
-								-- LOG.std(nil,"debug","x,y,block_id,block_data",{x,y,block_id,block_data});
-								-- if(x>= 10 and x <= 128 and y >= 10 and y <= 128) then
-								CreateBlock_(x, y, block_id, block_data);
-								-- end
-								if((count%block_per_tick) == 0) then
-									coroutine.yield(true);
-								end
-								count = count + 1;
-							end
-						end
-					end
-					if(row_padding_bytes > 0) then
-						file:ReadBytes(row_padding_bytes, pixel);
-					end
-				end
-			end)
+-- 						if(pixel[4]~=0) then
+-- 							-- transparent pixel does not show up. 
+-- 							local block_id, block_data = GetBlockIdFromPixel(pixel, colors);
+-- 							if(block_id) then
+-- 								-- LOG.std(nil,"debug","x,y,block_id,block_data",{x,y,block_id,block_data});
+-- 								-- if(x>= 10 and x <= 128 and y >= 10 and y <= 128) then
+-- 								CreateBlock_(x, y, block_id, block_data);
+-- 								-- end
+-- 								if((count%block_per_tick) == 0) then
+-- 									coroutine.yield(true);
+-- 								end
+-- 								count = count + 1;
+-- 							end
+-- 						end
+-- 					end
+-- 					if(row_padding_bytes > 0) then
+-- 						file:ReadBytes(row_padding_bytes, pixel);
+-- 					end
+-- 				end
+-- 			end)
 
-			local timer = commonlib.Timer:new({callbackFunc = function(timer)
-				local status, result = coroutine.resume(worker_thread_co);
-				if not status then
-					LOG.std(nil, "info", "PNGToBlocks", "finished with %d blocks: %s ", count, tostring(result));
-					timer:Change();
-					raster:close();
-				end
-			end})
-			timer:Change(30,30);
+-- 			local timer = commonlib.Timer:new({callbackFunc = function(timer)
+-- 				local status, result = coroutine.resume(worker_thread_co);
+-- 				if not status then
+-- 					LOG.std(nil, "info", "PNGToBlocks", "finished with %d blocks: %s ", count, tostring(result));
+-- 					timer:Change();
+-- 					raster:close();
+-- 					self:saveOnFinish()
+-- 				end
+-- 			end})
+-- 			timer:Change(30,30);
 
-			UndoManager.PushCommand(self);
-		else
-			LOG.std(nil, "error", "PNGToBlocks", "format not supported");
-			-- for iy=1, width do
-			-- 	for ix=1, height do
-			-- 		local x,y = math.round(ix / factor), math.round(iy / factor)
-			-- 		pixel = raster:ReadBytes(bytesPerPixel, pixel);
-			-- 		echo(pixel)
-			-- 		-- LOG.std(nil, "error", "bytesPerPixel", pixel[4]);
-			-- 	end
-			-- end
-			raster:close();
-		end
-	end
-end
-
+-- 			UndoManager.PushCommand(self);
+-- 		else
+-- 			LOG.std(nil, "error", "PNGToBlocks", "format not supported");
+-- 			-- for iy=1, width do
+-- 			-- 	for ix=1, height do
+-- 			-- 		local x,y = math.round(ix / factor), math.round(iy / factor)
+-- 			-- 		pixel = raster:ReadBytes(bytesPerPixel, pixel);
+-- 			-- 		echo(pixel)
+-- 			-- 		-- LOG.std(nil, "error", "bytesPerPixel", pixel[4]);
+-- 			-- 	end
+-- 			-- end
+-- 			raster:close();
+-- 		end
+-- 	end
+-- end
 
 function gisToBlocks:mixColor(cs) -- rgb
 	-- 取最深颜色 <   取最浅颜色 >
@@ -513,8 +513,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 			local z;
 			spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
 			ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
-
-			self:AddBlock(spx, spy, spz, block_id, block_data);
+			self:AddBlock(spx, spy, spz, block_id, block_data, tile);
 		end
 
 		local pixel = {};
@@ -579,27 +578,26 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 				if (not status) then
 					timer:Change();
 					raster:close();
-
-					self.curTimes = self.curTimes + 1
-					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, self.curTimes + self.passTimes, self.totalCounts);
+					tile.isUpdated = true
+					TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes + 1
+					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
 					self:fillingGap()
+					self:saveOnFinish()
 				end
 			end})
 			timer:Change(30,30);
 
 			UndoManager.PushCommand(self);
 		else
-			LOG.std(nil, "error", "PNGToBlockScale", "format not supported process: %d / %d", self.curTimes + self.passTimes, self.totalCounts);
+			LOG.std(nil, "error", "PNGToBlockScale", "format not supported process: %d / %d", TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
 			raster:close();
-			self.passTimes = self.passTimes + 1
+			TileManager.GetInstance().passTimes = TileManager.GetInstance().passTimes + 1
 		end
 	end
 end
 
 -- 填充所有块
 function gisToBlocks:fillingGap()
-	-- if self.curTimes + self.passTimes >= self.totalCounts then
-	-- 	echo("填补色块 " .. self.curTimes .. "," .. self.passTimes .. "," .. self.totalCounts)
 	local ct = 0
 	TileManager.GetInstance():fillNullBlock(function(block,x,y,px,py,pz)
 		local data = BlockEngine:GetBlockData(px,py,pz)
@@ -718,13 +716,12 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,tile)
 	EarthMod:SaveWorldData();
 	
 	LOG.std(nil,"debug","gisToBlocks","加载方块和贴图");
-	if factor > 1 then
-		self:PNGToBlockScale(raster, px, py, pz, tile);
-	else
-		self:PNGToBlock(raster, px, py, pz, tile);
-	end
+	-- if factor > 1 then
+	self:PNGToBlockScale(raster, px, py, pz, tile);
+	-- else
+	-- 	self:PNGToBlock(raster, px, py, pz, tile);
+	-- end
 	-- self:OSMToBlock(vector, px, py, pz);
-	CommandManager:RunCommand("/save");
 
 	-- self.isDrawing = false
 end
@@ -823,13 +820,13 @@ function gisToBlocks:BoundaryCheck()
 end
 
 function gisToBlocks:downloadMap(i,j)
-	self.pushMapFlag[i] = self.pushMapFlag[i] or {}
-	if not self.pushMapFlag[i][j] then
+	TileManager.GetInstance().pushMapFlag[i] = TileManager.GetInstance().pushMapFlag[i] or {}
+	if not TileManager.GetInstance().pushMapFlag[i][j] then
 		local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
 		if tile and (not tile.isDrawed) then
 			LOG.std(nil,"debug","gosToBlocks","添加绘制任务 " .. tile.x .. "," .. tile.y);
 			TileManager.GetInstance():push(tile)
-			self.pushMapFlag[i][j] = true
+			TileManager.GetInstance().pushMapFlag[i][j] = true
 		end
 	end
 end
@@ -918,15 +915,12 @@ function gisToBlocks:Run()
 		-- 获取区域范围瓦片的列数和行数
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
 		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);
-		self.totalCounts = self.cols * self.rows
-		self.curTimes = 0
-		self.passTimes = 0
-		self.pushMapFlag = {}
 		self:downloadMap(1,1)
 		self:downloadMap(1,2)
 		self:downloadMap(2,2)
 		self:downloadMap(2,1)
 		self:startDrawTiles()
+		self:initWorld()
 		-- 计算,测试需要,最多只加载指定区域范围内的4个瓦片
 		-- local count = 0;
 		-- for j=1,rows do
@@ -959,14 +953,14 @@ function gisToBlocks:Run()
 		-- 	end
 		-- end});
 		-- loadToSceneTimer:Change(10000,10000);
+	end
+end
 
-		-- 人物跳转
-		-- local po = TileManager.GetInstance():getParaPo() -- TileManager.GetInstance():getMapPosition() 这是瓦片中心
-		-- CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
+function gisToBlocks:initWorld()
+	if not SelectLocationTask.isDownLoaded then
 		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
 		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
 		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
-
 		-- 更新SelectLocationTask.player_lon和SelectLocationTask.player_lat(人物当前所处经纬度)信息
 		local sltInstance = SelectLocationTask.GetInstance();
 		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
@@ -1005,9 +999,16 @@ function gisToBlocks:refrushPlayerInfo()
 				local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
 				local poInfo = "经度:" .. lon .. " 纬度:" .. lat
 				local foInfo = "人物朝向: " .. ron .. "° " .. str
-				GameLogic.AddBBS("statusBar", poInfo .. " " .. foInfo, 15000, "223 81 145"); -- 显示提示条
+				local fiInfo = "已加载:" .. TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count
+				GameLogic.AddBBS("statusBar", poInfo .. " " .. foInfo .. " " .. fiInfo, 15000, "223 81 145"); -- 显示提示条
 				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
 			end
 	end});
 	playerLocationTimer:Change(1000,1000);
+end
+
+-- 存储一次数据
+function gisToBlocks:saveOnFinish()
+	TileManager.GetInstance():Save()
+	CommandManager:RunCommand("/save");
 end
