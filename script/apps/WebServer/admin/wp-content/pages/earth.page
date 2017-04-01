@@ -1,4 +1,4 @@
-﻿<?npl
+<?npl
 --[[
 Title: earth
 Author: big
@@ -246,7 +246,7 @@ $(function(){
         return new L.Control.Search(options);
     };
     //启用控件并添加到地图中
-    L.control.search().addTo(map);
+        
      function renderUniversity(uni){
         if(uni != null & uni != undefined){
             rec.remove();
