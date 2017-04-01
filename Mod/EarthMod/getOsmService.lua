@@ -12,6 +12,7 @@ local getOsmService = commonlib.gettable("Mod.EarthMod.getOsmService");
 NPL.load("(gl)script/ide/System/Encoding/base64.lua");
 NPL.load("(gl)script/ide/Encoding.lua");
 NPL.load("(gl)script/ide/Files.lua");
+NPL.load("(gl)script/ide/timer.lua");
 
 local getOsmService = commonlib.gettable("Mod.EarthMod.getOsmService");
 local Encoding      = commonlib.gettable("System.Encoding");
@@ -65,7 +66,7 @@ function getOsmService:retry(_err, _msg, _data, _params, _callback)
 	end
 end
 
-function getOsmService:getOsmXMLData(x,y,_callback)
+function getOsmService:getOsmXMLData(x,y,i,j,_callback)
 	local osmXMLUrl = getOsmService.osmXMLUrl();
 
 	osmXMLUrl = osmXMLUrl:gsub("{left}",self.dleft);
@@ -73,44 +74,60 @@ function getOsmService:getOsmXMLData(x,y,_callback)
 	osmXMLUrl = osmXMLUrl:gsub("{right}",self.dright);
 	osmXMLUrl = osmXMLUrl:gsub("{top}",self.dtop);
 
-	self:GetUrl(osmXMLUrl,function(data,err)
-		if(err == 200) then
-			--[[local file = ParaIO.open("/xml.osm", "w");
-			file:write(data,#data);
-			file:close();]]
+	_callback();
 
-			local fileExt = ParaIO.open("xml_"..x.."_"..y..".osm", "w");
-			LOG.std(nil,"debug","gisOsmService","xml_"..x.."_"..y..".osm");
-			local ret = fileExt:write(data,#data);
-			fileExt:close();
+	-- 使用定时器,错开多次请求OSM节点数据的接口调用,避免出现短时间内请求达到100次峰值之后无法获取到OSM节点数据的情况
+	-- local downOsmXMLTimer = commonlib.Timer:new({callbackFunc = function(downOsmXMLTimer)
+	-- 	self:GetUrl(osmPNGUrl,function(data,err)
+	-- 		if(err == 200) then
+	-- 			--[[local file = ParaIO.open("/xml.osm", "w");
+	-- 			file:write(data,#data);
+	-- 			file:close();]]
 
-			_callback(data);
-		else
-			return nil;
-		end
-	end);
+	-- 			local fileExt = ParaIO.open("xml_"..x.."_"..y..".osm", "w");
+	-- 			LOG.std(nil,"debug","gisOsmService","xml_"..x.."_"..y..".osm");
+	-- 			local ret = fileExt:write(data,#data);
+	-- 			fileExt:close();
+
+	-- 			_callback(data);
+	-- 		else
+	-- 			return nil;
+	-- 		end
+	-- 	end);
+	-- end})
+
+	-- -- start the timer after i milliseconds, and stop it immediately.
+	-- downOsmXMLTimer:Change(i*3000, nil);
 end
 
-function getOsmService:getOsmPNGData(x,y,_callback)
+function getOsmService:getOsmPNGData(x,y,i,j,_callback)
 	local osmPNGUrl = getOsmService.osmPNGUrl();
 
 	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(x));
 	osmPNGUrl = osmPNGUrl:gsub("{y}",tostring(y));
 
-	self:GetUrl(osmPNGUrl,function(data,err)
-		if(err == 200) then
-			--[[local file = ParaIO.open("/tile.png", "w");
-			file:write(data,#data);
-			file:close();]]
+	-- _callback();
 
-			local fileExt = ParaIO.open("tile_"..x.."_"..y..".png", "w");
-			LOG.std(nil,"debug","gisOsmService","tile_"..x.."_"..y..".png");
-			local ret = fileExt:write(data,#data);
-			fileExt:close();
+	-- 使用定时器,错开多次请求PNG图片的接口调用,避免出现短时间内请求达到100次峰值之后无法获取到PNG图片的情况
+	local downLoadPngTimer = commonlib.Timer:new({callbackFunc = function(downLoadPngTimer)
+		self:GetUrl(osmPNGUrl,function(data,err)
+			if(err == 200) then
+				--[[local file = ParaIO.open("/tile.png", "w");
+				file:write(data,#data);
+				file:close();]]
 
-			_callback(data);
-		else
-			return nil;
-		end
-	end);
+				local fileExt = ParaIO.open("tile_"..x.."_"..y..".png", "w");
+				LOG.std(nil,"debug","gisOsmService","tile_"..x.."_"..y..".png");
+				local ret = fileExt:write(data,#data);
+				fileExt:close();
+
+				_callback(data);
+			else
+				return nil;
+			end
+		end);
+	end})
+
+	-- start the timer after i milliseconds, and stop it immediately.
+	downLoadPngTimer:Change(i*5000, nil);
 end

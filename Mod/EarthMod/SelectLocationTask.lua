@@ -25,6 +25,14 @@ SelectLocationTask.isFirstSelect = true;
 SelectLocationTask.is_top_level  = true;
 SelectLocationTask.getMoreTiles  = false;
 
+-- 人物坐标对应经纬度
+SelectLocationTask.playerLon  = nil;
+SelectLocationTask.playerLat  = nil;
+SelectLocationTask.player_curLon = nil;
+SelectLocationTask.player_curLat = nil;
+SelectLocationTask.player_curState = nil;
+SelectLocationTask.isDownLoaded = nil
+
 function SelectLocationTask:ctor()
 end
 
@@ -147,6 +155,9 @@ end
 function SelectLocationTask:Run()
 	curInstance = self;
 	self.finished = false;
+	SelectLocationTask.player_curLon = nil;
+	SelectLocationTask.player_curLat = nil;
+	SelectLocationTask.player_curState = nil
 
 	local coordinate = EarthMod:GetWorldData("coordinate");
 
@@ -161,4 +172,24 @@ function SelectLocationTask:Run()
 	end
 
 	-- self:ShowPage();
+end
+
+function SelectLocationTask:setPlayerCoordinate(lon, lat)
+	SelectLocationTask.player_lon = lon;
+	SelectLocationTask.player_lat = lat;
+end
+
+function SelectLocationTask:getPlayerCoordinate()
+	return SelectLocationTask.player_lon, SelectLocationTask.player_lat;
+end
+
+-- 设置并跳转人物
+function SelectLocationTask:setPlayerLocation(lon, lat)
+	if not SelectLocationTask.isDownLoaded then return end
+	local str = "网页读取到人物跳转：lon:" .. lon .. ", lat:" .. lat
+	GameLogic.AddBBS("statusBar", str, 15000, "223 81 145"); -- 显示提示条
+	SelectLocationTask.player_curLon = lon;
+	SelectLocationTask.player_curLat = lat;
+	SelectLocationTask.player_curState = nil
+	LOG.std(nil,"RunFunction","SelectLocationTask",str)
 end
