@@ -1,6 +1,13 @@
 --[[
+Title: DBStore
+Author(s):  Bl.Chock
+Date: 2017年4月1日
+Desc: using tableDatabase to save game`s config data
+use the lib:
+------------------------------------------------------------
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
+------------------------------------------------------------
 ]]
 
 NPL.load("(gl)script/ide/System/Database/TableDatabase.lua");

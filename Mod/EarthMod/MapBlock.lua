@@ -1,8 +1,8 @@
 --[[
 Title: MapBlock
-Author(s):  LiXizhi
-Date: 2016.10.19
-Desc: a demo block item
+Author(s):  Bl.Chock
+Date: 2017年4月1日
+Desc: map block item
 use the lib:
 ------------------------------------------------------------
 NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
