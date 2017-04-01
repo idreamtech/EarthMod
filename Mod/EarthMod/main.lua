@@ -22,7 +22,6 @@ local gisCommand     = commonlib.gettable("Mod.EarthMod.gisCommand");
 local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
 local MapBlock = commonlib.gettable("Mod.EarthMod.MapBlock");
-
 --LOG.SetLogLevel("DEBUG");
 EarthMod:Property({"Name", "EarthMod"});
 
@@ -68,7 +67,6 @@ function EarthMod:init()
 		end
 		return xmlRoot;
 	end)
-
 	MapBlock:init()
 end
 
@@ -90,17 +88,17 @@ function EarthMod:OnWorldLoad()
 
 	assert("TileManager new")
 	TileManager:new() -- 初始化并加载数据
-	if not TileManager.GetInstance():Load() then -- 加载配置
-		-- gisToBlocks:refrushPlayerInfo()
-	end
+	TileManager.GetInstance():Load() -- 加载配置
+	-- if not  then
+	-- 	-- gisToBlocks:refrushPlayerInfo()
+	-- end
 
 end
 -- called when a world is unloaded. 
 
 function EarthMod:OnLeaveWorld()
 	if TileManager.GetInstance() then
-		assert("TileManager saving..")
-		TileManager.GetInstance():Save()
+		MapBlock:OnLeaveWorld()
 	end
 end
 

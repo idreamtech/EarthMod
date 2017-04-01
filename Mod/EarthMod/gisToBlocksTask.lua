@@ -55,7 +55,7 @@ gisToBlocks.concurrent_creation_point_count = 1;
 -- the color schema. can be 1, 2, 16. where 1 is only a single color. 
 gisToBlocks.colors = 32;
 gisToBlocks.zoom   = 17;
-local factor = 1 -- 地图缩放比例
+local factor = 1.19 -- 地图缩放比例
 local PngWidth = 256
 
 --RGB, block_id
@@ -374,92 +374,92 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz)
 	end
 end
 
-function gisToBlocks:PNGToBlock(raster, px, py, pz)
-	local colors = self.colors;
+-- function gisToBlocks:PNGToBlock(raster, px, py, pz)
+-- 	local colors = self.colors;
 
-	if(raster:IsValid()) then
-		local ver           = raster:ReadInt();
-		local width         = raster:ReadInt();
-		local height        = raster:ReadInt();
-		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
+-- 	if(raster:IsValid()) then
+-- 		local ver           = raster:ReadInt();
+-- 		local width         = raster:ReadInt();
+-- 		local height        = raster:ReadInt();
+-- 		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
 
-		-- if bytesPerPixel == 0 then bytesPerPixel = 4 end
+-- 		-- if bytesPerPixel == 0 then bytesPerPixel = 4 end
 
-		LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
+-- 		LOG.std(nil, "info", "gisToBlocks", {ver, width, height, bytesPerPixel});
 
-		local block_world = GameLogic.GetBlockWorld();
+-- 		local block_world = GameLogic.GetBlockWorld();
 
-		local function CreateBlock_(ix, iy, block_id, block_data)
-			local z;
-			spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
-			ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
+-- 		local function CreateBlock_(ix, iy, block_id, block_data)
+-- 			local z;
+-- 			spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
+-- 			ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
 
-			self:AddBlock(spx, spy, spz, block_id, block_data);
-		end
-		--array of {r,g,b,a}
-		local pixel = {};
+-- 			self:AddBlock(spx, spy, spz, block_id, block_data);
+-- 		end
+-- 		--array of {r,g,b,a}
+-- 		local pixel = {};
 
-		if(bytesPerPixel >= 3) then
-			local block_per_tick = 100;
-			local count = 0;
-			local row_padding_bytes = (bytesPerPixel*width)%4;
+-- 		if(bytesPerPixel >= 3) then
+-- 			local block_per_tick = 100;
+-- 			local count = 0;
+-- 			local row_padding_bytes = (bytesPerPixel*width)%4;
 
-			if(row_padding_bytes > 0) then
-				row_padding_bytes = 4-row_padding_bytes;
-			end
-			local worker_thread_co = coroutine.create(function ()
-				for iy=1, width do
-					for ix=1, height do
-						local x,y = math.round(ix * factor), math.round(iy * factor)
-						pixel = raster:ReadBytes(bytesPerPixel, pixel);
+-- 			if(row_padding_bytes > 0) then
+-- 				row_padding_bytes = 4-row_padding_bytes;
+-- 			end
+-- 			local worker_thread_co = coroutine.create(function ()
+-- 				for iy=1, width do
+-- 					for ix=1, height do
+-- 						local x,y = math.round(ix * factor), math.round(iy * factor)
+-- 						pixel = raster:ReadBytes(bytesPerPixel, pixel);
 
-						if(pixel[4]~=0) then
-							-- transparent pixel does not show up. 
-							local block_id, block_data = GetBlockIdFromPixel(pixel, colors);
-							if(block_id) then
-								-- LOG.std(nil,"debug","x,y,block_id,block_data",{x,y,block_id,block_data});
-								-- if(x>= 10 and x <= 128 and y >= 10 and y <= 128) then
-								CreateBlock_(x, y, block_id, block_data);
-								-- end
-								if((count%block_per_tick) == 0) then
-									coroutine.yield(true);
-								end
-								count = count + 1;
-							end
-						end
-					end
-					if(row_padding_bytes > 0) then
-						file:ReadBytes(row_padding_bytes, pixel);
-					end
-				end
-			end)
+-- 						if(pixel[4]~=0) then
+-- 							-- transparent pixel does not show up. 
+-- 							local block_id, block_data = GetBlockIdFromPixel(pixel, colors);
+-- 							if(block_id) then
+-- 								-- LOG.std(nil,"debug","x,y,block_id,block_data",{x,y,block_id,block_data});
+-- 								-- if(x>= 10 and x <= 128 and y >= 10 and y <= 128) then
+-- 								CreateBlock_(x, y, block_id, block_data);
+-- 								-- end
+-- 								if((count%block_per_tick) == 0) then
+-- 									coroutine.yield(true);
+-- 								end
+-- 								count = count + 1;
+-- 							end
+-- 						end
+-- 					end
+-- 					if(row_padding_bytes > 0) then
+-- 						file:ReadBytes(row_padding_bytes, pixel);
+-- 					end
+-- 				end
+-- 			end)
 
-			local timer = commonlib.Timer:new({callbackFunc = function(timer)
-				local status, result = coroutine.resume(worker_thread_co);
-				if not status then
-					LOG.std(nil, "info", "PNGToBlocks", "finished with %d blocks: %s ", count, tostring(result));
-					timer:Change();
-					raster:close();
-				end
-			end})
-			timer:Change(30,30);
+-- 			local timer = commonlib.Timer:new({callbackFunc = function(timer)
+-- 				local status, result = coroutine.resume(worker_thread_co);
+-- 				if not status then
+-- 					LOG.std(nil, "info", "PNGToBlocks", "finished with %d blocks: %s ", count, tostring(result));
+-- 					timer:Change();
+-- 					raster:close();
+-- 					self:saveOnFinish()
+-- 				end
+-- 			end})
+-- 			timer:Change(30,30);
 
-			UndoManager.PushCommand(self);
-		else
-			LOG.std(nil, "error", "PNGToBlocks", "format not supported");
-			-- for iy=1, width do
-			-- 	for ix=1, height do
-			-- 		local x,y = math.round(ix / factor), math.round(iy / factor)
-			-- 		pixel = raster:ReadBytes(bytesPerPixel, pixel);
-			-- 		echo(pixel)
-			-- 		-- LOG.std(nil, "error", "bytesPerPixel", pixel[4]);
-			-- 	end
-			-- end
-			raster:close();
-		end
-	end
-end
-
+-- 			UndoManager.PushCommand(self);
+-- 		else
+-- 			LOG.std(nil, "error", "PNGToBlocks", "format not supported");
+-- 			-- for iy=1, width do
+-- 			-- 	for ix=1, height do
+-- 			-- 		local x,y = math.round(ix / factor), math.round(iy / factor)
+-- 			-- 		pixel = raster:ReadBytes(bytesPerPixel, pixel);
+-- 			-- 		echo(pixel)
+-- 			-- 		-- LOG.std(nil, "error", "bytesPerPixel", pixel[4]);
+-- 			-- 	end
+-- 			-- end
+-- 			raster:close();
+-- 		end
+-- 	end
+-- end
 
 function gisToBlocks:mixColor(cs) -- rgb
 	-- 取最深颜色 <   取最浅颜色 >
@@ -582,6 +582,8 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 					self.curTimes = self.curTimes + 1
 					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, self.curTimes + self.passTimes, self.totalCounts);
 					self:fillingGap()
+					self.curCounts = self.curCounts + 1
+					self:saveOnFinish()
 				end
 			end})
 			timer:Change(30,30);
@@ -717,13 +719,12 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,tile)
 	EarthMod:SaveWorldData();
 	
 	LOG.std(nil,"debug","gisToBlocks","加载方块和贴图");
-	if factor > 1 then
-		self:PNGToBlockScale(raster, px, py, pz, tile);
-	else
-		self:PNGToBlock(raster, px, py, pz, tile);
-	end
+	-- if factor > 1 then
+	self:PNGToBlockScale(raster, px, py, pz, tile);
+	-- else
+	-- 	self:PNGToBlock(raster, px, py, pz, tile);
+	-- end
 	-- self:OSMToBlock(vector, px, py, pz);
-	CommandManager:RunCommand("/save");
 
 	-- self.isDrawing = false
 end
@@ -918,6 +919,7 @@ function gisToBlocks:Run()
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
 		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);
 		self.totalCounts = self.cols * self.rows
+		self.curCounts = 0
 		self.curTimes = 0
 		self.passTimes = 0
 		self.pushMapFlag = {}
@@ -1004,9 +1006,16 @@ function gisToBlocks:refrushPlayerInfo()
 				local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
 				local poInfo = "经度:" .. lon .. " 纬度:" .. lat
 				local foInfo = "人物朝向: " .. ron .. "° " .. str
-				GameLogic.AddBBS("statusBar", poInfo .. " " .. foInfo, 15000, "223 81 145"); -- 显示提示条
+				local fiInfo = "已加载:" .. self.curCounts .. "/" .. self.totalCounts
+				GameLogic.AddBBS("statusBar", poInfo .. " " .. foInfo .. " " .. fiInfo, 15000, "223 81 145"); -- 显示提示条
 				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
 			end
 	end});
 	playerLocationTimer:Change(1000,1000);
+end
+
+-- 存储一次数据
+function gisToBlocks:saveOnFinish()
+	TileManager.GetInstance():Save()
+	CommandManager:RunCommand("/save");
 end
