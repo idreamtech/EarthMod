@@ -382,8 +382,6 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
         })
     }
 
-    
-
     // 在地图上矩形选框内点击时候,触发marker位置移动,并通知pararcraft中的人物进行跳转
     function onMapClick(e) {
         // 判断点击区域是否在矩形区域内
@@ -425,5 +423,32 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
         // 每一秒更新一次人物坐标信息
         setInterval("getCurrentPostionInParacraft()",1000);
     })
+
+    // 请求学校经纬度信息
+    function getSchoolByName(schoolName){
+        var urlStr = "http://127.0.0.1:8098/api/wiki/models/school/getSchoolByName";
+        if (schoolName != null && typeof(schoolName) != "undefined" && $.trim(schoolName) != "") {
+            urlStr = urlStr + "?name=" + $.trim(schoolName);
+            $.ajax({
+                url:urlStr,
+                type:"get",
+                dataType:"json",
+                success:function(res){
+                    console.log(res);
+                    if(res && res.error && res.data && res.error.id == 0){
+                        // 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
+                        // res.data是数组
+                        console.log(res.data);
+                    }else{
+                        alert("学校信息不存在")
+                    }
+                },
+                error:function(err){
+                    console.log(err.statusText);
+                }
+            })
+        }
+        
+    }
 
 </script>
