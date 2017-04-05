@@ -64,7 +64,7 @@ end
 
 function ItemEarth:TryCreate(itemStack, entityPlayer, x, y, z, side, data, side_region)
 	if(SelectLocationTask.isFirstSelect) then
-		_guihelper.MessageBox(L"您还没有选择地图坐标");
+		_guihelper.MessageBox(L"您还没有选定待生成地理贴图信息的学校");
 		return;
 	end
 
