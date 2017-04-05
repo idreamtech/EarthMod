@@ -804,9 +804,11 @@ function gisToBlocks:Undo()
 end
 
 -- 绘制玩家周围一圈地图
-function gisToBlocks:BoundaryCheck()
+function gisToBlocks:BoundaryCheck(px, py, pz)
 	-- if self.isDrawing then return false end
-	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	if px == nil and py == nil and pz == nil then
+		px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	end
 	local cx,cy = TileManager.GetInstance():getInTile(px, py, pz) -- self.gx,self.gy
 	if type(cx) == "table" then cy = cx.y;cx = cx.x end
 	local function checkAddMap(x,y)
@@ -897,11 +899,10 @@ function gisToBlocks:Run()
 			self.add_to_history = false;
 		end
 		self:initWorld()
-		self:BoundaryCheck() -- 绘制人物周围9块
 		local po = TileManager.GetInstance():getParaPo()
+		self:BoundaryCheck(po.x, po.y, po.z) -- 绘制人物周围9块
 		-- 跳转到地图中间
 		CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
-		echo("传送 " .. po.x .. "," ..  po.y .. "," ..  po.z .. ",")
 		--
 
 		-- local firstLon, firstLat = pixel2deg(gisToBlocks.tile_MIN_X,gisToBlocks.tile_MIN_Y,0,0,self.zoom);
