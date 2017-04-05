@@ -510,10 +510,13 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 		local block_world = GameLogic.GetBlockWorld();
 
 		local function CreateBlock_(ix, iy, block_id, block_data)
-			local z;
-			spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
-			ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
-			self:AddBlock(spx, spy, spz, block_id, block_data, tile);
+			local spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
+			if TileManager.GetInstance():checkMarkArea(spx,spy,spz) then
+				ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
+				self:AddBlock(spx, spy, spz, block_id, block_data, tile);
+			else
+				echo("跳过绘制 " .. spx .. "," .. spz)
+			end
 		end
 
 		local pixel = {};
@@ -601,7 +604,7 @@ function gisToBlocks:fillingGap()
 	local ct = 0
 	TileManager.GetInstance():fillNullBlock(function(block,x,y,px,py,pz)
 		local data = BlockEngine:GetBlockData(px,py,pz)
-		if data == 0 then
+		if data == 0 and TileManager.GetInstance():checkMarkArea(px, py, pz) then
 			-- LOG.std(nil, "info", "PNGToBlockScale", "filling gap %d,%d .. (%d,%d,%d)",x,y,px,py,pz);
 			ct = ct + 1
 			local block_id, block_data = GetBlockIdFromPixel(block, self.colors);
@@ -800,6 +803,7 @@ function gisToBlocks:Undo()
 	end
 end
 
+-- 绘制玩家周围一圈地图
 function gisToBlocks:BoundaryCheck()
 	-- if self.isDrawing then return false end
 	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
@@ -819,6 +823,7 @@ function gisToBlocks:BoundaryCheck()
 	return true
 end
 
+-- 申请下载地图
 function gisToBlocks:downloadMap(i,j)
 	TileManager.GetInstance().pushMapFlag[i] = TileManager.GetInstance().pushMapFlag[i] or {}
 	if not TileManager.GetInstance().pushMapFlag[i][j] then
@@ -892,6 +897,13 @@ function gisToBlocks:Run()
 			self.add_to_history = false;
 		end
 		self:initWorld()
+		self:BoundaryCheck() -- 绘制人物周围9块
+		local po = TileManager.GetInstance():getParaPo()
+		-- 跳转到地图中间
+		CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
+		echo("传送 " .. po.x .. "," ..  po.y .. "," ..  po.z .. ",")
+		--
+
 		-- local firstLon, firstLat = pixel2deg(gisToBlocks.tile_MIN_X,gisToBlocks.tile_MIN_Y,0,0,self.zoom);
 		-- local lastLon, lastLat = pixel2deg(gisToBlocks.tile_MAX_X,gisToBlocks.tile_MAX_Y,255,255,self.zoom);
 		-- local firstPo, lastPo = {lat = firstLat,lon = firstLon},{lat = lastLat,lon = lastLon};
@@ -901,11 +913,6 @@ function gisToBlocks:Run()
 		
 		--
 		-- 获取区域范围瓦片的列数和行数
-		self:downloadMap(1,1)
-		self:downloadMap(1,2)
-		self:downloadMap(2,2)
-		self:downloadMap(2,1)
-
 
 
 		-- 计算,测试需要,最多只加载指定区域范围内的4个瓦片
@@ -957,7 +964,7 @@ function gisToBlocks:initWorld()
 			lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
 			rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
 			bx = px,by = py,bz = pz,tileSize = math.ceil(PngWidth * factor),
-			-- firstPo = firstPo,lastPo = lastPo -- 传入地理位置信息
+			firstPo = {lat=self.minlat,lon=self.minlon},lastPo = {lat=self.maxlat,lon=self.maxlon}, -- 传入地理位置信息
 		})
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
 		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);

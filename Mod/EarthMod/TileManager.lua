@@ -75,7 +75,6 @@ end
 -- lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
 -- rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
 -- bx = px,by = py,bz = pz,tileSize = math.ceil(PngWidth * factor),
--- firstPo = firstPo,lastPo = lastPo -- 传入地理位置信息
 function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐标（左下点），瓦片大小
 	self.tileSize = para.tileSize or TILE_SIZE
 	self.oPo = {x = para.bx,y = para.by,z = para.bz}
@@ -85,6 +84,11 @@ function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐
 	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
 	self.firstBlockPo = {x = math.floor(self.oPo.x - (self.tileSize - 1) / 2),y = para.by,z = math.floor(self.oPo.z - (self.tileSize - 1) / 2)}
 	self.count = self.col * self.row
+	self.firstGPo = para.firstPo -- 传入地理位置信息
+	self.lastGPo = para.lastPo
+	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
+	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
+	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 end
 
 function TileManager:db()
@@ -270,13 +274,11 @@ function TileManager:getGPo(x,y,z)
 	return self:pixel2deg(self:getTilePo(dx - locDt.x,dz - locDt.z))
 end
 
--- gps经纬度转parancraft坐标系(不传参数为中心点) -32907218 5 15222780
+-- gps经纬度转parancraft坐标系 -32907218 5 15222780
 function TileManager:getParaPo(lon,lat)
+	if (not lat) and (not lon) then return self.cenPo end
 	if lat == nil and lon and type(lon) == "table" then
 		lat = lon.lat;lon = lon.lon
-	end
-	if lon == nil and lat == nil then
-		lon = self.gCen.x;lat = self.gCen.y
 	end
 	local tileX,tileZ,x,z = self:deg2pixel(lon,lat)
 	LOG.std(nil,"RunFunction","人物跳转瓦片号",tileX .. "," .. tileZ .. " | " .. x .. "," .. z)
@@ -362,6 +364,12 @@ function TileManager:Load()
 	-- get data
 	-- return true
 	--
+end
+
+-- 检查坐标点是否在标记区域内
+function TileManager:checkMarkArea(x, y, z)
+	if x >= self.firstPo.x and x <= self.lastPo.x and z >= self.firstPo.z and z <= self.lastPo.z then return true end
+	return false
 end
 
 --[[
