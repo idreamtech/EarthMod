@@ -1,8 +1,11 @@
 --[[
-Title: Earth Position Locate
+Title: TileManager
 Author(s): bcc
 Date: 2017-3-16
-Desc: Earth Mod
+Desc: manager the tiles,a tile has more than 90000 blocks,all information will be saved in database
+------------------------------------------------------------
+NPL.load("(gl)Mod/EarthMod/TileManager.lua");
+local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
 ------------------------------------------------------------
 ]]
 NPL.load("(gl)Mod/EarthMod/main.lua");

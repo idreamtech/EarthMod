@@ -1,6 +1,13 @@
 --[[
+Title: DBStore
+Author(s):  Bl.Chock
+Date: 2017年4月1日
+Desc: using tableDatabase to save game`s config data
+use the lib:
+------------------------------------------------------------
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
+------------------------------------------------------------
 ]]
 
 NPL.load("(gl)script/ide/System/Database/TableDatabase.lua");
@@ -9,6 +16,7 @@ local TableDatabase = commonlib.gettable("System.Database.TableDatabase");
 local DBStore = commonlib.inherit(nil,commonlib.gettable("Mod.EarthMod.DBStore"));
 local curInstance;
 DBStore.worldName = nil
+DBStore.worldPath = nil
 DBStore.dbPath = nil
 DBStore.db = nil -- database directory
 
@@ -18,9 +26,10 @@ function DBStore.GetInstance()
 end
 
 function DBStore:ctor()
-	self.worldName = string.sub(ParaWorld.GetWorldDirectory(),20,-1) -- echo:"worlds/DesignHouse/ccc/"
+	self.worldPath = ParaWorld.GetWorldDirectory() -- echo:"worlds/DesignHouse/ccc/"
+	self.worldName = string.sub(self.worldPath,20,-1)
 	-- echo("加载世界：" .. self.worldName)
-	self.dbPath = "database/EarthDB/" .. self.worldName
+	self.dbPath = self.worldPath .. "EarthDB/"
 	self.db = TableDatabase:new():connect(self.dbPath, function() end);
 	curInstance = self
 end

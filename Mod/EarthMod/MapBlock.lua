@@ -1,8 +1,8 @@
 --[[
 Title: MapBlock
-Author(s):  LiXizhi
-Date: 2016.10.19
-Desc: a demo block item
+Author(s):  Bl.Chock
+Date: 2017年4月1日
+Desc: map block item
 use the lib:
 ------------------------------------------------------------
 NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
@@ -86,7 +86,7 @@ end
 function MapBlock:addBlock(spx,spy,spz,color,isUpdate)
 	local function insertBlock()
 		BlockEngine:SetBlock(spx,spy,spz, MapBlock.ID, color) -- , nil, data
-		self:DB():insertOne(nil, {world=self.worldName,x=spx,y=spy,z=spz,type="map"})
+		self:DB():insertOne(nil, {world=DBStore.GetInstance().worldName,x=spx,y=spy,z=spz,type="map"})
 	end
 	if isUpdate then -- 为假时将不进入更新模式，而是全部重新绘制，为真时更新地图元素，不覆盖非地图元素
 		self:isMap(spx,spy,spz,function()
@@ -102,7 +102,7 @@ end
 -- {attr={filename="Mod/EarthMod/textures/nil.fbx"},{name="cmd","map"}}
 -- 检测是否是地图
 function MapBlock:isMap(spx,spy,spz,func)
-	self:DB():find({world=self.worldName,x=spx,y=spy,z=spz}, function(err, data)  
+	self:DB():find({world=DBStore.GetInstance().worldName,x=spx,y=spy,z=spz}, function(err, data)  
 		if data.type == "map" then
 			func()
 		end
