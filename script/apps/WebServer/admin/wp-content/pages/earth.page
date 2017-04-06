@@ -269,11 +269,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
             input.setAttribute('data-provide','typeahead');
             input.ondblclick = this._ondblclick;
             container.onclick = this._onclick;
-<<<<<<< HEAD
-            
             // container.stopPropagation();
-=======
->>>>>>> upstream/master
             container.appendChild(input);
             if (L.DomEvent) {
                 L.DomEvent.disableClickPropagation(container);
@@ -281,11 +277,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
             return container;
         },
         _onclick:function(e){
-<<<<<<< HEAD
             // e.stopPropagation();
-=======
             e.stopPropagation();
->>>>>>> upstream/master
         },
         _ondblclick:function(e){
             // e.stopPropagation();// 阻止事件冒泡,双击输入框放大地图事件
