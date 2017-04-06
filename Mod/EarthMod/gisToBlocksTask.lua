@@ -508,7 +508,6 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
 		LOG.std(nil, "info", "PNGToBlockScale", {ver, width, height, bytesPerPixel});
 		local block_world = GameLogic.GetBlockWorld();
-
 		local function CreateBlock_(ix, iy, block_id, block_data)
 			local spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
 			if TileManager.GetInstance():checkMarkArea(spx,spy,spz) then
@@ -581,10 +580,12 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 				if (not status) then
 					timer:Change();
 					raster:close();
-					tile.isUpdated = true
+					if not tile.isUpdated then
+						tile.isUpdated = true
+						self:fillingGap()
+					end
 					TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes + 1
 					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
-					self:fillingGap()
 					self:saveOnFinish()
 				end
 			end})
@@ -827,6 +828,10 @@ end
 
 -- 申请下载地图
 function gisToBlocks:downloadMap(i,j)
+	if (not i) and (not j) then
+		local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+		i, j = TileManager.GetInstance():getInTile(px, py, pz)
+	end
 	TileManager.GetInstance().pushMapFlag[i] = TileManager.GetInstance().pushMapFlag[i] or {}
 	if not TileManager.GetInstance().pushMapFlag[i][j] then
 		local po,tile = TileManager.GetInstance():getDrawPosition(i,j);

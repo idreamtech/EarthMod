@@ -193,3 +193,12 @@ function SelectLocationTask:setPlayerLocation(lon, lat)
 	SelectLocationTask.player_curState = nil
 	LOG.std(nil,"RunFunction","SelectLocationTask",str)
 end
+
+function SelectLocationTask:getSchoolAreaInfo()
+	if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
+		local coordinate = EarthMod:GetWorldData("coordinate");
+		return {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat}};
+	else
+		return {status = 300, data = nil};
+	end
+end

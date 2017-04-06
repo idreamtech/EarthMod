@@ -103,7 +103,7 @@ end
 -- 检测是否是地图块
 function MapBlock:isMap(spx,spy,spz) -- ,func
 	local from_id = BlockEngine:GetBlockId(spx,spy,spz);
-	if tonumber(from_id) == MapBlock.ID then return true end
+	if from_id and tonumber(from_id) == MapBlock.ID then return true end
 	return false
 end
 
