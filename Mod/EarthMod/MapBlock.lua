@@ -79,20 +79,20 @@ function MapBlock:DB()
 end
 
 function MapBlock:OnLeaveWorld()
-	self:DB():flush({})
+	-- self:DB():flush({})
 end
 
 -- 添加地图模块
 function MapBlock:addBlock(spx,spy,spz,color,isUpdate)
 	local function insertBlock()
 		BlockEngine:SetBlock(spx,spy,spz, MapBlock.ID, color) -- , nil, data
-		self:DB():insertOne(nil, {world=DBStore.GetInstance().worldName,x=spx,y=spy,z=spz,type="map"})
+		-- self:DB():insertOne(nil, {world=DBStore.GetInstance().worldName,x=spx,y=spy,z=spz,type="map"})
 	end
 	if isUpdate then -- 为假时将不进入更新模式，而是全部重新绘制，为真时更新地图元素，不覆盖非地图元素
-		self:isMap(spx,spy,spz,function()
+		if self:isMap(spx,spy,spz) then
 			self:delete(spx,spy,spz)
 			insertBlock()
-		end)
+		end
 		return
 	end
 	insertBlock()
@@ -100,18 +100,11 @@ function MapBlock:addBlock(spx,spy,spz,color,isUpdate)
 end
 
 -- {attr={filename="Mod/EarthMod/textures/nil.fbx"},{name="cmd","map"}}
--- 检测是否是地图
-function MapBlock:isMap(spx,spy,spz,func)
-	self:DB():find({world=DBStore.GetInstance().worldName,x=spx,y=spy,z=spz}, function(err, data)  
-		if data.type == "map" then
-			func()
-		end
-	end);
-	-- local entityData = BlockEngine:GetBlockEntityData(spx,spy,spz);
-	-- if entityData == nil then return end
-	-- local ism = false
-	-- if entityData[1][1] == "m" then ism = true end
-	-- return ism,entityData
+-- 检测是否是地图块
+function MapBlock:isMap(spx,spy,spz) -- ,func
+	local from_id = BlockEngine:GetBlockId(spx,spy,spz);
+	if from_id and tonumber(from_id) == MapBlock.ID then return true end
+	return false
 end
 
 function MapBlock:cmd(str)
@@ -122,3 +115,9 @@ end
 function MapBlock:delete(x,y,z)
 	BlockEngine:SetBlockToAir(x,y,z)
 end
+
+-- self:DB():find({world=DBStore.GetInstance().worldName,x=spx,y=spy,z=spz}, function(err, data)  
+-- 	if data.type == "map" then
+-- 		func()
+-- 	end
+-- end);

@@ -581,10 +581,12 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 				if (not status) then
 					timer:Change();
 					raster:close();
-					tile.isUpdated = true
+					if not tile.isUpdated then
+						tile.isUpdated = true
+						self:fillingGap()
+					end
 					TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes + 1
 					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
-					self:fillingGap()
 					self:saveOnFinish()
 				end
 			end})
@@ -712,6 +714,7 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,tile)
 	gisToBlocks.pleft   = px - 128;
 	gisToBlocks.pright  = px + 128;
 
+	print("加载世界 saving world")
 	EarthMod:SetWorldData("boundary",{ptop    = gisToBlocks.ptop,
 									  pbottom = gisToBlocks.pbottom,
 									  pleft   = gisToBlocks.pleft,
@@ -827,6 +830,10 @@ end
 
 -- 申请下载地图
 function gisToBlocks:downloadMap(i,j)
+	if (not i) and (not j) then
+		local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+		i, j = TileManager.GetInstance():getInTile(px, py, pz)
+	end
 	TileManager.GetInstance().pushMapFlag[i] = TileManager.GetInstance().pushMapFlag[i] or {}
 	if not TileManager.GetInstance().pushMapFlag[i][j] then
 		local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
