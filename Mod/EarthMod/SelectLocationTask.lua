@@ -118,6 +118,7 @@ function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon)
 		SelectLocationTask.maxlat   = maxlat;
 		SelectLocationTask.maxlon   = maxlon;
 	end
+
 	EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
 	--EarthMod:SaveWorldData();
 
