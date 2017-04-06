@@ -508,7 +508,6 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
 		LOG.std(nil, "info", "PNGToBlockScale", {ver, width, height, bytesPerPixel});
 		local block_world = GameLogic.GetBlockWorld();
-
 		local function CreateBlock_(ix, iy, block_id, block_data)
 			local spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
 			if TileManager.GetInstance():checkMarkArea(spx,spy,spz) then

@@ -9,10 +9,13 @@ NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
 
 local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 
+-- 矩形范围经纬度最大最小值
 local minlat = request:get("minlat");
 local minlon = request:get("minlon");
 local maxlat = request:get("maxlat");
 local maxlon = request:get("maxlon");
+
+-- 当前人物地图标记点经纬度
 local curLat = request:get("curLat");
 local curLon = request:get("curLon");
 
@@ -39,6 +42,18 @@ if(is_ajax()) then
         SelectLocationTask:setPlayerLocation(curLon, curLat);
         response:send();
         return;
+    end);
+
+    add_action('wp_ajax_get_school_area' , function()
+        --获取选定学校区域范围信息
+        local ret = SelectLocationTask:getSchoolAreaInfo();
+        if ret then
+            response:send_json(ret);
+            return;
+        else
+            response:send_json();
+            return;
+        end
     end);
 
     return;
@@ -424,6 +439,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
         $('.navbar').remove();
         $('.footer').remove();
 
+        getSchoolAreaInfo();
+
         // 每一秒更新一次人物坐标信息
         setInterval("getCurrentPostionInParacraft()",1000);
     })
@@ -486,7 +503,33 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                 }
             })
         }
-        
+    }
+
+    // 获取学校区域信息
+    function getSchoolAreaInfo() {
+        $.ajax({
+            url:"/ajax/earth?action=get_school_area",
+            type:"post",
+            dataType:"json",
+            success:function(res){
+                console.log(res);
+                if (res != null && typeof(res) != "undefined" && res.status == 100) {
+                    // 学校已经划定区域情况下,显示学校区域信息
+                    var _corner1 = L.latLng(res.data.minlat, res.data.minlon);
+                    var _corner2 = L.latLng(res.data.maxlat, res.data.maxlon);
+                    bounds = L.latLngBounds(_corner1, _corner2);
+                    rec.setBounds(bounds);
+                    rec.setStyle({color: "#ff7800", weight: 1});
+                    // var _rec = L.rectangle(_bounds, {color: "#ff7800", weight: 1}).addTo(map);
+                    map.fitBounds(bounds);
+                }else{
+                    // 学校未划定区域情况
+                }
+            },
+            error:function(){
+                 alert("获取学校区域信息失败")
+            }
+        })
     }
 
 </script>
