@@ -28,15 +28,15 @@ TileManager.row = nil -- 始终保持奇数
 TileManager.col = nil -- 始终保持奇数
 TileManager.count = 0
 TileManager.oPo = nil -- 最左下角瓦片位置(paracraft坐标系)
-TileManager.tiles = {} -- 瓦片合集
-TileManager.blocks = {} -- 砖块合集
-TileManager.mapStack = {} -- 瓦块下载数据
+TileManager.tiles = {} -- 瓦片合集 以1,1为起点的瓦片合集
+TileManager.blocks = {} -- 砖块合集 以1,1为起点的方块合集
+TileManager.mapStack = {}
 TileManager.popCount = 0
 TileManager.zoomN = nil
 TileManager.isLoaded = nil
 TileManager.curTimes = 0
 TileManager.passTimes = 0
-TileManager.pushMapFlag = {}
+TileManager.pushMapFlag = {} -- 瓦块下载数据 以1,1为起点的瓦片数据
 
 function math.round(decimal)
 	-- decimal = decimal * 100
@@ -80,6 +80,7 @@ function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐
 	self.oPo = {x = para.bx,y = para.by,z = para.bz}
 	self.col = para.rid - para.lid + 1
 	self.row = para.bid - para.tid + 1
+	self.idHL = {col=para.lid,row=para.bid} -- 记录左下角行列式
 	self.beginPo,self.endPo = {x = para.lid, y = para.bid},{x = para.rid,y = para.tid}
 	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
 	self.firstBlockPo = {x = math.floor(self.oPo.x - (self.tileSize - 1) / 2),y = para.by,z = math.floor(self.oPo.z - (self.tileSize - 1) / 2)}
@@ -89,6 +90,54 @@ function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐
 	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
 	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
 	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
+end
+
+-- 扩充校园；传入新的 firstPo,lastPo,lid,bid,rid,tid 调整瓦片数据
+function TileManager:reInit(para)
+	self.col = para.rid - para.lid + 1
+	self.row = para.bid - para.tid + 1
+	self.count = self.col * self.row
+	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
+	self.firstGPo = para.firstPo -- 传入地理位置信息
+	self.lastGPo = para.lastPo
+	self.beginPo,self.endPo = {x = para.lid, y = para.bid},{x = para.rid,y = para.tid}
+	local firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat)
+	local lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat)
+	self.deltaPo = self:pSub(firstPo,self.firstPo) -- 点差
+	self.firstBlockPo = self:pAdd(self.firstBlockPo,self.deltaPo)
+	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
+	self.oPo = self:pAdd(self.oPo,self.deltaPo)
+	self.deltaHL = {col=self.idHL.col - para.lid,row=para.bid - self.idHL.row} -- 行列差 col:x row:y
+	self.idHL = {col=para.lid,row=para.bid}
+	-- TileManager.tiles = {} -- 瓦片合集 以1,1为起点的瓦片合集
+	self.tiles = self:tMov(self.tiles,self.deltaHL.col,self.deltaHL.row,function(tile,idx,idy)
+		local curID = idx + (idy - 1) * self.col
+		tile.curID = curID
+		tile.x = idx
+		tile.y = idy -- po,ranksID不变，因为瓦片实际上并未移动
+	end)
+	self.blocks = self:tMov(self.blocks,self.deltaPo.z,self.deltaPo.x)
+	self.pushMapFlag = self:tMov(self.pushMapFlag,self.deltaHL.col,self.deltaHL.row)
+end
+
+-- 水平面paracraft坐标减法
+function TileManager:pSub(a,b) return {x=a.x-b.x,y=a.y-b.y,z=a.z-b.z} end
+function TileManager:pAdd(a,b) return {x=a.x+b.x,y=a.y+b.y,z=a.z+b.z} end
+function TileManager:pMul(a,c) return {x=a.x * c,y=a.y * c,z=a.z * c} end
+function TileManager:pDiv(a,c) return {x=a.x / c,y=a.y / c,z=a.z / c} end
+function TileManager:tMov(tb,dx,dy,func) -- 移动表格下标
+	local tbNew = {}
+	for i,dtLine in pairs(tb) do
+		tbNew[i] = tbNew[i] or {}
+		for j,data in pairs(dtLine) do
+			local a,b = i + dx,j + dy
+			tbNew[a][b] = data
+			if func then
+				func(tbNew[a][b],a,b)
+			end
+		end
+	end
+	return tbNew
 end
 
 function TileManager:db()
