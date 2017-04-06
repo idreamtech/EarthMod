@@ -12,6 +12,7 @@ local EarthMod = commonlib.gettable("Mod.EarthMod");
 NPL.load("(gl)Mod/EarthMod/EarthSceneContext.lua");
 NPL.load("(gl)Mod/EarthMod/gisCommand.lua");
 NPL.load("(gl)Mod/EarthMod/ItemEarth.lua");
+NPL.load("(gl)Mod/EarthMod/gisToBlocksTask.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 NPL.load("(gl)script/apps/WebServer/WebServer.lua");
 NPL.load("(gl)Mod/EarthMod/TileManager.lua");
@@ -24,6 +25,7 @@ local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager")
 local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
 local MapBlock = commonlib.gettable("Mod.EarthMod.MapBlock");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
+local gisToBlocks = commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks");
 --LOG.SetLogLevel("DEBUG");
 EarthMod:Property({"Name", "EarthMod"});
 
@@ -88,15 +90,17 @@ function EarthMod:OnWorldLoad()
 	
 	MapBlock:OnWorldLoad();
 
-	assert("TileManager new")
 	TileManager:new() -- 初始化并加载数据
 	-- 检测是否是读取存档
-	local dbPath = DBStore.GetInstance().dbPath .. "/Config.db"
-	if ParaIO.DoesFileExist(dbPath, true) then
+	-- local dbPath = DBStore.GetInstance().dbPath .. "/Config.db"
+	if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
 		TileManager.GetInstance():Load() -- 加载配置
-		-- to do 读取存档后初始化游戏
-		-- gisToBlocks:initWorld() 不知道怎么调用这个
-		echo("如果数据库存在则代表游戏是读取存档方式的  这时候初始化世界")
+		local coordinate = EarthMod:GetWorldData("coordinate");
+		gisToBlocks.minlat = coordinate.minlat
+		gisToBlocks.minlon = coordinate.minlon
+		gisToBlocks.maxlat = coordinate.maxlat
+		gisToBlocks.maxlon = coordinate.maxlon
+		gisToBlocks:initWorld()
 	end
 end
 -- called when a world is unloaded. 
