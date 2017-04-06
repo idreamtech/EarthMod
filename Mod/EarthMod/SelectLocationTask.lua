@@ -12,9 +12,11 @@ task:Run();
 -------------------------------------------------------
 ]]
 NPL.load("(gl)Mod/EarthMod/main.lua");
+NPL.load("(gl)Mod/EarthMod/gisToBlocksTask.lua");
 
 local SelectLocationTask = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask"));
 local EarthMod           = commonlib.gettable("Mod.EarthMod");
+local gisToBlocks = commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks");
 
 SelectLocationTask:Property({"LeftLongHoldToDelete", false, auto=true});
 
@@ -68,13 +70,12 @@ function SelectLocationTask:GetItem()
 end
 
 function SelectLocationTask.OnClickSelectLocationScript()
-	_guihelper.MessageBox(L"点击后打开内嵌浏览器，输入学校名称，选择学校后，显示学校设定区域信息。", function(res)
-		if(res and res == _guihelper.DialogResult.Yes) then
-			local self = SelectLocationTask.GetInstance();
-			local item = self:GetItem();
-		
-			if(item) then
-				item:GoToMap();
+	_guihelper.MessageBox(L"点击后更新当前所在瓦片区域贴图信息", function(res)
+		if(res and res == _guihelper.DialogResult.Yes and gisToBlocks) then
+			if SelectLocationTask.isDownLoaded then
+				gisToBlocks:downloadMap();
+			else
+				_guihelper.MessageBox(L"瓦片信息未初始化");
 			end
 		end
 	end, _guihelper.MessageBoxButtons.YesNo);
@@ -171,7 +172,7 @@ function SelectLocationTask:Run()
 		SelectLocationTask.maxlon = coordinate.maxlon or 0;
 	end
 
-	-- self:ShowPage();
+	self:ShowPage();
 end
 
 function SelectLocationTask:setPlayerCoordinate(lon, lat)

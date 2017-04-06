@@ -905,7 +905,7 @@ function gisToBlocks:Run()
 		end
 		self:initWorld()
 		local po = TileManager.GetInstance():getParaPo()
-		self:BoundaryCheck(po.x, po.y, po.z) -- 绘制人物周围9块
+		-- self:BoundaryCheck(po.x, po.y, po.z) -- 绘制人物周围9块
 		-- 跳转到地图中间
 		CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
 		--
