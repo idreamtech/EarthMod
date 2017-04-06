@@ -253,11 +253,20 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
             input.placeholder = "请输入校园名称";
             input.setAttribute('data-provide','typeahead');
             input.ondblclick = this._ondblclick;
+            container.onclick = this._onclick;
+            
+            // container.stopPropagation();
             container.appendChild(input);
+            if (L.DomEvent) {
+                L.DomEvent.disableClickPropagation(container);
+            }
             return container;
         },
+        _onclick:function(e){
+            // e.stopPropagation();
+        },
         _ondblclick:function(e){
-            e.stopPropagation();// 阻止事件冒泡,双击输入框放大地图事件
+            // e.stopPropagation();// 阻止事件冒泡,双击输入框放大地图事件
             // console.log(1);
         }
     })
