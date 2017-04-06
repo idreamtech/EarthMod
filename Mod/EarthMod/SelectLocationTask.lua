@@ -203,3 +203,4 @@ function SelectLocationTask:getSchoolAreaInfo()
 		return {status = 300, data = nil};
 	end
 end
+
