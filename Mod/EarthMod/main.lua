@@ -90,7 +90,6 @@ function EarthMod:OnWorldLoad()
 	
 	MapBlock:OnWorldLoad();
 
-	-- assert("TileManager new")
 	TileManager:new() -- 初始化并加载数据
 	-- 检测是否是读取存档
 	-- local dbPath = DBStore.GetInstance().dbPath .. "/Config.db"
@@ -104,7 +103,6 @@ function EarthMod:OnWorldLoad()
 		gisToBlocks.maxlat = coordinate.maxlat
 		gisToBlocks.maxlon = coordinate.maxlon
 		gisToBlocks:initWorld()
-		echo("如果数据库存在则代表游戏是读取存档方式的  这时候初始化世界")
 	end
 end
 -- called when a world is unloaded. 
