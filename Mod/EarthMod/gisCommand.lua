@@ -33,8 +33,21 @@ Commands["gis"] = {
 		-- local minlat,minlon,maxlat,maxlon=22.5308,113.9250,22.5424,113.9402;
 		options, cmd_text = CmdParser.ParseOptions(cmd_text);
 		--LOG.std(nil,"debug","options",options);
-
-		if(options.already or options.coordinate) then
+		if options.already then
+			optionsType = "already";
+			minlat, cmd_text = CmdParser.ParseString(cmd_text);
+			minlon, cmd_text = CmdParser.ParseString(cmd_text);
+			maxlat, cmd_text = CmdParser.ParseString(cmd_text);
+			maxlon, cmd_text = CmdParser.ParseString(cmd_text);
+			LOG.std(nil,"debug","minlat,minlon,maxlat,maxlon",{minlat,minlon,maxlat,maxlon});
+			if(options.cache) then
+				cache, cmd_text = CmdParser.ParseString(cmd_text);
+			else
+				cache = 'false';
+			end
+			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon,cache=cache});
+			return;
+		elseif options.coordinate then
 			minlat, cmd_text = CmdParser.ParseString(cmd_text);
 			minlon, cmd_text = CmdParser.ParseString(cmd_text);
 			maxlat, cmd_text = CmdParser.ParseString(cmd_text);
@@ -42,11 +55,7 @@ Commands["gis"] = {
 
 			LOG.std(nil,"debug","minlat,minlon,maxlat,maxlon",{minlat,minlon,maxlat,maxlon});
 
-			if(options.already) then
-				optionsType = "already";
-			elseif(options.coordinate) then
-				optionsType = "coordinate";
-			end
+			optionsType = "coordinate";
 
 			options, cmd_text = CmdParser.ParseOptions(cmd_text);
 

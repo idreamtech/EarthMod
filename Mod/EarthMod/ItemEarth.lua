@@ -55,11 +55,11 @@ function ItemEarth:OnSelect(itemStack)
 		NplCefWindowManager:Show("my_window", true);
 	end
 
-	--[[if(EarthMod:GetWorldData("alreadyBlock")) then
-		LOG.std(nil,"debug","SelectLocationTask.lat",SelectLocationTask.lat);
-		CommandManager:RunCommand("/gis -already " .. SelectLocationTask.lat .. " " .. SelectLocationTask.lon);
+	if(EarthMod:GetWorldData("alreadyBlock")) then
+		local coordinate = EarthMod:GetWorldData("coordinate");
+		CommandManager:RunCommand("/gis -already " .. coordinate.minlat .. " " .. coordinate.minlon.. " " .. coordinate.maxlat.. " " .. coordinate.maxlon);
 		self:boundaryCheck();
-	end]]
+	end
 end
 
 function ItemEarth:TryCreate(itemStack, entityPlayer, x, y, z, side, data, side_region)

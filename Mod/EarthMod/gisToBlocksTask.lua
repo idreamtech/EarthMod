@@ -513,8 +513,8 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 			if TileManager.GetInstance():checkMarkArea(spx,spy,spz) then
 				ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
 				self:AddBlock(spx, spy, spz, block_id, block_data, tile);
-			else
-				echo("跳过绘制 " .. spx .. "," .. spz)
+			-- else
+			-- 	echo("跳过绘制 " .. spx .. "," .. spz)
 			end
 		end
 
@@ -873,91 +873,36 @@ end
 
 function gisToBlocks:Run()
 	self.finished = true;
-	-- echo("读取方块数据")
-	-- echo(BlockEngine:GetBlockData(19213,100,19799));
-	-- echo(BlockEngine:GetBlockEntityData(19213,100,19799))
-
-	if(self.options == "already" or self.options == "coordinate") then
-		-- LOG.std(nil,"debug","self.lon,self.lat",{self.lon,self.lon});
-		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.minlon,self.minlat,self.zoom);
-		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
-		gisToBlocks.dright, gisToBlocks.dbottom = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
-		
-		getOsmService.dleft   = gisToBlocks.dleft;
-		getOsmService.dtop    = gisToBlocks.dtop;
-		getOsmService.dright  = gisToBlocks.dright;
-		getOsmService.dbottom = gisToBlocks.dbottom;
-		getOsmService.zoom = self.zoom;
-		
-		if(self.options == "already") then
-			local boundary = EarthMod:GetWorldData("boundary");
-			gisToBlocks.ptop    = boundary.ptop;
-			gisToBlocks.pbottom = boundary.pbottom;
-			gisToBlocks.pleft   = boundary.pleft;
-			gisToBlocks.pright  = boundary.pright;
-			self:initWorld()
-		end
-	end
-
-	if(self.options == "coordinate") then
+	if(self.options == "already") then
+		self:initWorld()
+		local boundary = EarthMod:GetWorldData("boundary");
+		gisToBlocks.ptop    = boundary.ptop;
+		gisToBlocks.pbottom = boundary.pbottom;
+		gisToBlocks.pleft   = boundary.pleft;
+		gisToBlocks.pright  = boundary.pright;
+	elseif(self.options == "coordinate") then
 		if(GameLogic.GameMode:CanAddToHistory()) then
 			self.add_to_history = false;
 		end
 		self:initWorld()
 		local po = TileManager.GetInstance():getParaPo()
-		self:BoundaryCheck(po.x, po.y, po.z) -- 绘制人物周围9块
+		-- self:BoundaryCheck(po.x, po.y, po.z) -- 绘制人物周围9块
 		-- 跳转到地图中间
 		CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
-		--
-
-		-- local firstLon, firstLat = pixel2deg(gisToBlocks.tile_MIN_X,gisToBlocks.tile_MIN_Y,0,0,self.zoom);
-		-- local lastLon, lastLat = pixel2deg(gisToBlocks.tile_MAX_X,gisToBlocks.tile_MAX_Y,255,255,self.zoom);
-		-- local firstPo, lastPo = {lat = firstLat,lon = firstLon},{lat = lastLat,lon = lastLon};
-		-- LOG.std(nil,"debug","gisToBlocks","获取到的地图经纬度");
-		-- echo(firstPo);echo(lastPo)
-		-- echo(self.minlon .. "," .. self.minlat);echo(self.maxlon .. "," .. self.maxlat)
-		
-		--
-		-- 获取区域范围瓦片的列数和行数
-
-
-		-- 计算,测试需要,最多只加载指定区域范围内的4个瓦片
-		-- local count = 0;
-		-- for j=1,rows do
-		-- 	for i=1,cols do
-		-- 		local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
-		-- 		getOsmService.tileX = tile.ranksID.x;
-		-- 		getOsmService.tileY = tile.ranksID.y;
-		-- 		LOG.std(nil,"debug","gisToBlocks","待获取瓦片的XY坐标: "..tile.ranksID.x.."-"..tile.ranksID.y .." po:"..po.x..","..po.y..","..po.z);
-		-- 		self:GetData(tile.ranksID.x,tile.ranksID.y,i,j,function(raster,vector)
-		-- 			count = count + 1;
-		-- 			self:LoadToScene(raster,vector,po.x,po.y,po.z, tile);
-		-- 		end);
-		-- 		LOG.std(nil,"debug","gisToBlocks","after getData");
-		-- 	end
-		-- end
-		-- SelectLocationTask.isDownLoaded = nil
-		-- -- timer定时检查图片是否下载完成,count值等于rows*cols乘积时候才执行生成方块操作
-		-- local loadToSceneTimer = commonlib.Timer:new({callbackFunc = function(loadToSceneTimer)
-		-- 	if (count == (cols * rows)) then
-		-- 		LOG.std(nil,"debug","gisToBlocks","即将加载方块和贴图信息");
-		-- 		for j=1,rows do
-		-- 			for i=1,cols do
-		-- 				local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
-		-- 				local raster = ParaIO.open("tile_"..tile.ranksID.x.."_"..tile.ranksID.y..".png", "image");
-		-- 				self:LoadToScene(raster,vector,po.x,po.y,po.z,tile);
-		-- 			end
-		-- 		end
-		-- 		loadToSceneTimer:Change();
-		-- 		SelectLocationTask.isDownLoaded = true
-		-- 	end
-		-- end});
-		-- loadToSceneTimer:Change(10000,10000);
 	end
 end
 
 function gisToBlocks:initWorld()
 	if self.minlon and self.minlat and self.maxlon and self.maxlat and (not SelectLocationTask.isDownLoaded) then
+		-- 初始化osm信息
+		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.minlon,self.minlat,self.zoom);
+		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
+		gisToBlocks.dright, gisToBlocks.dbottom = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
+		getOsmService.dleft   = gisToBlocks.dleft;
+		getOsmService.dtop    = gisToBlocks.dtop;
+		getOsmService.dright  = gisToBlocks.dright;
+		getOsmService.dbottom = gisToBlocks.dbottom;
+		getOsmService.zoom = self.zoom;
 		-- 根据minlat和minlon计算出左下角的瓦片行列号坐标
 		gisToBlocks.tile_MIN_X , gisToBlocks.tile_MIN_Y   = deg2tile(self.minlon,self.minlat,self.zoom);
 		-- 根据maxlat和maxlon计算出右上角的瓦片行列号坐标
