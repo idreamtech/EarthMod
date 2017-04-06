@@ -713,7 +713,6 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,tile)
 	gisToBlocks.pleft   = px - 128;
 	gisToBlocks.pright  = px + 128;
 
-	print("加载世界 saving world")
 	EarthMod:SetWorldData("boundary",{ptop    = gisToBlocks.ptop,
 									  pbottom = gisToBlocks.pbottom,
 									  pleft   = gisToBlocks.pleft,

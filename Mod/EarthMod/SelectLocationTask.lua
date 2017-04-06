@@ -118,9 +118,8 @@ function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon)
 		SelectLocationTask.maxlat   = maxlat;
 		SelectLocationTask.maxlon   = maxlon;
 	end
-	print("启用控件时存储世界 saving world")
 	EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
-	-- EarthMod:SaveWorldData();
+	--EarthMod:SaveWorldData();
 
     local self = SelectLocationTask.GetInstance();
 	local item = self:GetItem();

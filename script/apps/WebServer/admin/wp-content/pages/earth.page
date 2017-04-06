@@ -314,9 +314,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
             success:function(res){
                 console.log(res);
             },
-            error:function(err){
-                console.log("err info:")
-                console.log(err)
+            error:function(){
+                alert("请求失败")
             }
 
         })

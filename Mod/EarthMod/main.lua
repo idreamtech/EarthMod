@@ -93,8 +93,6 @@ function EarthMod:OnWorldLoad()
 	TileManager:new() -- 初始化并加载数据
 	-- 检测是否是读取存档
 	-- local dbPath = DBStore.GetInstance().dbPath .. "/Config.db"
-	echo("loadinfo:")
-	echo(EarthMod:GetWorldData("coordinate"))
 	if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
 		TileManager.GetInstance():Load() -- 加载配置
 		local coordinate = EarthMod:GetWorldData("coordinate");

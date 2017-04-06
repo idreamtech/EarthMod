@@ -74,7 +74,6 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x, y, z, side, data, side_
 	end
 	
 	if(EarthMod:GetWorldData("alreadyBlock") == nil or EarthMod:GetWorldData("alreadyBlock") == false) then
-		print("鼠标右键创建地图 saving world")
 		EarthMod:SetWorldData("alreadyBlock",true);
 	end
 
