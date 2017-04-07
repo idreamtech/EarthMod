@@ -109,7 +109,7 @@ function SelectLocationTask.OnClickCancel()
 	page:CloseWindow();
 end
 
-function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon)
+function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon,schoolName)
 	SelectLocationTask.isFirstSelect = false;
 
 	if(minlat ~= SelectLocationTask.minlat or minlon ~=SelectLocationTask.minlon or maxlat ~= SelectLocationTask.maxlat or maxlon ~=SelectLocationTask.maxlon) then
@@ -120,6 +120,7 @@ function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon)
 		SelectLocationTask.maxlon   = maxlon;
 	end
 
+	EarthMod:SetWorldData("schoolName",schoolName);
 	EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
 	--EarthMod:SaveWorldData();
 
@@ -172,7 +173,7 @@ function SelectLocationTask:Run()
 		SelectLocationTask.maxlon = coordinate.maxlon or 0;
 	end
 
-	self:ShowPage();
+	-- self:ShowPage();
 end
 
 function SelectLocationTask:setPlayerCoordinate(lon, lat)

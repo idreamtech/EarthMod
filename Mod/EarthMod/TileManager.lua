@@ -378,6 +378,8 @@ function TileManager:Save()
 	tileData.curTimes = self.curTimes
 	tileData.passTimes = self.passTimes
 	tileData.pushMapFlag = self.pushMapFlag
+	tileData.firstGPo = self.firstGPo -- 传入地理位置信息
+	tileData.lastGPo = self.lastGPo
 	--
 	DBStore.GetInstance():saveTable(self:db(),tileData)
 	-- 
@@ -403,6 +405,8 @@ function TileManager:Load()
 		self.curTimes = tileData.curTimes
 		self.passTimes = tileData.passTimes
 		self.pushMapFlag = tileData.pushMapFlag
+		self.firstGPo = tileData.firstGPo -- 传入地理位置信息
+		self.lastGPo = tileData.lastGPo
 		self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
 		self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
 		self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}

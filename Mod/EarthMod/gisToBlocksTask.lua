@@ -57,7 +57,7 @@ gisToBlocks.colors = 32;
 gisToBlocks.zoom   = 17;
 local factor = 1.19 -- 地图缩放比例
 local PngWidth = 256
-local FloorLevel = 5 -- 绘制地图层层高：草地层
+local FloorLevel = 4 -- 绘制地图层层高：草地层
 
 --RGB, block_id
 -- local block_colors = {

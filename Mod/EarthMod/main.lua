@@ -94,13 +94,49 @@ function EarthMod:OnWorldLoad()
 	-- 检测是否是读取存档
 	-- local dbPath = DBStore.GetInstance().dbPath .. "/Config.db"
 	if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
+
 		TileManager.GetInstance():Load() -- 加载配置
 		local coordinate = EarthMod:GetWorldData("coordinate");
 		gisToBlocks.minlat = coordinate.minlat
 		gisToBlocks.minlon = coordinate.minlon
 		gisToBlocks.maxlat = coordinate.maxlat
 		gisToBlocks.maxlon = coordinate.maxlon
-		gisToBlocks:initWorld()
+
+		-- 从文件读取学校名称,由于字符串数据自带双引号,所以需要替换掉
+		local schoolName = EarthMod:GetWorldData("schoolName");
+		schoolName = string.gsub(schoolName, "\"", "");
+		-- echo("school name is : "..schoolName)
+		-- 根据学校名称调用getSchoolByName接口,请求最新的经纬度范围信息,如果信息不一致,则更新文件中已有数据
+		System.os.GetUrl({url = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
+			if(res and res.error and res.data and res.data ~= {} and res.error.id == 0) then
+                -- 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
+                -- echo("getSchoolByName by name : ")
+                -- echo(res.data)
+                local areaInfo = res.data[1];
+                -- 如果查询到的最新的经纬度范围不等于原有的范围,则更新已有tileManager信息
+                -- echo(areaInfo.southWestLng .. " , " .. areaInfo.southWestLat .. " , " .. areaInfo.northEastLng .. " , " .. areaInfo.northEastLat)
+                -- echo(tostring(areaInfo.southWestLng ~= coordinate.minlon) .. " , " .. tostring(areaInfo.southWestLat ~= coordinate.minlat) .. " , " .. tostring(areaInfo.northEastLng ~= coordinate.maxlon) .. " , " .. tostring(areaInfo.northEastLat ~= coordinate.maxlat))
+                if areaInfo.southWestLng and areaInfo.southWestLat and areaInfo.northEastLng and areaInfo.northEastLat 
+                	and (areaInfo.southWestLng ~= coordinate.minlon or areaInfo.southWestLat ~= coordinate.minlat 
+                	or areaInfo.northEastLng ~= coordinate.maxlon or areaInfo.northEastLat ~= coordinate.maxlat) then
+                	gisToBlocks.minlat = areaInfo.southWestLat
+					gisToBlocks.minlon = areaInfo.southWestLng
+					gisToBlocks.maxlat = areaInfo.northEastLat
+					gisToBlocks.maxlon = areaInfo.northEastLng
+					echo("call reInitWorld")
+					-- 更新原有坐标信息
+					EarthMod:SetWorldData("coordinate",{minlat=tostring(gisToBlocks.minlat),minlon=tostring(gisToBlocks.minlon),maxlat=tostring(gisToBlocks.maxlat),maxlon=tostring(gisToBlocks.maxlon)});
+					EarthMod:SaveWorldData();
+                	gisToBlocks:reInitWorld()
+                else
+                	echo("call initworld")
+                	gisToBlocks:initWorld()
+                end
+            else
+            	gisToBlocks:initWorld()
+            end
+		end);
+
 	end
 end
 -- called when a world is unloaded. 

@@ -77,20 +77,21 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x, y, z, side, data, side_
 		EarthMod:SetWorldData("alreadyBlock",true);
 	end
 
-	--CommandManager:RunCommand("/fog 1000");
-	--CommandManager:RunCommand("/renderdist 128");
-
-	local gisCommandText = "/gis -coordinate " .. SelectLocationTask.minlat .. " " .. SelectLocationTask.minlon.." ".. SelectLocationTask.maxlat .. " " .. SelectLocationTask.maxlon;
+	_guihelper.MessageBox(L"点击确认后开始地图绘制", function(res)
+		if(res and res == _guihelper.DialogResult.Yes) then
+			local gisCommandText = "/gis -coordinate " .. SelectLocationTask.minlat .. " " .. SelectLocationTask.minlon.." ".. SelectLocationTask.maxlat .. " " .. SelectLocationTask.maxlon;
 	
-	if(SelectLocationTask.isChange)then
-		SelectLocationTask.isChange = false;
-		gisCommandText = gisCommandText .. " -cache true";
-	else
-		gisCommandText = gisCommandText .. " -cache false";
-	end
+			if(SelectLocationTask.isChange)then
+				SelectLocationTask.isChange = false;
+				gisCommandText = gisCommandText .. " -cache true";
+			else
+				gisCommandText = gisCommandText .. " -cache false";
+			end
 
-	CommandManager:RunCommand(gisCommandText);
-	self:boundaryCheck();
+			CommandManager:RunCommand(gisCommandText);
+			self:boundaryCheck();
+		end
+	end, _guihelper.MessageBoxButtons.YesNo);
 end
 
 -- return true if items are the same. 
