@@ -61,7 +61,7 @@ end
 -- 将表存储到数据库
 function DBStore:saveTable(db,tb)
 	if db and tb and type(tb) == "table" then
-		local data = self:clone(tb)
+		local data = table.clone(tb)
 		-- echo("DBStore:save table")
 		local keyTable = {}
 		for k,v in pairs(data) do
@@ -136,7 +136,7 @@ end
 
 -- @param object 要克隆的值
 -- @return objectCopy 返回值的副本
-function DBStore:clone( object )
+function table.clone( object )
     local lookup_table = {}
     local function copyObj( object )
         if type( object ) ~= "table" then

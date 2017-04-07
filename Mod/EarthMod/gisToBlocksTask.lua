@@ -898,7 +898,7 @@ function gisToBlocks:Run()
 end
 
 function gisToBlocks:reInitWorld()
-	if self.minlon and self.minlat and self.maxlon and self.maxlat then
+	if self.minlon and self.minlat and self.maxlon and self.maxlat and (not SelectLocationTask.isDownLoaded) then
 		-- 初始化osm信息
 		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.minlon,self.minlat,self.zoom);
 		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
@@ -922,6 +922,17 @@ function gisToBlocks:reInitWorld()
 		})
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
 		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);
+		self:startDrawTiles()
+
+		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
+		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
+		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
+		-- 更新SelectLocationTask.player_lon和SelectLocationTask.player_lat(人物当前所处经纬度)信息
+		local sltInstance = SelectLocationTask.GetInstance();
+		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
+		-- timer定时更新人物坐标信息
+		self:refreshPlayerInfo()
+		SelectLocationTask.isDownLoaded = true
 	end
 end
 
