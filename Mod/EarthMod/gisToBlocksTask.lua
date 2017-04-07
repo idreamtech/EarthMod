@@ -57,6 +57,7 @@ gisToBlocks.colors = 32;
 gisToBlocks.zoom   = 17;
 local factor = 1.19 -- 地图缩放比例
 local PngWidth = 256
+local FloorLevel = 5 -- 绘制地图层层高：草地层
 
 --RGB, block_id
 -- local block_colors = {
@@ -896,6 +897,34 @@ function gisToBlocks:Run()
 	end
 end
 
+function gisToBlocks:reInitWorld()
+	if self.minlon and self.minlat and self.maxlon and self.maxlat then
+		-- 初始化osm信息
+		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.minlon,self.minlat,self.zoom);
+		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
+		gisToBlocks.dright, gisToBlocks.dbottom = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
+		getOsmService.dleft   = gisToBlocks.dleft;
+		getOsmService.dtop    = gisToBlocks.dtop;
+		getOsmService.dright  = gisToBlocks.dright;
+		getOsmService.dbottom = gisToBlocks.dbottom;
+		getOsmService.zoom = self.zoom;
+		-- 根据minlat和minlon计算出左下角的瓦片行列号坐标
+		gisToBlocks.tile_MIN_X , gisToBlocks.tile_MIN_Y   = deg2tile(self.minlon,self.minlat,self.zoom);
+		-- 根据maxlat和maxlon计算出右上角的瓦片行列号坐标
+		gisToBlocks.tile_MAX_X , gisToBlocks.tile_MAX_Y   = deg2tile(self.maxlon,self.maxlat,self.zoom);
+		LOG.std(nil,"debug","gisToBlocks","tile_MIN_X : "..gisToBlocks.tile_MIN_X.." tile_MIN_Y : "..gisToBlocks.tile_MIN_Y);
+		LOG.std(nil,"debug","gisToBlocks","tile_MAX_X : "..gisToBlocks.tile_MAX_X.." tile_MAX_Y : "..gisToBlocks.tile_MAX_Y);
+		-- 重新初始化地图数据
+		local tileManager = TileManager.GetInstance():reInit({
+			lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
+			rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
+			firstPo = {lat=self.minlat,lon=self.minlon},lastPo = {lat=self.maxlat,lon=self.maxlon}, -- 传入地理位置信息
+		})
+		self.cols, self.rows = TileManager.GetInstance():getIterSize();
+		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);
+	end
+end
+
 function gisToBlocks:initWorld()
 	if self.minlon and self.minlat and self.maxlon and self.maxlat and (not SelectLocationTask.isDownLoaded) then
 		-- 初始化osm信息
@@ -918,7 +947,7 @@ function gisToBlocks:initWorld()
 		local tileManager = TileManager.GetInstance():init({
 			lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
 			rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
-			bx = px,by = py,bz = pz,tileSize = math.ceil(PngWidth * factor),
+			bx = px,by = FloorLevel,bz = pz,tileSize = math.ceil(PngWidth * factor),
 			firstPo = {lat=self.minlat,lon=self.minlon},lastPo = {lat=self.maxlat,lon=self.maxlon}, -- 传入地理位置信息
 		})
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
