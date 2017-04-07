@@ -866,19 +866,13 @@ function gisToBlocks:startDrawTiles()
 		end);
 		LOG.std(nil,"debug","gosToBlocks","绘制完成一张");
 	end
-	local timerGet = commonlib.Timer:new({callbackFunc = function(timer)
+	self.timerGet = commonlib.Timer:new({callbackFunc = function(timer)
 		tile,popCount = TileManager.GetInstance():pop()
 		if tile and (not tile.isDrawed) then
 			onDraw(tile)
-		-- else
-			-- LOG.std(nil,"nextRaster","等待绘制地图" .. popCount .. ".. " .. timer.lastTick, timer.id .. "," .. timer.delta)
-		end
-		if popCount >= TileManager.GetInstance().count then
-			LOG.std(nil,"nextRaster","绘制完成所有地图，绘制次数",popCount)
-			timer:Change()
 		end
 	end})
-	timerGet:Change(2000,2000); -- 每秒获取一次图片状态
+	self.timerGet:Change(2000,2000); -- 每秒获取一次图片状态
 end
 
 function gisToBlocks:Run()

@@ -107,6 +107,7 @@ end
 
 function EarthMod:OnLeaveWorld()
 	if TileManager.GetInstance() then
+		if gisToBlocks.timerGet then gisToBlocks.timerGet:Change();gisToBlocks.timerGet = nil end
 		MapBlock:OnLeaveWorld()
 	end
 end
