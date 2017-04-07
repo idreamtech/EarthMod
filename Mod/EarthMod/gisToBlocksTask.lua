@@ -828,13 +828,23 @@ end
 
 -- 申请下载地图
 function gisToBlocks:downloadMap(i,j)
+	local po,tile = nil,nil
 	if (not i) and (not j) then
 		local px, py, pz = EntityManager.GetFocus():GetBlockPos();
 		i, j = TileManager.GetInstance():getInTile(px, py, pz)
+		if type(i) == "table" then j = i.y; i = i.x end
+		po,tile = TileManager.GetInstance():getDrawPosition(i,j);
+		if tile then
+			tile.isDrawed = nil
+			TileManager.GetInstance().pushMapFlag[i] = TileManager.GetInstance().pushMapFlag[i] or {}
+			TileManager.GetInstance().pushMapFlag[i][j] = nil
+			TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes - 1
+			if TileManager.GetInstance().curTimes < 0 then TileManager.GetInstance().curTimes = 0 end
+		end
 	end
 	TileManager.GetInstance().pushMapFlag[i] = TileManager.GetInstance().pushMapFlag[i] or {}
 	if not TileManager.GetInstance().pushMapFlag[i][j] then
-		local po,tile = TileManager.GetInstance():getDrawPosition(i,j);
+		if not tile then po,tile = TileManager.GetInstance():getDrawPosition(i,j); end
 		if tile and (not tile.isDrawed) then
 			LOG.std(nil,"debug","gosToBlocks","添加绘制任务 " .. tile.x .. "," .. tile.y);
 			TileManager.GetInstance():push(tile)

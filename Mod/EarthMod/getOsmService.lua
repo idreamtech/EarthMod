@@ -103,7 +103,7 @@ end
 function getOsmService:getOsmPNGData(x,y,i,j,_callback)
 	local osmPNGUrl = getOsmService.osmPNGUrl();
 
-	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(x));
+	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(x)); -- + 1 测试更新
 	osmPNGUrl = osmPNGUrl:gsub("{y}",tostring(y));
 
 	-- _callback();
