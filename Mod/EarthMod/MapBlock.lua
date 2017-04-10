@@ -112,7 +112,7 @@ function MapBlock:isMap(spx,spy,spz,checkGrass) -- ,func
 	local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 	if from_id then
 		if checkGrass then
-			if tonumber(from_id) == 62 then return true end -- 检测草地(id:62)
+			if tonumber(from_id) == 0 then return true end -- 检测草地(id:62) 空气0
 		else
 			if tonumber(from_id) == MapBlock.ID then return true end
 		end
