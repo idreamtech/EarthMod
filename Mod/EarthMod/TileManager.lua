@@ -34,6 +34,7 @@ TileManager.isLoaded = nil
 TileManager.curTimes = 0
 TileManager.passTimes = 0
 TileManager.pushMapFlag = {} -- 瓦块下载数据 以1,1为起点的瓦片数据
+TileManager.idHL = nil
 
 function math.round(decimal)
 	-- decimal = decimal * 100
@@ -51,6 +52,27 @@ function handler(obj, method)
     end
 end
 
+-- -- @param object 要克隆的值
+-- -- @return objectCopy 返回值的副本
+-- function table.clone( object )
+--     local lookup_table = {}
+--     local function copyObj( object )
+--         if type( object ) ~= "table" then
+--             return object
+--         elseif lookup_table[object] then
+--             return lookup_table[object]
+--         end
+       
+--         local new_table = {}
+--         lookup_table[object] = new_table
+--         for key, value in pairs( object ) do
+--             new_table[copyObj( key )] = copyObj( value )
+--         end
+--         return setmetatable( new_table, getmetatable( object ) )
+--     end
+--     return copyObj( object )
+-- end
+
 -- get current instance
 function TileManager.GetInstance()
 	return curInstance;
@@ -65,6 +87,7 @@ function TileManager:ctor()
 	self.curTimes = 0
 	self.passTimes = 0
 	self.pushMapFlag = {}
+	self.idHL = nil
 	curInstance = self
 end
 
@@ -98,23 +121,53 @@ function TileManager:reInit(para)
 	self.firstGPo = para.firstPo -- 传入地理位置信息
 	self.lastGPo = para.lastPo
 	self.beginPo,self.endPo = {x = para.lid, y = para.bid},{x = para.rid,y = para.tid}
-	local firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat)
-	local lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat)
-	self.deltaPo = self:pSub(firstPo,self.firstPo) -- 点差
-	self.firstBlockPo = self:pAdd(self.firstBlockPo,self.deltaPo)
+	-- 计算偏移
+	-- echo("reInit:convert")
+	-- echo(para)
+	-- echo(self.idHL)
+	self.deltaHL = {col=para.lid - self.idHL.col,row=self.idHL.row - para.bid} -- 行列差 col:x row:y
+	-- echo(self.deltaHL)
+	self.idHL = {col=para.lid,row=para.bid}
+	local fbPo = {x = self.firstBlockPo.x + self.deltaHL.col * self.tileSize,y = self.firstBlockPo.y,z = self.firstBlockPo.z + self.deltaHL.row * self.tileSize}
+	self.deltaPo = self:pSub(fbPo,self.firstBlockPo) -- 点差
+	-- echo("点差deltaPo:")
+	-- echo(self.deltaPo)
+	self.firstBlockPo = fbPo
+	-- echo("坐标扩大:")
+	-- echo(self.firstPo);-- echo(self.lastPo)
+	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat)
+	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat)
+	-- echo(self.firstPo);-- echo(self.lastPo)
+	--
 	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 	self.oPo = self:pAdd(self.oPo,self.deltaPo)
-	self.deltaHL = {col=self.idHL.col - para.lid,row=para.bid - self.idHL.row} -- 行列差 col:x row:y
-	self.idHL = {col=para.lid,row=para.bid}
 	-- TileManager.tiles = {} -- 瓦片合集 以1,1为起点的瓦片合集
-	self.tiles = self:tMov(self.tiles,self.deltaHL.col,self.deltaHL.row,function(tile,idx,idy)
-		local curID = idx + (idy - 1) * self.col
-		tile.curID = curID
-		tile.x = idx
-		tile.y = idy -- po,ranksID不变，因为瓦片实际上并未移动
-	end)
-	self.blocks = self:tMov(self.blocks,self.deltaPo.z,self.deltaPo.x)
-	self.pushMapFlag = self:tMov(self.pushMapFlag,self.deltaHL.col,self.deltaHL.row)
+	-- echo("__________ora____________");-- echo(self.tiles)
+	if self.tiles and #self.tiles > 0 then
+		local tileNew = {}
+		for id,tile in pairs(self.tiles) do
+			if type(tile) == "table" then
+				local idx, idy = tile.x - self.deltaHL.col,tile.y - self.deltaHL.row
+				local curID = idx + (idy - 1) * self.col
+				tile.id = curID
+				tile.x = idx
+				tile.y = idy -- po,ranksID不变，因为瓦片实际上并未移动
+				tile.isUpdated = nil
+				tile.isDrawed = nil
+				tile.needFill = nil
+				tileNew[curID] = table.clone(tile)
+			end
+		end
+		self.tiles = tileNew
+	end
+	-- echo(self.tiles)
+	-- echo("__________ora____________");-- echo(self.blocks)
+	self.blocks = self:tMov(self.blocks,-self.deltaPo.z,-self.deltaPo.x)
+	-- echo(self.blocks)
+	-- echo("__________ora____________");-- echo(self.pushMapFlag)
+	self.pushMapFlag = self:tMov(self.pushMapFlag,-self.deltaHL.col,-self.deltaHL.row,1)
+	-- echo(self.pushMapFlag)
+	self.curTimes = 0
 end
 
 -- 水平面paracraft坐标减法
@@ -122,16 +175,21 @@ function TileManager:pSub(a,b) return {x=a.x-b.x,y=a.y-b.y,z=a.z-b.z} end
 function TileManager:pAdd(a,b) return {x=a.x+b.x,y=a.y+b.y,z=a.z+b.z} end
 function TileManager:pMul(a,c) return {x=a.x * c,y=a.y * c,z=a.z * c} end
 function TileManager:pDiv(a,c) return {x=a.x / c,y=a.y / c,z=a.z / c} end
-function TileManager:tMov(tb,dx,dy,func) -- 移动表格下标
+function TileManager:tMov(tb,dx,dy,dtSet,func) -- 移动表格下标
 	if (not tb) or tb == {} then return tb end
 	local tbNew = {}
 	for i,dtLine in pairs(tb) do
-		tbNew[i] = tbNew[i] or {}
-		for j,data in pairs(dtLine) do
-			local a,b = i + dx,j + dy
-			tbNew[a][b] = data
-			if func then
-				func(tbNew[a][b],a,b)
+		if type(i) == "number" then
+			tbNew[i] = tbNew[i] or {}
+			for j,data in pairs(dtLine) do
+				if type(j) == "number" then
+					local a,b = i + dx,j + dy
+					tbNew[a] = tbNew[a] or {}
+					tbNew[a][b] = dtSet or table.clone(data)
+					if func then
+						func(tbNew[a][b],a,b)
+					end
+				end
 			end
 		end
 	end
@@ -240,7 +298,7 @@ function TileManager:getInTile(x,y,z)
 	for i,one in pairs(self.tiles) do
 		if one and type(one) == "table" then
 			if (not one.rect) then
-				echo(one)
+				-- echo(one)
 				assert(1)
 			end
 			if x >= one.rect.l and x <= one.rect.r and z <= one.rect.t and z >= one.rect.b then
@@ -380,6 +438,7 @@ function TileManager:Save()
 	tileData.pushMapFlag = self.pushMapFlag
 	tileData.firstGPo = self.firstGPo -- 传入地理位置信息
 	tileData.lastGPo = self.lastGPo
+	tileData.idHL = self.idHL
 	--
 	DBStore.GetInstance():saveTable(self:db(),tileData)
 	-- 
@@ -407,6 +466,7 @@ function TileManager:Load()
 		self.pushMapFlag = tileData.pushMapFlag
 		self.firstGPo = tileData.firstGPo -- 传入地理位置信息
 		self.lastGPo = tileData.lastGPo
+		self.idHL = tileData.idHL
 		self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
 		self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
 		self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
@@ -419,6 +479,7 @@ end
 
 -- 检查坐标点是否在标记区域内
 function TileManager:checkMarkArea(x, y, z)
+	-- return true
 	if x >= self.firstPo.x and x <= self.lastPo.x and z >= self.firstPo.z and z <= self.lastPo.z then return true end
 	return false
 end
@@ -427,6 +488,6 @@ end
 -- Object Browsser: CSceneObject->CTerrainTileRoot->listSolidObj->0 下面的Properties标签页
 local player = ParaScene.GetPlayer()
 local facing = player:GetFacing()
-echo(facing)
+-- echo(facing)
 player:SetFacing(1)
 ]]

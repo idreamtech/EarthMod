@@ -57,7 +57,7 @@ gisToBlocks.colors = 32;
 gisToBlocks.zoom   = 17;
 local factor = 1.19 -- 地图缩放比例
 local PngWidth = 256
-local FloorLevel = 4 -- 绘制地图层层高：草地层
+local FloorLevel = 5 -- 绘制地图层层高：草地层
 
 --RGB, block_id
 -- local block_colors = {
@@ -196,10 +196,10 @@ function gisToBlocks:ctor()
 end
 
 function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data, tile)
-	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-	if spx == px and spy == py and spz == pz then
-		CommandManager:RunCommand("/goto " .. px .. " " .. py .. " " .. pz) -- 当画到脚下那块时人物跳起来
-	end
+	-- local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	-- if spx == px and spy == py and spz == pz then
+	-- 	CommandManager:RunCommand("/goto " .. px .. " " .. py .. " " .. pz) -- 当画到脚下那块时人物跳起来
+	-- end
 	if(self.add_to_history) then
 		local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 		local from_data, from_entity_data;
@@ -214,7 +214,9 @@ function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data, tile)
 		self.history[#(self.history)+1] = {spx,spy,spz, block_id, from_id, from_data, from_entity_data};
 	end
 	local isUpdate = nil
-	if tile then isUpdate = tile.isUpdated end
+	if tile then
+		if tile.needFill then isUpdate = "fill" else isUpdate = tile.isUpdated end
+	end
 	MapBlock:addBlock(spx,spy,spz,block_data,isUpdate)
 end
 
@@ -510,7 +512,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 		LOG.std(nil, "info", "PNGToBlockScale", {ver, width, height, bytesPerPixel});
 		local block_world = GameLogic.GetBlockWorld();
 		local function CreateBlock_(ix, iy, block_id, block_data)
-			local spx, spy, spz = px+ix-(PngWidth/2), py, pz+iy-(PngWidth/2);
+			local spx, spy, spz = px+ix-(PngWidth/2 * factor), py, pz+iy-(PngWidth/2 * factor);
 			if TileManager.GetInstance():checkMarkArea(spx,spy,spz) then
 				ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
 				self:AddBlock(spx, spy, spz, block_id, block_data, tile);
@@ -545,7 +547,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 						file:ReadBytes(row_padding_bytes, pixel);
 					end
 				end
-				-- LOG.std(nil,"info","PNGToBlockScale map size: ",maxx .. "," .. maxy)
+				LOG.std(nil,"info","PNGToBlockScale map size: ",maxx .. "," .. maxy)
 				for x = 1,maxx do
 					for y=1,maxy do
 						blocksHistory[y] = blocksHistory[y] or {}
@@ -562,7 +564,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 						if blocksHistory[y][x] then
 							local block_id, block_data = GetBlockIdFromPixel(blocksHistory[y][x], colors);
 							if(block_id) then
-								if x == 1 and y == 1 then LOG.std(nil,"info","draw",x .. "," .. y);echo(block_data) end
+								-- if x == 1 and y == 1 then LOG.std(nil,"info","draw",x .. "," .. y);echo(block_data) end
 								CreateBlock_(x, y, block_id, block_data);
 								count = count + 1;
 								if((count%block_per_tick) == 0) then
@@ -844,9 +846,10 @@ function gisToBlocks:downloadMap(i,j)
 		end
 	end
 	TileManager.GetInstance().pushMapFlag[i] = TileManager.GetInstance().pushMapFlag[i] or {}
-	if not TileManager.GetInstance().pushMapFlag[i][j] then
+	if TileManager.GetInstance().pushMapFlag[i][j] ~= true then
 		if not tile then po,tile = TileManager.GetInstance():getDrawPosition(i,j); end
 		if tile and (not tile.isDrawed) then
+			if TileManager.GetInstance().pushMapFlag[i][j] == 1 then tile.needFill = true end -- 填补模式
 			LOG.std(nil,"debug","gosToBlocks","添加绘制任务 " .. tile.x .. "," .. tile.y);
 			TileManager.GetInstance():push(tile)
 			TileManager.GetInstance().pushMapFlag[i][j] = true
@@ -865,7 +868,7 @@ function gisToBlocks:startDrawTiles()
 			LOG.std(nil,"debug","gosToBlocks","getData");
 			self:LoadToScene(raster,vector,po.x,po.y,po.z,tile);
 		end);
-		LOG.std(nil,"debug","gosToBlocks","绘制完成一张");
+		LOG.std(nil,"debug","gosToBlocks","一张下载完成，开始绘制..");
 	end
 	self.timerGet = commonlib.Timer:new({callbackFunc = function(timer)
 		tile,popCount = TileManager.GetInstance():pop()
@@ -898,7 +901,7 @@ function gisToBlocks:Run()
 end
 
 function gisToBlocks:reInitWorld()
-	if self.minlon and self.minlat and self.maxlon and self.maxlat then
+	if self.minlon and self.minlat and self.maxlon and self.maxlat and (not SelectLocationTask.isDownLoaded) then
 		-- 初始化osm信息
 		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.minlon,self.minlat,self.zoom);
 		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
@@ -922,6 +925,17 @@ function gisToBlocks:reInitWorld()
 		})
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
 		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);
+		self:startDrawTiles()
+
+		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
+		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
+		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
+		-- 更新SelectLocationTask.player_lon和SelectLocationTask.player_lat(人物当前所处经纬度)信息
+		local sltInstance = SelectLocationTask.GetInstance();
+		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
+		-- timer定时更新人物坐标信息
+		self:refreshPlayerInfo()
+		SelectLocationTask.isDownLoaded = true
 	end
 end
 
@@ -995,8 +1009,9 @@ function gisToBlocks:refreshPlayerInfo()
 				local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
 				local poInfo = "经度:" .. lon .. " 纬度:" .. lat
 				local foInfo = "人物朝向: " .. ron .. "° " .. str
+				local mapPo = "坐标:(" .. x .. "," .. y .. "," .. z .. ")"
 				local fiInfo = "已加载:" .. TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count
-				GameLogic.AddBBS("statusBar", poInfo .. " " .. foInfo .. " " .. fiInfo, 15000, "223 81 145"); -- 显示提示条
+				GameLogic.AddBBS("statusBar", poInfo .. " " .. mapPo .. " " .. foInfo .. " " .. fiInfo, 15000, "223 81 145"); -- 显示提示条
 				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
 			end
 	end});
