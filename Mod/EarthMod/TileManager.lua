@@ -122,27 +122,27 @@ function TileManager:reInit(para)
 	self.lastGPo = para.lastPo
 	self.beginPo,self.endPo = {x = para.lid, y = para.bid},{x = para.rid,y = para.tid}
 	-- 计算偏移
-	echo("reInit:convert")
-	echo(para)
-	echo(self.idHL)
+	-- echo("reInit:convert")
+	-- echo(para)
+	-- echo(self.idHL)
 	self.deltaHL = {col=para.lid - self.idHL.col,row=self.idHL.row - para.bid} -- 行列差 col:x row:y
-	echo(self.deltaHL)
+	-- echo(self.deltaHL)
 	self.idHL = {col=para.lid,row=para.bid}
 	local fbPo = {x = self.firstBlockPo.x + self.deltaHL.col * self.tileSize,y = self.firstBlockPo.y,z = self.firstBlockPo.z + self.deltaHL.row * self.tileSize}
 	self.deltaPo = self:pSub(fbPo,self.firstBlockPo) -- 点差
-	echo("点差deltaPo:")
-	echo(self.deltaPo)
+	-- echo("点差deltaPo:")
+	-- echo(self.deltaPo)
 	self.firstBlockPo = fbPo
-	echo("坐标扩大:")
-	echo(self.firstPo);echo(self.lastPo)
+	-- echo("坐标扩大:")
+	-- echo(self.firstPo);-- echo(self.lastPo)
 	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat)
 	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat)
-	echo(self.firstPo);echo(self.lastPo)
+	-- echo(self.firstPo);-- echo(self.lastPo)
 	--
 	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 	self.oPo = self:pAdd(self.oPo,self.deltaPo)
 	-- TileManager.tiles = {} -- 瓦片合集 以1,1为起点的瓦片合集
-	echo("__________ora____________");echo(self.tiles)
+	-- echo("__________ora____________");-- echo(self.tiles)
 	if self.tiles and #self.tiles > 0 then
 		local tileNew = {}
 		for id,tile in pairs(self.tiles) do
@@ -160,13 +160,13 @@ function TileManager:reInit(para)
 		end
 		self.tiles = tileNew
 	end
-	echo(self.tiles)
-	echo("__________ora____________");echo(self.blocks)
+	-- echo(self.tiles)
+	-- echo("__________ora____________");-- echo(self.blocks)
 	self.blocks = self:tMov(self.blocks,-self.deltaPo.z,-self.deltaPo.x)
-	echo(self.blocks)
-	echo("__________ora____________");echo(self.pushMapFlag)
+	-- echo(self.blocks)
+	-- echo("__________ora____________");-- echo(self.pushMapFlag)
 	self.pushMapFlag = self:tMov(self.pushMapFlag,-self.deltaHL.col,-self.deltaHL.row,1)
-	echo(self.pushMapFlag)
+	-- echo(self.pushMapFlag)
 	self.curTimes = 0
 end
 
@@ -298,7 +298,7 @@ function TileManager:getInTile(x,y,z)
 	for i,one in pairs(self.tiles) do
 		if one and type(one) == "table" then
 			if (not one.rect) then
-				echo(one)
+				-- echo(one)
 				assert(1)
 			end
 			if x >= one.rect.l and x <= one.rect.r and z <= one.rect.t and z >= one.rect.b then
@@ -488,6 +488,6 @@ end
 -- Object Browsser: CSceneObject->CTerrainTileRoot->listSolidObj->0 下面的Properties标签页
 local player = ParaScene.GetPlayer()
 local facing = player:GetFacing()
-echo(facing)
+-- echo(facing)
 player:SetFacing(1)
 ]]
