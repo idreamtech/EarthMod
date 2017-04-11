@@ -287,8 +287,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 	end
 
 	local function draw2Point(self,PointList,blockId,type)
-		local factor = 1;
-		local PNGSize = math.ceil(256*factor);
+		local PNGSize = math.ceil(PngWidth*factor);
 		local pointA,pointB;
 
 		if (PointList) then
@@ -510,8 +509,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 											cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, self.zoom);
 											if (cur_tilex == tileX) and (cur_tiley == tileY) then
 												xpos, ypos = deg2pixel(item.lon, item.lat, self.zoom);
-												point.cx = px + xpos - 256/2;
-												point.cy = pz - ypos + 256 - 256/2;
+												point.cx = px + xpos - PngWidth/2;
+												point.cy = pz - ypos + PngWidth - PngWidth/2;
 												point.draw = "true";
 											end
 										end
@@ -579,11 +578,11 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 					else
 						for key,point in pairs(curNd) do
 							if(point.x) then
-								point.cx = px + math.ceil(point.x) - 256/2;
+								point.cx = px + math.ceil(point.x) - PngWidth/2;
 							end
 
 							if(point.y) then
-								point.cy = pz - math.ceil(point.y) + 256 - 256/2;
+								point.cy = pz - math.ceil(point.y) + PngWidth - PngWidth/2;
 							end
 
 							point.cz = point.z;
@@ -648,8 +647,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 											cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, self.zoom);
 											if (cur_tilex == tileX) and (cur_tiley == tileY) then
 												xpos, ypos = deg2pixel(item.lon, item.lat, self.zoom);
-												point.cx = px + xpos - 256/2;
-												point.cy = pz - ypos + 256 - 256/2;
+												point.cx = px + xpos - PngWidth/2;
+												point.cy = pz - ypos + PngWidth - PngWidth/2;
 												point.draw = "true";
 											end
 										end
@@ -715,11 +714,11 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 					else
 						for key,point in pairs(curNd) do
 							if(point.x) then
-								point.cx = px + math.ceil(point.x) - 256/2;
+								point.cx = px + math.ceil(point.x) - PngWidth/2;
 							end
 
 							if(point.y) then
-								point.cy = pz - math.ceil(point.y) + 256 - 256/2;
+								point.cy = pz - math.ceil(point.y) + PngWidth - PngWidth/2;
 							end
 
 							point.cz = point.z;
