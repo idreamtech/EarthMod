@@ -27,6 +27,8 @@ end
 
 function DBStore:ctor()
 	self.worldPath = ParaWorld.GetWorldDirectory() -- echo:"worlds/DesignHouse/ccc/"
+	echo("world path:")
+	echo(self.worldPath)
 	self.worldName = string.sub(self.worldPath,20,-1)
 	-- echo("加载世界：" .. self.worldName)
 	self.dbPath = self.worldPath .. "EarthDB/"
@@ -41,6 +43,11 @@ end
 function DBStore:MapDB()
 	return self.db.Map
 end
+
+function DBStore:SystemDB()
+	return self.db.Sysm
+end
+
 -- 将table数据转换为数据库格式数据 local json = commonlib.Json.Encode(tileData)
 function DBStore:genTable(k,dt)
 	if type(dt) == "table" then
@@ -51,11 +58,12 @@ function DBStore:genTable(k,dt)
 end
 -- 将数据库格式数据转换为table数据
 function DBStore:getTableValue(tb)
-	if type(tb) == "table" then
+	if tb and type(tb) == "table" then
 		if tb.dbData then return tb.dbData end
 		tb.key = nil
 		return tb
 	end
+	return nil
 end
 
 -- 将表存储到数据库
@@ -80,11 +88,9 @@ function DBStore:loadTable(db,func,keyTable)
 		self.readData = {}
 		self.readCount = #kTable
 		for k,key in pairs(kTable) do
-			self:getValue(db,key,function(err,data)
-				if not data then
-					-- echo(err) -- 打印报错日志
-				else
-					self.readData[key] = self:getTableValue(data)
+			self:getValue(db,key,function(data)
+				if data then
+					self.readData[key] = data
 				end
 				self.readCount = self.readCount - 1
 				if self.readCount == 0 then
@@ -96,11 +102,8 @@ function DBStore:loadTable(db,func,keyTable)
 	if keyTable then
 		readFromTable(db,func,keyTable)
 	else
-		self:getValue(db,"keyTable",function(err,data)
-			if not data then
-				-- echo("DBStore:loadTable no data")
-				-- echo(err)
-			else
+		self:getOraValue(db,"keyTable",function(err,data)
+			if data then
 				readFromTable(db,func,data)
 			end
 		end)
@@ -108,11 +111,16 @@ function DBStore:loadTable(db,func,keyTable)
 end
 -- 获取数据库中某键的值(如果没有值则err和data都为nil)
 function DBStore:getValue(db,k,func)
+	db:findOne({key = k}, function(err, data) func(self:getTableValue(data)) end)
+end
+
+function DBStore:getOraValue(db,k,func)
 	db:findOne({key = k}, function(err, data) func(err, data) end)
 end
+
 -- 添加/更新数据库中某键的值,onlyAdd:只添加不修改，存在键则不操作
 function DBStore:setValue(db,k,v,onlyAdd)
-	self:getValue(db,k,function(err,data)
+	self:getValue(db,k,function(data)
 		if not data then
 			-- echo("DBStore:setValue")
 			-- echo(err) -- 打印报错日志

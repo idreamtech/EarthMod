@@ -13,10 +13,13 @@ task:Run();
 ]]
 NPL.load("(gl)Mod/EarthMod/main.lua");
 NPL.load("(gl)Mod/EarthMod/gisToBlocksTask.lua");
+NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 
 local SelectLocationTask = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask"));
 local EarthMod           = commonlib.gettable("Mod.EarthMod");
 local gisToBlocks = commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks");
+local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
+local DBS,SysDB
 
 SelectLocationTask:Property({"LeftLongHoldToDelete", false, auto=true});
 
@@ -119,10 +122,13 @@ function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon,schoolName
 		SelectLocationTask.maxlat   = maxlat;
 		SelectLocationTask.maxlon   = maxlon;
 	end
-
-	EarthMod:SetWorldData("schoolName",schoolName);
-	EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
-	--EarthMod:SaveWorldData();
+	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
+	DBS:setValue(SysDB,"schoolName",schoolName);
+	DBS:setValue(SysDB,"coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
+	DBS:flush(SysDB)
+	-- EarthMod:SetWorldData("schoolName",schoolName);
+	-- EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
+	-- EarthMod:SaveWorldData();
 
     local self = SelectLocationTask.GetInstance();
 	local item = self:GetItem();
@@ -160,19 +166,18 @@ function SelectLocationTask:Run()
 	SelectLocationTask.player_curLon = nil;
 	SelectLocationTask.player_curLat = nil;
 	SelectLocationTask.player_curState = nil
-
-	local coordinate = EarthMod:GetWorldData("coordinate");
-
-	if(coordinate) then
+	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
+	DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
 		SelectLocationTask.isFirstSelect = false;
 		SelectLocationTask.isChage       = false;
-
 		SelectLocationTask.minlat = coordinate.minlat or 0;
 		SelectLocationTask.minlon = coordinate.minlon or 0;
 		SelectLocationTask.maxlat = coordinate.maxlat or 0;
 		SelectLocationTask.maxlon = coordinate.maxlon or 0;
-	end
-
+	end end)
+	-- local coordinate = EarthMod:GetWorldData("coordinate");
+	-- if(coordinate) then
+	-- end
 	-- self:ShowPage();
 end
 
@@ -196,12 +201,22 @@ function SelectLocationTask:setPlayerLocation(lon, lat)
 	LOG.std(nil,"RunFunction","SelectLocationTask",str)
 end
 
-function SelectLocationTask:getSchoolAreaInfo()
-	if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
-		local coordinate = EarthMod:GetWorldData("coordinate");
-		return {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat}};
+function SelectLocationTask:getSchoolAreaInfo(func)
+	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
+	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
+		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
+			func({status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat}})
+		else
+			func({status = 300, data = nil})
+		end end)
 	else
-		return {status = 300, data = nil};
-	end
+		func({status = 300, data = nil})
+	end end)
+	-- if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
+	-- 	local coordinate = EarthMod:GetWorldData("coordinate");
+	-- 	return {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat}};
+	-- else
+	-- 	return {status = 300, data = nil};
+	-- end
 end
 

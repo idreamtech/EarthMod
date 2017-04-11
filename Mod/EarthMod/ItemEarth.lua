@@ -15,6 +15,7 @@ NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/GUI/OpenFileDialog.lua");
 NPL.load("(gl)Mod/EarthMod/gisCommand.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
+NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 
 local ItemBlockModel     = commonlib.gettable("MyCompany.Aries.Game.Items.ItemBlockModel");
 local ItemEarth          = commonlib.inherit(ItemBlockModel, commonlib.gettable("MyCompany.Aries.Game.Items.ItemEarth"));
@@ -26,6 +27,8 @@ local ItemStack          = commonlib.gettable("MyCompany.Aries.Game.Items.ItemSt
 local OpenFileDialog     = commonlib.gettable("MyCompany.Aries.Game.GUI.OpenFileDialog");
 local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 local CommandManager     = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
+local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
+local DBS,SysDB
 
 block_types.RegisterItemClass("ItemEarth", ItemEarth);
 
@@ -54,12 +57,18 @@ function ItemEarth:OnSelect(itemStack)
 		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
 		NplCefWindowManager:Show("my_window", true);
 	end
-
-	if(EarthMod:GetWorldData("alreadyBlock")) then
-		local coordinate = EarthMod:GetWorldData("coordinate");
-		CommandManager:RunCommand("/gis -already " .. coordinate.minlat .. " " .. coordinate.minlon.. " " .. coordinate.maxlat.. " " .. coordinate.maxlon);
-		self:boundaryCheck();
-	end
+	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
+	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
+		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
+			CommandManager:RunCommand("/gis -already " .. coordinate.minlat .. " " .. coordinate.minlon.. " " .. coordinate.maxlat.. " " .. coordinate.maxlon);
+			self:boundaryCheck();
+		end end)
+	end end)
+	-- if(EarthMod:GetWorldData("alreadyBlock")) then
+	-- 	local coordinate = EarthMod:GetWorldData("coordinate");
+	-- 	CommandManager:RunCommand("/gis -already " .. coordinate.minlat .. " " .. coordinate.minlon.. " " .. coordinate.maxlat.. " " .. coordinate.maxlon);
+	-- 	self:boundaryCheck();
+	-- end
 end
 
 function ItemEarth:TryCreate(itemStack, entityPlayer, x, y, z, side, data, side_region)
@@ -68,29 +77,33 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x, y, z, side, data, side_
 		return;
 	end
 
-	if(EarthMod:GetWorldData("alreadyBlock")) then
+	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
 		_guihelper.MessageBox(L"地图已生成");
-		return;
-	end
+	else
+		_guihelper.MessageBox(L"点击确认后开始地图绘制", function(res)
+			if(res and res == _guihelper.DialogResult.Yes) then
+				-- if(EarthMod:GetWorldData("alreadyBlock") == nil or EarthMod:GetWorldData("alreadyBlock") == false) then
+				-- 	EarthMod:SetWorldData("alreadyBlock",true);
+				-- end
+				DBS:setValue(SysDB,"alreadyBlock",true);
+				local gisCommandText = "/gis -coordinate " .. SelectLocationTask.minlat .. " " .. SelectLocationTask.minlon.." ".. SelectLocationTask.maxlat .. " " .. SelectLocationTask.maxlon;
+		
+				if(SelectLocationTask.isChange)then
+					SelectLocationTask.isChange = false;
+					gisCommandText = gisCommandText .. " -cache true";
+				else
+					gisCommandText = gisCommandText .. " -cache false";
+				end
 
-	_guihelper.MessageBox(L"点击确认后开始地图绘制", function(res)
-		if(res and res == _guihelper.DialogResult.Yes) then
-			if(EarthMod:GetWorldData("alreadyBlock") == nil or EarthMod:GetWorldData("alreadyBlock") == false) then
-				EarthMod:SetWorldData("alreadyBlock",true);
+				CommandManager:RunCommand(gisCommandText);
+				self:boundaryCheck();
 			end
-			local gisCommandText = "/gis -coordinate " .. SelectLocationTask.minlat .. " " .. SelectLocationTask.minlon.." ".. SelectLocationTask.maxlat .. " " .. SelectLocationTask.maxlon;
-	
-			if(SelectLocationTask.isChange)then
-				SelectLocationTask.isChange = false;
-				gisCommandText = gisCommandText .. " -cache true";
-			else
-				gisCommandText = gisCommandText .. " -cache false";
-			end
-
-			CommandManager:RunCommand(gisCommandText);
-			self:boundaryCheck();
-		end
-	end, _guihelper.MessageBoxButtons.YesNo);
+		end, _guihelper.MessageBoxButtons.YesNo);
+	end end)
+	-- if(EarthMod:GetWorldData("alreadyBlock")) then
+	-- 	_guihelper.MessageBox(L"地图已生成");
+	-- 	return;
+	-- end
 end
 
 -- return true if items are the same. 
