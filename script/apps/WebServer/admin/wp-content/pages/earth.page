@@ -554,12 +554,15 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                     rec.setStyle({color: "#ff7800", weight: 1});
                     // var _rec = L.rectangle(_bounds, {color: "#ff7800", weight: 1}).addTo(map);
                     map.fitBounds(bounds);
+                }else if(res != null && typeof(res) != "undefined" && res.status == 400){
+                    // 400情况下,继续请求
+                    getSchoolAreaInfo();
                 }else{
-                    // 学校未划定区域情况
+                    console.log("学校信息未指定")
                 }
             },
             error:function(){
-                 alert("获取学校区域信息失败")
+                 console.log("获取学校区域信息失败")
             }
         })
     }
