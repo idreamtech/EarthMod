@@ -37,6 +37,7 @@ SelectLocationTask.player_curLon = nil;
 SelectLocationTask.player_curLat = nil;
 SelectLocationTask.player_curState = nil;
 SelectLocationTask.isDownLoaded = nil
+SelectLocationTask.schoolData = nil
 
 function SelectLocationTask:ctor()
 end
@@ -113,29 +114,37 @@ function SelectLocationTask.OnClickCancel()
 end
 
 function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon,schoolName)
-	SelectLocationTask.isFirstSelect = false;
+	local function doFunc()
+		SelectLocationTask.isFirstSelect = false;
+		if(minlat ~= SelectLocationTask.minlat or minlon ~=SelectLocationTask.minlon or maxlat ~= SelectLocationTask.maxlat or maxlon ~=SelectLocationTask.maxlon) then
+			SelectLocationTask.isChange = true;
+			SelectLocationTask.minlat   = minlat;
+			SelectLocationTask.minlon   = minlon;
+			SelectLocationTask.maxlat   = maxlat;
+			SelectLocationTask.maxlon   = maxlon;
+		end
+		if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
+		DBS:setValue(SysDB,"schoolName",schoolName);
+		DBS:setValue(SysDB,"coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
+		DBS:flush(SysDB)
+		-- EarthMod:SetWorldData("schoolName",schoolName);
+		-- EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
+		-- EarthMod:SaveWorldData();
 
-	if(minlat ~= SelectLocationTask.minlat or minlon ~=SelectLocationTask.minlon or maxlat ~= SelectLocationTask.maxlat or maxlon ~=SelectLocationTask.maxlon) then
-		SelectLocationTask.isChange = true;
-		SelectLocationTask.minlat   = minlat;
-		SelectLocationTask.minlon   = minlon;
-		SelectLocationTask.maxlat   = maxlat;
-		SelectLocationTask.maxlon   = maxlon;
+	    local self = SelectLocationTask.GetInstance();
+		local item = self:GetItem();
+		
+		if(item) then
+			item:RefreshTask(self:GetItemStack());
+		end
 	end
-	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
-	DBS:setValue(SysDB,"schoolName",schoolName);
-	DBS:setValue(SysDB,"coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
-	DBS:flush(SysDB)
-	-- EarthMod:SetWorldData("schoolName",schoolName);
-	-- EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
-	-- EarthMod:SaveWorldData();
-
-    local self = SelectLocationTask.GetInstance();
-	local item = self:GetItem();
-	
-	if(item) then
-		item:RefreshTask(self:GetItemStack());
-	end
+	DBS:getValue(SysDB,"schoolName",function(name)
+		if (not name) or name == schoolName then
+			doFunc()
+		else
+			echo("学校已创建，取消操作")
+		end
+	end)
 end
 
 function SelectLocationTask:ShowPage()
@@ -201,17 +210,21 @@ function SelectLocationTask:setPlayerLocation(lon, lat)
 	LOG.std(nil,"RunFunction","SelectLocationTask",str)
 end
 
-function SelectLocationTask:getSchoolAreaInfo(func)
+function SelectLocationTask:getSchoolAreaInfo()
 	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
 		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
-			func({status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat}})
+			self.schoolData = {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat}}
 		else
-			func({status = 300, data = nil})
+			self.schoolData = {status = 300, data = nil}
 		end end)
 	else
-		func({status = 300, data = nil})
+		self.schoolData = {status = 300, data = nil}
 	end end)
+	if self.schoolData then
+		return self.schoolData
+	else return {status = 400, data = nil}
+	end
 	-- if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
 	-- 	local coordinate = EarthMod:GetWorldData("coordinate");
 	-- 	return {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat}};

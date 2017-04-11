@@ -199,10 +199,10 @@ function gisToBlocks:ctor()
 end
 
 function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data, tile)
-	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-	if spx == px and spy == py and spz == pz then
-		CommandManager:RunCommand("/goto " .. px .. " " .. py .. " " .. pz) -- 当画到脚下那块时人物跳起来
-	end
+	-- local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	-- if spx == px and spy == py and spz == pz then
+	-- 	-- CommandManager:RunCommand("/goto " .. px .. " " .. py .. " " .. pz) -- 当画到脚下那块时人物跳起来
+	-- end
 	if(self.add_to_history) then
 		local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 		local from_data, from_entity_data;
