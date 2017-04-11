@@ -227,7 +227,7 @@ end
 
 function gisToBlocks:drawpixel(x, z, y, blockId)
 	if TileManager.GetInstance():checkMarkArea(x,y,z) then -- 不绘制未加载的
-		BlockEngine:SetBlock(x,y,z,blockId,0);
+		BlockEngine:SetBlock(x,y,z,blockId,0); -- y + 1
 	end
 end
 
