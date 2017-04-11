@@ -89,9 +89,16 @@ function MapBlock:addBlock(spx,spy,spz,color,isUpdate)
 		-- self:DB():insertOne(nil, {world=DBStore.GetInstance().worldName,x=spx,y=spy,z=spz,type="map"})
 	end
 	if isUpdate then -- 为假时将不进入更新模式，而是全部重新绘制，为真时更新地图元素，不覆盖非地图元素
-		if self:isMap(spx,spy,spz) then
-			self:delete(spx,spy,spz)
-			insertBlock()
+		if isUpdate == "fill" then -- 填充模式 填充非地图的草地模块
+			if self:isMap(spx,spy,spz,true) then
+				self:delete(spx,spy,spz)
+				insertBlock()
+			end
+		else -- 更新模式
+			if self:isMap(spx,spy,spz) then
+				self:delete(spx,spy,spz)
+				insertBlock()
+			end
 		end
 		return
 	end
@@ -101,9 +108,15 @@ end
 
 -- {attr={filename="Mod/EarthMod/textures/nil.fbx"},{name="cmd","map"}}
 -- 检测是否是地图块
-function MapBlock:isMap(spx,spy,spz) -- ,func
+function MapBlock:isMap(spx,spy,spz,checkGrass) -- ,func
 	local from_id = BlockEngine:GetBlockId(spx,spy,spz);
-	if from_id and tonumber(from_id) == MapBlock.ID then return true end
+	if from_id then
+		if checkGrass then
+			if tonumber(from_id) == 0 then return true end -- 检测草地(id:62) 空气0
+		else
+			if tonumber(from_id) == MapBlock.ID then return true end
+		end
+	end
 	return false
 end
 

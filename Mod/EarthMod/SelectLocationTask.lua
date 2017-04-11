@@ -12,9 +12,14 @@ task:Run();
 -------------------------------------------------------
 ]]
 NPL.load("(gl)Mod/EarthMod/main.lua");
+NPL.load("(gl)Mod/EarthMod/gisToBlocksTask.lua");
+NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 
 local SelectLocationTask = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask"));
 local EarthMod           = commonlib.gettable("Mod.EarthMod");
+local gisToBlocks = commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks");
+local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
+local DBS,SysDB
 
 SelectLocationTask:Property({"LeftLongHoldToDelete", false, auto=true});
 
@@ -32,6 +37,7 @@ SelectLocationTask.player_curLon = nil;
 SelectLocationTask.player_curLat = nil;
 SelectLocationTask.player_curState = nil;
 SelectLocationTask.isDownLoaded = nil
+SelectLocationTask.schoolData = nil
 
 function SelectLocationTask:ctor()
 end
@@ -68,13 +74,12 @@ function SelectLocationTask:GetItem()
 end
 
 function SelectLocationTask.OnClickSelectLocationScript()
-	_guihelper.MessageBox(L"点击后打开内嵌浏览器，输入学校名称，选择学校后，显示学校设定区域信息。", function(res)
-		if(res and res == _guihelper.DialogResult.Yes) then
-			local self = SelectLocationTask.GetInstance();
-			local item = self:GetItem();
-		
-			if(item) then
-				item:GoToMap();
+	_guihelper.MessageBox(L"点击后更新当前所在瓦片区域贴图信息", function(res)
+		if(res and res == _guihelper.DialogResult.Yes and gisToBlocks) then
+			if SelectLocationTask.isDownLoaded then
+				gisToBlocks:downloadMap();
+			else
+				_guihelper.MessageBox(L"瓦片信息未初始化");
 			end
 		end
 	end, _guihelper.MessageBoxButtons.YesNo);
@@ -108,26 +113,38 @@ function SelectLocationTask.OnClickCancel()
 	page:CloseWindow();
 end
 
-function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon)
-	SelectLocationTask.isFirstSelect = false;
+function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon,schoolName)
+	local function doFunc()
+		SelectLocationTask.isFirstSelect = false;
+		if(minlat ~= SelectLocationTask.minlat or minlon ~=SelectLocationTask.minlon or maxlat ~= SelectLocationTask.maxlat or maxlon ~=SelectLocationTask.maxlon) then
+			SelectLocationTask.isChange = true;
+			SelectLocationTask.minlat   = minlat;
+			SelectLocationTask.minlon   = minlon;
+			SelectLocationTask.maxlat   = maxlat;
+			SelectLocationTask.maxlon   = maxlon;
+		end
+		if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
+		DBS:setValue(SysDB,"schoolName",schoolName);
+		DBS:setValue(SysDB,"coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
+		DBS:flush(SysDB)
+		-- EarthMod:SetWorldData("schoolName",schoolName);
+		-- EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
+		-- EarthMod:SaveWorldData();
 
-	if(minlat ~= SelectLocationTask.minlat or minlon ~=SelectLocationTask.minlon or maxlat ~= SelectLocationTask.maxlat or maxlon ~=SelectLocationTask.maxlon) then
-		SelectLocationTask.isChange = true;
-		SelectLocationTask.minlat   = minlat;
-		SelectLocationTask.minlon   = minlon;
-		SelectLocationTask.maxlat   = maxlat;
-		SelectLocationTask.maxlon   = maxlon;
+	    local self = SelectLocationTask.GetInstance();
+		local item = self:GetItem();
+		
+		if(item) then
+			item:RefreshTask(self:GetItemStack());
+		end
 	end
-
-	EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
-	--EarthMod:SaveWorldData();
-
-    local self = SelectLocationTask.GetInstance();
-	local item = self:GetItem();
-	
-	if(item) then
-		item:RefreshTask(self:GetItemStack());
-	end
+	DBS:getValue(SysDB,"schoolName",function(name)
+		if (not name) or name == schoolName then
+			doFunc()
+		else
+			echo("学校已创建，取消操作")
+		end
+	end)
 end
 
 function SelectLocationTask:ShowPage()
@@ -158,19 +175,18 @@ function SelectLocationTask:Run()
 	SelectLocationTask.player_curLon = nil;
 	SelectLocationTask.player_curLat = nil;
 	SelectLocationTask.player_curState = nil
-
-	local coordinate = EarthMod:GetWorldData("coordinate");
-
-	if(coordinate) then
+	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
+	DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
 		SelectLocationTask.isFirstSelect = false;
 		SelectLocationTask.isChage       = false;
-
 		SelectLocationTask.minlat = coordinate.minlat or 0;
 		SelectLocationTask.minlon = coordinate.minlon or 0;
 		SelectLocationTask.maxlat = coordinate.maxlat or 0;
 		SelectLocationTask.maxlon = coordinate.maxlon or 0;
-	end
-
+	end end)
+	-- local coordinate = EarthMod:GetWorldData("coordinate");
+	-- if(coordinate) then
+	-- end
 	-- self:ShowPage();
 end
 
@@ -195,10 +211,25 @@ function SelectLocationTask:setPlayerLocation(lon, lat)
 end
 
 function SelectLocationTask:getSchoolAreaInfo()
-	if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
-		local coordinate = EarthMod:GetWorldData("coordinate");
-		return {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat}};
+	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
+	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
+		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
+			self.schoolData = {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat}}
+		else
+			self.schoolData = {status = 300, data = nil}
+		end end)
 	else
-		return {status = 300, data = nil};
+		self.schoolData = {status = 300, data = nil}
+	end end)
+	if self.schoolData then
+		return self.schoolData
+	else return {status = 400, data = nil}
 	end
+	-- if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
+	-- 	local coordinate = EarthMod:GetWorldData("coordinate");
+	-- 	return {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat}};
+	-- else
+	-- 	return {status = 300, data = nil};
+	-- end
 end
+

@@ -12,31 +12,29 @@ NPL.load("(gl)Mod/EarthMod/main.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 local EarthMod = commonlib.gettable("Mod.EarthMod");
 local TileManager = commonlib.inherit(nil,commonlib.gettable("Mod.EarthMod.TileManager"));
--- local gisToBlocksTask = commonlib.gettable("Mod.EarthMod.gisToBlocksTask");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 local curInstance;
 local TILE_SIZE = 256 -- 默认瓦片大小
-local zoom = 17 -- OSM级数
+local zoomN = 2 ^ 17 -- OSM级数
 local locDt = {x = 0.08,z = -0.08} -- OSM与实际显示位置偏移
--- local CENPO = {x=19199,y=5,z=19200} -- paracraft中心点位置
-
 TileManager.tileSize = nil -- 瓦片大小
 TileManager.beginPo = nil
 TileManager.endPo = nil
 TileManager.size = nil
 TileManager.row = nil -- 始终保持奇数
 TileManager.col = nil -- 始终保持奇数
-TileManager.count = 0
+TileManager.count = nil
+TileManager.firstBlockPo = nil
 TileManager.oPo = nil -- 最左下角瓦片位置(paracraft坐标系)
-TileManager.tiles = {} -- 瓦片合集
-TileManager.blocks = {} -- 砖块合集
-TileManager.mapStack = {} -- 瓦块下载数据
+TileManager.tiles = {} -- 瓦片合集 以1,1为起点的瓦片合集
+TileManager.blocks = {} -- 砖块合集 以1,1为起点的方块合集
+TileManager.mapStack = {}
 TileManager.popCount = 0
-TileManager.zoomN = nil
 TileManager.isLoaded = nil
 TileManager.curTimes = 0
 TileManager.passTimes = 0
-TileManager.pushMapFlag = {}
+TileManager.pushMapFlag = {} -- 瓦块下载数据 以1,1为起点的瓦片数据
+TileManager.idHL = nil
 
 function math.round(decimal)
 	-- decimal = decimal * 100
@@ -54,6 +52,27 @@ function handler(obj, method)
     end
 end
 
+-- -- @param object 要克隆的值
+-- -- @return objectCopy 返回值的副本
+-- function table.clone( object )
+--     local lookup_table = {}
+--     local function copyObj( object )
+--         if type( object ) ~= "table" then
+--             return object
+--         elseif lookup_table[object] then
+--             return lookup_table[object]
+--         end
+       
+--         local new_table = {}
+--         lookup_table[object] = new_table
+--         for key, value in pairs( object ) do
+--             new_table[copyObj( key )] = copyObj( value )
+--         end
+--         return setmetatable( new_table, getmetatable( object ) )
+--     end
+--     return copyObj( object )
+-- end
+
 -- get current instance
 function TileManager.GetInstance()
 	return curInstance;
@@ -64,31 +83,117 @@ function TileManager:ctor()
 	self.blocks = {}
 	self.mapStack = {}
 	self.popCount = 0
-	self.zoomN = 2 ^ zoom
 	self.isLoaded = nil
 	self.curTimes = 0
 	self.passTimes = 0
 	self.pushMapFlag = {}
+	self.idHL = nil
 	curInstance = self
 end
 
 -- lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
 -- rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
--- bx = px,by = py,bz = pz,tileSize = math.ceil(PngWidth * factor),
+-- bx = px,by = py,bz = pz,tileSize = math.ceil(PngWidth * factor),firstPo,lastPo
 function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐标（左下点），瓦片大小
 	self.tileSize = para.tileSize or TILE_SIZE
 	self.oPo = {x = para.bx,y = para.by,z = para.bz}
 	self.col = para.rid - para.lid + 1
 	self.row = para.bid - para.tid + 1
-	self.beginPo,self.endPo = {x = para.lid, y = para.bid},{x = para.rid,y = para.tid}
+	self.idHL = {col=para.lid,row=para.bid} -- 记录左下角行列式
+	self.beginPo = {x = para.lid, y = para.bid}
+	self.endPo = {x = para.rid,y = para.tid}
 	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
-	self.firstBlockPo = {x = math.floor(self.oPo.x - (self.tileSize - 1) / 2),y = para.by,z = math.floor(self.oPo.z - (self.tileSize - 1) / 2)}
+	self.firstBlockPo = self.firstBlockPo or {x = math.floor(self.oPo.x - (self.tileSize - 1) / 2),y = para.by,z = math.floor(self.oPo.z - (self.tileSize - 1) / 2)}
 	self.count = self.col * self.row
 	self.firstGPo = para.firstPo -- 传入地理位置信息
 	self.lastGPo = para.lastPo
 	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
 	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
 	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
+end
+
+-- 扩充校园；传入新的 firstPo,lastPo,lid,bid,rid,tid 调整瓦片数据
+function TileManager:reInit(para)
+	self.col = para.rid - para.lid + 1
+	self.row = para.bid - para.tid + 1
+	self.count = self.col * self.row
+	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
+	self.firstGPo = para.firstPo -- 传入地理位置信息
+	self.lastGPo = para.lastPo
+	self.beginPo,self.endPo = {x = para.lid, y = para.bid},{x = para.rid,y = para.tid}
+	-- 计算偏移
+	-- echo("reInit:convert")
+	-- echo(para)
+	-- echo(self.idHL)
+	self.deltaHL = {col=para.lid - self.idHL.col,row=self.idHL.row - para.bid} -- 行列差 col:x row:y
+	-- echo(self.deltaHL)
+	self.idHL = {col=para.lid,row=para.bid}
+	local fbPo = {x = self.firstBlockPo.x + self.deltaHL.col * self.tileSize,y = self.firstBlockPo.y,z = self.firstBlockPo.z + self.deltaHL.row * self.tileSize}
+	self.deltaPo = self:pSub(fbPo,self.firstBlockPo) -- 点差
+	-- echo("点差deltaPo:")
+	-- echo(self.deltaPo)
+	self.firstBlockPo = fbPo
+	-- echo("坐标扩大:")
+	-- echo(self.firstPo);-- echo(self.lastPo)
+	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat)
+	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat)
+	-- echo(self.firstPo);-- echo(self.lastPo)
+	--
+	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
+	self.oPo = self:pAdd(self.oPo,self.deltaPo)
+	-- TileManager.tiles = {} -- 瓦片合集 以1,1为起点的瓦片合集
+	-- echo("__________ora____________");-- echo(self.tiles)
+	if self.tiles and #self.tiles > 0 then
+		local tileNew = {}
+		for id,tile in pairs(self.tiles) do
+			if type(tile) == "table" then
+				local idx, idy = tile.x - self.deltaHL.col,tile.y - self.deltaHL.row
+				local curID = idx + (idy - 1) * self.col
+				tile.id = curID
+				tile.x = idx
+				tile.y = idy -- po,ranksID不变，因为瓦片实际上并未移动
+				tile.isUpdated = nil
+				tile.isDrawed = nil
+				tile.needFill = nil
+				tileNew[curID] = table.clone(tile)
+			end
+		end
+		self.tiles = tileNew
+	end
+	-- echo(self.tiles)
+	-- echo("__________ora____________");-- echo(self.blocks)
+	self.blocks = self:tMov(self.blocks,-self.deltaPo.z,-self.deltaPo.x)
+	-- echo(self.blocks)
+	-- echo("__________ora____________");-- echo(self.pushMapFlag)
+	self.pushMapFlag = self:tMov(self.pushMapFlag,-self.deltaHL.col,-self.deltaHL.row,1)
+	-- echo(self.pushMapFlag)
+	self.curTimes = 0
+end
+
+-- 水平面paracraft坐标减法
+function TileManager:pSub(a,b) return {x=a.x-b.x,y=a.y-b.y,z=a.z-b.z} end
+function TileManager:pAdd(a,b) return {x=a.x+b.x,y=a.y+b.y,z=a.z+b.z} end
+function TileManager:pMul(a,c) return {x=a.x * c,y=a.y * c,z=a.z * c} end
+function TileManager:pDiv(a,c) return {x=a.x / c,y=a.y / c,z=a.z / c} end
+function TileManager:tMov(tb,dx,dy,dtSet,func) -- 移动表格下标
+	if (not tb) or tb == {} then return tb end
+	local tbNew = {}
+	for i,dtLine in pairs(tb) do
+		if type(i) == "number" then
+			tbNew[i] = tbNew[i] or {}
+			for j,data in pairs(dtLine) do
+				if type(j) == "number" then
+					local a,b = i + dx,j + dy
+					tbNew[a] = tbNew[a] or {}
+					tbNew[a][b] = dtSet or table.clone(data)
+					if func then
+						func(tbNew[a][b],a,b)
+					end
+				end
+			end
+		end
+	end
+	return tbNew
 end
 
 function TileManager:db()
@@ -111,16 +216,16 @@ end
 function TileManager:deg2pixel(lon, lat)
     local lon_deg = tonumber(lon)
     local lat_rad = math.rad(lat)
-    local xtile = self.zoomN * ((lon_deg + 180) / 360)
-    local ytile = self.zoomN * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2
-	LOG.std(nil,"RunFunction","瓦片行列号",xtile .. "," .. ytile)
+    local xtile = zoomN * ((lon_deg + 180) / 360)
+    local ytile = zoomN * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2
+	-- LOG.std(nil,"RunFunction","瓦片行列号",xtile .. "," .. ytile)
     return self:getTilePo(xtile, ytile)
 end
 
 -- 瓦片行列式转经纬度(参数：瓦片ID，瓦片中所在像素位置，缩放级数)
 function TileManager:pixel2deg(tileX, tileY, pixelX, pixelY)
-	local lon_deg = (tileX + pixelX / self.tileSize) / self.zoomN * 360.0 - 180.0;
-	local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/self.tileSize) / self.zoomN)))
+	local lon_deg = (tileX + pixelX / self.tileSize) / zoomN * 360.0 - 180.0;
+	local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/self.tileSize) / zoomN)))
 	local lat_deg = lat_rad * 180.0 / math.pi
 	return {lon = lon_deg, lat = lat_deg}
 end
@@ -191,12 +296,14 @@ function TileManager:getInTile(x,y,z)
 		z = x.z;y = x.y; x = x.x
 	end
 	for i,one in pairs(self.tiles) do
-		if one and (not one.rect) then
-			echo(one)
-			assert(1)
-		end
-		if x >= one.rect.l and x <= one.rect.r and z <= one.rect.t and z >= one.rect.b then
-			return one
+		if one and type(one) == "table" then
+			if (not one.rect) then
+				-- echo(one)
+				assert(1)
+			end
+			if x >= one.rect.l and x <= one.rect.r and z <= one.rect.t and z >= one.rect.b then
+				return one
+			end
 		end
 	end
 	local idx = math.ceil((x - self.firstBlockPo.x) / self.tileSize)
@@ -281,8 +388,6 @@ function TileManager:getParaPo(lon,lat)
 		lat = lon.lat;lon = lon.lon
 	end
 	local tileX,tileZ,x,z = self:deg2pixel(lon,lat)
-	LOG.std(nil,"RunFunction","人物跳转瓦片号",tileX .. "," .. tileZ .. " | " .. x .. "," .. z)
-	echo(self.beginPo)
 	local dx = (tileX - self.beginPo.x + locDt.x) * self.tileSize + x + self.firstBlockPo.x
 	local dz = (self.beginPo.y - tileZ - locDt.z + 1) * self.tileSize - z + self.firstBlockPo.z
 	return {x = math.round(dx),y = self.firstBlockPo.y,z = math.round(dz)}
@@ -319,7 +424,6 @@ function TileManager:Save()
 	local tileData = {}
 	-- set data default:commonlib.Json.Null()
 	tileData.tiles = self.tiles
-	tileData.blocks = self.blocks
 	tileData.tileSize = self.tileSize
 	tileData.oPo = self.oPo
 	tileData.col = self.col
@@ -332,6 +436,9 @@ function TileManager:Save()
 	tileData.curTimes = self.curTimes
 	tileData.passTimes = self.passTimes
 	tileData.pushMapFlag = self.pushMapFlag
+	tileData.firstGPo = self.firstGPo -- 传入地理位置信息
+	tileData.lastGPo = self.lastGPo
+	tileData.idHL = self.idHL
 	--
 	DBStore.GetInstance():saveTable(self:db(),tileData)
 	-- 
@@ -345,7 +452,6 @@ function TileManager:Load()
 	-- local tileData = commonlib.Json.Decode(json)
 	DBStore.GetInstance():loadTable(self:db(),function(tileData)
 		self.tiles = tileData.tiles
-		self.blocks = tileData.blocks
 		self.tileSize = tileData.tileSize
 		self.oPo = tileData.oPo
 		self.col = tileData.col
@@ -358,9 +464,14 @@ function TileManager:Load()
 		self.curTimes = tileData.curTimes
 		self.passTimes = tileData.passTimes
 		self.pushMapFlag = tileData.pushMapFlag
+		self.firstGPo = tileData.firstGPo -- 传入地理位置信息
+		self.lastGPo = tileData.lastGPo
+		self.idHL = tileData.idHL
+		self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
+		self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
+		self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 		self.isLoaded = true
 	end)
-	-- echo(tileData)
 	-- get data
 	-- return true
 	--
@@ -368,6 +479,7 @@ end
 
 -- 检查坐标点是否在标记区域内
 function TileManager:checkMarkArea(x, y, z)
+	-- return true
 	if x >= self.firstPo.x and x <= self.lastPo.x and z >= self.firstPo.z and z <= self.lastPo.z then return true end
 	return false
 end
@@ -376,6 +488,6 @@ end
 -- Object Browsser: CSceneObject->CTerrainTileRoot->listSolidObj->0 下面的Properties标签页
 local player = ParaScene.GetPlayer()
 local facing = player:GetFacing()
-echo(facing)
+-- echo(facing)
 player:SetFacing(1)
 ]]
