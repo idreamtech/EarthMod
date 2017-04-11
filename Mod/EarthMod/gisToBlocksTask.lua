@@ -22,6 +22,7 @@ NPL.load("(gl)script/apps/Aries/Creator/Game/Tasks/UndoManager.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Items/ItemColorBlock.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
+NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 
 local Color           = commonlib.gettable("System.Core.Color");
 local ItemColorBlock  = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
@@ -38,6 +39,8 @@ local EarthMod        = commonlib.gettable("Mod.EarthMod");
 local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
 local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 local MapBlock = commonlib.gettable("Mod.EarthMod.MapBlock");
+local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
+local DBS,SysDB
 
 local gisToBlocks = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks"));
 
@@ -196,10 +199,10 @@ function gisToBlocks:ctor()
 end
 
 function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data, tile)
-	-- local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-	-- if spx == px and spy == py and spz == pz then
-	-- 	CommandManager:RunCommand("/goto " .. px .. " " .. py .. " " .. pz) -- 当画到脚下那块时人物跳起来
-	-- end
+	local px, py, pz = EntityManager.GetFocus():GetBlockPos();
+	if spx == px and spy == py and spz == pz then
+		CommandManager:RunCommand("/goto " .. px .. " " .. py .. " " .. pz) -- 当画到脚下那块时人物跳起来
+	end
 	if(self.add_to_history) then
 		local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 		local from_data, from_entity_data;
@@ -716,11 +719,17 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,tile)
 	gisToBlocks.pleft   = px - 128;
 	gisToBlocks.pright  = px + 128;
 
-	EarthMod:SetWorldData("boundary",{ptop    = gisToBlocks.ptop,
+	DBS:setValue(SysDB,"boundary",{ptop    = gisToBlocks.ptop,
 									  pbottom = gisToBlocks.pbottom,
 									  pleft   = gisToBlocks.pleft,
-									  pright  = gisToBlocks.pright});
-	EarthMod:SaveWorldData();
+									  pright  = gisToBlocks.pright})
+	DBS:flush(SysDB)
+
+	-- EarthMod:SetWorldData("boundary",{ptop    = gisToBlocks.ptop,
+	-- 								  pbottom = gisToBlocks.pbottom,
+	-- 								  pleft   = gisToBlocks.pleft,
+	-- 								  pright  = gisToBlocks.pright});
+	-- EarthMod:SaveWorldData();
 	
 	LOG.std(nil,"debug","gisToBlocks","加载方块和贴图");
 	-- if factor > 1 then
@@ -883,11 +892,18 @@ function gisToBlocks:Run()
 	self.finished = true;
 	if(self.options == "already") then
 		self:initWorld()
-		local boundary = EarthMod:GetWorldData("boundary");
-		gisToBlocks.ptop    = boundary.ptop;
-		gisToBlocks.pbottom = boundary.pbottom;
-		gisToBlocks.pleft   = boundary.pleft;
-		gisToBlocks.pright  = boundary.pright;
+		DBS:getValue(SysDB,"boundary",function(boundary) if boundary then
+			gisToBlocks.ptop    = boundary.ptop;
+			gisToBlocks.pbottom = boundary.pbottom;
+			gisToBlocks.pleft   = boundary.pleft;
+			gisToBlocks.pright  = boundary.pright;
+		end end)
+		-- local boundary = EarthMod:GetWorldData("boundary");
+		-- gisToBlocks.ptop    = boundary.ptop;
+		-- gisToBlocks.pbottom = boundary.pbottom;
+		-- gisToBlocks.pleft   = boundary.pleft;
+		-- gisToBlocks.pright  = boundary.pright;
+
 	elseif(self.options == "coordinate") then
 		if(GameLogic.GameMode:CanAddToHistory()) then
 			self.add_to_history = false;
@@ -901,6 +917,7 @@ function gisToBlocks:Run()
 end
 
 function gisToBlocks:reInitWorld()
+	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 	if self.minlon and self.minlat and self.maxlon and self.maxlat and (not SelectLocationTask.isDownLoaded) then
 		-- 初始化osm信息
 		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.minlon,self.minlat,self.zoom);
@@ -940,6 +957,7 @@ function gisToBlocks:reInitWorld()
 end
 
 function gisToBlocks:initWorld()
+	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 	if self.minlon and self.minlat and self.maxlon and self.maxlat and (not SelectLocationTask.isDownLoaded) then
 		-- 初始化osm信息
 		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.minlon,self.minlat,self.zoom);
@@ -990,7 +1008,7 @@ function gisToBlocks:refreshPlayerInfo()
 				SelectLocationTask.player_lon = curLon
 				SelectLocationTask.player_lat = curLat
 				local po = TileManager.GetInstance():getParaPo(curLon,curLat)
-				CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
+				CommandManager:RunCommand("/goto " .. po.x .. " " .. (po.y + 2) .. " " .. po.z)
 				echo("人物跳转开始");echo(po)
 				SelectLocationTask.player_curLon = nil
 				SelectLocationTask.player_curLat = nil
