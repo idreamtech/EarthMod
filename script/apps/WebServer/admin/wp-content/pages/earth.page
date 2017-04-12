@@ -163,6 +163,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 </div>
 
 <script>
+    var currentSchool = '';
    $('#map').height($(window).height());
    // alert(ipLocation);
    // var uniData = {
@@ -294,6 +295,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     //启用控件并添加到地图中
     L.control.search().addTo(map);
      function renderUniversity(schoolName, uni){
+        currentSchool = schoolName;
         if(uni != null & uni != undefined){
             rec.remove();
             corner1 = L.latLng(uni.southWestLat, uni.southWestLng);
@@ -496,8 +498,13 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                                     var schoolLat = school.southWestLat;
                                     var schoolLng = school.southWestLng;
                                     // 将marker添加到地图中
-                                    var schoolMarker = L.marker([schoolLat, schoolLng]).addTo(map).bindTooltip(schoolName).openTooltip();;
+                                    var schoolMarker = L.marker([schoolLat, schoolLng]).addTo(map).bindTooltip(schoolName);;
                                     markerArray.push(schoolMarker);
+									for(var i=0;i<markerArray.length;i++){
+                                        markerArray[i].on('click',function(e){
+                                            getSchoolByName(e.target._tooltip._content);
+                                        })
+                                    }
                                 }
                             }
                         }
@@ -559,6 +566,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                     rec.setStyle({color: "#ff7800", weight: 1});
                     // var _rec = L.rectangle(_bounds, {color: "#ff7800", weight: 1}).addTo(map);
                     map.fitBounds(bounds);
+                    document.getElementsByClassName('search-inp')[0].disabled = true;
+                    document.getElementsByClassName('search-inp')[0].value = currentSchool;
                 }else if(res != null && typeof(res) != "undefined" && res.status == 400){
                     // 400情况下,继续请求
                     getSchoolAreaInfo();
