@@ -44,7 +44,7 @@ function ItemEarth:OnSelect(itemStack)
 	if(not WebServer:IsStarted()) then
 		GameLogic.SetStatus(L"On Select : Start Server");
 		--start server
-		WebServer:Start("script/apps/WebServer/admin", "127.0.0.1", 8099);
+		WebServer:Start("script/apps/WebServer/admin", "0.0.0.0", 8099);
 
 		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
