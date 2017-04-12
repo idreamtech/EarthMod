@@ -66,38 +66,39 @@ function getOsmService:retry(_err, _msg, _data, _params, _callback)
 	end
 end
 
-function getOsmService:getOsmXMLData(x,y,i,j,_callback)
+function getOsmService:getOsmXMLData(x,y,i,j,dleft,dbottom,dright,dtop,_callback)
 	local osmXMLUrl = getOsmService.osmXMLUrl();
 
-	osmXMLUrl = osmXMLUrl:gsub("{left}",self.dleft);
-	osmXMLUrl = osmXMLUrl:gsub("{bottom}",self.dbottom);
-	osmXMLUrl = osmXMLUrl:gsub("{right}",self.dright);
-	osmXMLUrl = osmXMLUrl:gsub("{top}",self.dtop);
+	osmXMLUrl = osmXMLUrl:gsub("{left}",dleft);
+	osmXMLUrl = osmXMLUrl:gsub("{bottom}",dbottom);
+	osmXMLUrl = osmXMLUrl:gsub("{right}",dright);
+	osmXMLUrl = osmXMLUrl:gsub("{top}",dtop);
 
-	_callback();
-
+	-- _callback();
+	echo("downloadOSMurl:" .. osmXMLUrl)
 	-- 使用定时器,错开多次请求OSM节点数据的接口调用,避免出现短时间内请求达到100次峰值之后无法获取到OSM节点数据的情况
-	-- local downOsmXMLTimer = commonlib.Timer:new({callbackFunc = function(downOsmXMLTimer)
-	-- 	self:GetUrl(osmPNGUrl,function(data,err)
-	-- 		if(err == 200) then
-	-- 			--[[local file = ParaIO.open("/xml.osm", "w");
-	-- 			file:write(data,#data);
-	-- 			file:close();]]
+	local downOsmXMLTimer = commonlib.Timer:new({callbackFunc = function(downOsmXMLTimer)
+		self:GetUrl(osmXMLUrl,function(data,err)
+			if(err == 200) then
+				--[[local file = ParaIO.open("/xml.osm", "w");
+				file:write(data,#data);
+				file:close();]]
 
-	-- 			local fileExt = ParaIO.open("xml_"..x.."_"..y..".osm", "w");
-	-- 			LOG.std(nil,"debug","gisOsmService","xml_"..x.."_"..y..".osm");
-	-- 			local ret = fileExt:write(data,#data);
-	-- 			fileExt:close();
+				local fileExt = ParaIO.open("xml_"..x.."_"..y..".osm", "w");
+				LOG.std(nil,"debug","gisOsmService","xml_"..x.."_"..y..".osm");
+				local ret = fileExt:write(data,#data);
+				fileExt:close();
 
-	-- 			_callback(data);
-	-- 		else
-	-- 			return nil;
-	-- 		end
-	-- 	end);
-	-- end})
+				_callback(data);
+			else
+				echo("download failse" .. tostring(err))
+				return nil;
+			end
+		end);
+	end})
 
-	-- -- start the timer after i milliseconds, and stop it immediately.
-	-- downOsmXMLTimer:Change(i*3000, nil);
+	-- start the timer after i milliseconds, and stop it immediately.
+	downOsmXMLTimer:Change(i*3000, nil);
 end
 
 function getOsmService:getOsmPNGData(x,y,i,j,_callback)

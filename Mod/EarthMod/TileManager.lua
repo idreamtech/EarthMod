@@ -16,7 +16,7 @@ local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 local curInstance;
 local TILE_SIZE = 256 -- 默认瓦片大小
 local zoomN = 2 ^ 17 -- OSM级数
-local locDt = {x = 0.08,z = -0.08} -- OSM与实际显示位置偏移
+local locDt = {x = 0,z = 0} -- {x = 0.08,z = -0.08} -- OSM与实际显示位置偏移
 TileManager.tileSize = nil -- 瓦片大小
 TileManager.beginPo = nil
 TileManager.endPo = nil
@@ -247,7 +247,7 @@ function TileManager:getDrawPosition(idx,idy)
 	if idx < 1 or idx > self.col or idy < 1 or idy > self.row then return nil end
 	local po = {x = self.oPo.x + (idx - 1) * self.tileSize,y = self.oPo.y,z = self.oPo.z + (idy - 1) * self.tileSize}
 	local curID = idx + (idy - 1) * self.col
-	local ranksID = {x = self.beginPo.x + idx - 1,y = self.beginPo.y - idy + 1}
+	local ranksID = {x = self.beginPo.x + idx - 1,y = self.beginPo.y - idy + 1} -- 行列号
 	if self.tiles[curID] then
 		return self.tiles[curID].po,self.tiles[curID]
 	else
