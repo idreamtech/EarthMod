@@ -212,19 +212,20 @@ end
 
 function SelectLocationTask:getSchoolAreaInfo()
 	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
-		DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
-			DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
-				DBS:getValue(SysDB,"schoolName",function(schoolName) if schoolName then
-					self.schoolData = {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat, schoolName = schoolName}}
-				else
-					self.schoolData = {status = 300, data = nil}
-				end 
-			end 
-		end)
+	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
+		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
+			DBS:getValue(SysDB,"schoolName",function(schoolName) if schoolName then
+				self.schoolData = {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat, schoolName = schoolName}}
+			else
+				self.schoolData = {status = 300, data = nil}
+			end end)
+		else
+			self.schoolData = {status = 300, data = nil}
+		end end)
 	else
 		self.schoolData = {status = 300, data = nil}
 	end end)
-	
+
 	if self.schoolData then
 		return self.schoolData
 	else 
