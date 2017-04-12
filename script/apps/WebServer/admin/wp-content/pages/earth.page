@@ -272,14 +272,19 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
             input.setAttribute('data-provide','typeahead');
             input.ondblclick = this._ondblclick;
             container.onclick = this._onclick;
+            // container.stopPropagation();
             container.appendChild(input);
+            if (L.DomEvent) {
+                L.DomEvent.disableClickPropagation(container);
+            }
             return container;
         },
         _onclick:function(e){
+            // e.stopPropagation();
             e.stopPropagation();
         },
         _ondblclick:function(e){
-            e.stopPropagation();// 阻止事件冒泡,双击输入框放大地图事件
+            // e.stopPropagation();// 阻止事件冒泡,双击输入框放大地图事件
             // console.log(1);
         }
     })
@@ -491,8 +496,13 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                                     var schoolLat = school.southWestLat;
                                     var schoolLng = school.southWestLng;
                                     // 将marker添加到地图中
-                                    var schoolMarker = L.marker([schoolLat, schoolLng]).addTo(map).bindTooltip(schoolName).openTooltip();;
+                                    var schoolMarker = L.marker([schoolLat, schoolLng]).addTo(map).bindTooltip(schoolName);;
                                     markerArray.push(schoolMarker);
+									for(var i=0;i<markerArray.length;i++){
+                                        markerArray[i].on('click',function(e){
+                                            getSchoolByName(e.target._tooltip._content);
+                                        })
+                                    }
                                 }
                             }
                         }
@@ -554,6 +564,9 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                     rec.setStyle({color: "#ff7800", weight: 1});
                     // var _rec = L.rectangle(_bounds, {color: "#ff7800", weight: 1}).addTo(map);
                     map.fitBounds(bounds);
+                    var currentSchool = res.data.schoolName;
+                    document.getElementsByClassName('search-inp')[0].disabled = true;
+                    document.getElementsByClassName('search-inp')[0].value = currentSchool;
                 }else if(res != null && typeof(res) != "undefined" && res.status == 400){
                     // 400情况下,继续请求
                     getSchoolAreaInfo();
