@@ -163,7 +163,6 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 </div>
 
 <script>
-    var currentSchool = '';
    $('#map').height($(window).height());
    // alert(ipLocation);
    // var uniData = {
@@ -295,7 +294,6 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     //启用控件并添加到地图中
     L.control.search().addTo(map);
      function renderUniversity(schoolName, uni){
-        currentSchool = schoolName;
         if(uni != null & uni != undefined){
             rec.remove();
             corner1 = L.latLng(uni.southWestLat, uni.southWestLng);
@@ -566,6 +564,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                     rec.setStyle({color: "#ff7800", weight: 1});
                     // var _rec = L.rectangle(_bounds, {color: "#ff7800", weight: 1}).addTo(map);
                     map.fitBounds(bounds);
+                    var currentSchool = res.data.schoolName;
                     document.getElementsByClassName('search-inp')[0].disabled = true;
                     document.getElementsByClassName('search-inp')[0].value = currentSchool;
                 }else if(res != null && typeof(res) != "undefined" && res.status == 400){
