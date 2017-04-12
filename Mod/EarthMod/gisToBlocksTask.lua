@@ -62,6 +62,7 @@ gisToBlocks.crossPointLists = {};
 local factor = 1.19 -- 地图缩放比例
 local PngWidth = 256
 local FloorLevel = 5 -- 绘制地图层层高：草地层
+local buildLevelMax = 30 -- 绘制地图层层高：草地层
 
 --RGB, block_id
 local block_colors = {
@@ -213,21 +214,27 @@ function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data, tile)
 end
 
 
-function gisToBlocks:drawpixel(x, z, y, block_data, isUpdate)
+function gisToBlocks:drawpixel(x, z, y, block_data)
 	if TileManager.GetInstance():checkMarkArea(x,y,z) then -- 不绘制未加载的
 		-- BlockEngine:SetBlock(x,y,z,blockId,0); -- y + 1
 		local pixel = block_colors[block_data]
 		local color = ItemColorBlock:ColorToData(Color.RGBA_TO_DWORD(pixel[3],pixel[2],pixel[1], 0))
-		-- test: 删掉isUpdate可以测试强制更新和不替换用户数据的区别
-		MapBlock:addBlock(x, y, z, color, isUpdate)
+		MapBlock:addBlock(x, y, z, color, "fill") -- 只要是空气就可以填补
 	end
 end
+
+-- function gisToBlocks:addSkipData(tile,x,y,z)
+-- 	x = math.ceil(x);y = math.ceil(y);z = math.ceil(z)
+-- 	tile.skips[y] = tile.skips[y] or {}
+-- 	tile.skips[y][x] = tile.skips[y][x] or {}
+-- 	tile.skips[y][x][z] = 1
+-- end
 
 function gisToBlocks:floodFillScanline()
 	
 end
 
-function gisToBlocks:drawline(x1, y1, x2, y2, z, block_data, isUpdate)
+function gisToBlocks:drawline(x1, y1, x2, y2, z, block_data)
 	--local x, y, dx, dy, s1, s2, p, temp, interchange, i;
 	if math.abs(x2-x1) > math.abs(y2-y1) then  
         steps = math.abs(x2 - x1);  
@@ -239,7 +246,7 @@ function gisToBlocks:drawline(x1, y1, x2, y2, z, block_data, isUpdate)
         x = x1;  
         y = y1;  
     for i = 0,steps do  
-        self:drawpixel(x,y,z,block_data,isUpdate);  
+        self:drawpixel(x,y,z,block_data);  
         x = x + increx;
         y = y + increy;
     end  
@@ -248,20 +255,7 @@ end
 function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
 	local tileX,tileY = tile.ranksID.x,tile.ranksID.y;
-	local isUpdate = nil
-	if tile then
-		if tile.needFill then isUpdate = "fill" else isUpdate = tile.isUpdated end
-	end
-	-- if(self.options == "coordinate") then
-	-- 	--echo("coordinate");
-	-- 	tileX = self.home.tileX;
-	-- 	tileY = self.home.tileY;
-	-- elseif(self.options == "already")then
-	-- 	--echo("already");
-	-- 	tileX = self.more.tileX;
-	-- 	tileY = self.more.tileY;
-	-- end
-
+	MapBlock:deleteArea({x = tile.rect.l,y = FloorLevel + 1,z = tile.rect.b},{x = tile.rect.r,y = FloorLevel + buildLevelMax + 1,z = tile.rect.t})
 	LOG.std(nil,"debug","tileX,tileY",{tileX,tileY});
 
 	if (not xmlRoot) then
@@ -281,7 +275,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 		count = count + 1;
 	end
 
-	local function draw2Point(self,PointList,block_data,type,isUp)
+	local function draw2Point(self,PointList,block_data,type)
 		local PNGSize = math.ceil(PngWidth*factor);
 		local pointA,pointB;
 
@@ -306,9 +300,9 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 
 					local function floor(self)
 						if (pointA.cx < pointB.cx) then
-							self:drawline(pointA.cx, pointA.cy, pointB.cx, pointB.cy, pointA.cz, block_data, isUp);
+							self:drawline(pointA.cx, pointA.cy, pointB.cx, pointB.cy, pointA.cz, block_data);
 						else
-							self:drawline(pointB.cx, pointB.cy, pointA.cx, pointA.cy, pointB.cz, block_data, isUp);
+							self:drawline(pointB.cx, pointB.cy, pointA.cx, pointA.cy, pointB.cz, block_data);
 						end
 					end
 
@@ -328,7 +322,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 		end
 	end
 
-	local function draw2area(self,PointList,blockId,type,isUp)
+	local function draw2area(self,PointList,blockId,type)
 		if (PointList) then
 			local point = {left = PointList[1].cx, right = PointList[1].cx, top = PointList[1].cy, bottom = PointList[1].cy};
 			local currentPoint;
@@ -449,11 +443,11 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 								if(type == "waterMore") then
 									for i=1,4 do
 										height = height - 1;
-										self:drawpixel(currentPoint.cx,loopY,height,blockId,isUp)
+										self:drawpixel(currentPoint.cx,loopY,height,blockId)
 										-- BlockEngine:SetBlock(currentPoint.cx,height,loopY,blockId,0);
 									end
 								else
-									self:drawpixel(currentPoint.cx,loopY,height,blockId,isUp)
+									self:drawpixel(currentPoint.cx,loopY,height,blockId)
 									-- BlockEngine:SetBlock(currentPoint.cx,height,loopY,blockId,0);
 								end
 							end
@@ -523,8 +517,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 							end
 
 							if(isDraw) then
-								draw2Point(self,crossBuildingList.points,51,"buildingMore",isUpdate);
-								draw2area(self,crossBuildingList.points,51,"buildingMore",isUpdate);
+								draw2Point(self,crossBuildingList.points,51,"buildingMore");
+								draw2area(self,crossBuildingList.points,51,"buildingMore");
 								crossBuildingList = false;
 							end
 						end
@@ -661,8 +655,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 							end
 
 							if(isDraw) then
-								draw2Point(self,crossWaterList.points,4,"waterMore",isUpdate);
-								draw2area(self,crossWaterList.points,76,"waterMore",isUpdate);
+								draw2Point(self,crossWaterList.points,4,"waterMore");
+								draw2area(self,crossWaterList.points,76,"waterMore");
 								crossWaterList = false;
 							end
 						end
@@ -735,8 +729,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 	for k,v in pairs(osmBuildingList) do
 		buildingPointList = v.points;
 		
-		draw2Point(self,buildingPointList,51,"building",isUpdate);
-		draw2area(self,buildingPointList,51,"buildingMore",isUpdate);
+		draw2Point(self,buildingPointList,51,"building");
+		draw2area(self,buildingPointList,51,"buildingMore");
 	end
 
 	local waterPointList;
@@ -744,8 +738,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 		for k,v in pairs(osmWaterList) do
 			waterPointList = v.points;
 		
-			draw2Point(self,waterPointList,4,"water",isUpdate);
-			draw2area(self,waterPointList,76,"waterMore",isUpdate);
+			draw2Point(self,waterPointList,4,"water");
+			draw2area(self,waterPointList,76,"waterMore");
 		end
 	end
 
@@ -753,7 +747,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 	for k,v in pairs(osmHighWayList) do
 		highWayPointList = v.points;
 
-		draw2Point(self,highWayPointList,180,"highWay",isUpdate);
+		draw2Point(self,highWayPointList,180,"highWay");
 
 		local makemore = commonlib.copy(highWayPointList);
 
@@ -763,7 +757,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].x = value.x - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay",isUpdate);
+		draw2Point(self,makemore,180,"highWay");
 
 		for key,value in pairs(makemore) do
 			--LOG.std(nil,"debug","value",value.cx);
@@ -771,7 +765,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].x = value.x - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay",isUpdate);
+		draw2Point(self,makemore,180,"highWay");
 
 		for key,value in pairs(makemore) do
 			--LOG.std(nil,"debug","value",value.cx);
@@ -779,7 +773,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].x = value.x - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay",isUpdate);
+		draw2Point(self,makemore,180,"highWay");
 
 		-----
 
@@ -791,7 +785,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].y = value.y - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay",isUpdate);
+		draw2Point(self,makemore,180,"highWay");
 
 		for key,value in pairs(makemore) do
 			--LOG.std(nil,"debug","value",value.cx);
@@ -799,7 +793,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].y = value.y - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay",isUpdate);
+		draw2Point(self,makemore,180,"highWay");
 
 		for key,value in pairs(makemore) do
 			--LOG.std(nil,"debug","value",value.cx);
@@ -807,7 +801,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].y = value.y - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay",isUpdate);
+		draw2Point(self,makemore,180,"highWay");
 	end
 end
 
