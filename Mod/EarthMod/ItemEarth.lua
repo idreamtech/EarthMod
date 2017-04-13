@@ -48,14 +48,15 @@ function ItemEarth:OnSelect(itemStack)
 
 		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		-- Open a new window
-		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_lt", 100, 100, 800, 560);
+		-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -380, 0, 380, 380);
 	else
 		GameLogic.SetStatus(L"On Select : Show Browser");
 
 		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		NplCefWindowManager:Show("my_window", true);
+		-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -380, 0, 380, 380);
 	end
 	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
