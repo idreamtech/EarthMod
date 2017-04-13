@@ -8,11 +8,15 @@
     </script>
     <!-- <pe:container style="padding:5px;background-color:#ff0000"> -->
     <div style='width:320px;height:120px;'>
-        <div style='position:absolute; width:160px; height:24px; left:10px; top:5px;' onclick="SelectLocationTask.OnClickSelectLocationScript()">
-            <img style='width:24px;height:24px;border:none;' src="Mod/EarthMod/textures/icon.png"/>
-            <span style='width:auto;height:24px;line-height:20px;font-size:18px;font-weight:bold;margin-left:5px'>更新地图</span>                                                            
+        <div style='position:absolute; width:160px; height:24px; left:10px; top:5px' onclick="SelectLocationTask.OnShowMap()">
+            <img style='width:28px;height:26px;border:none;' src="Mod/EarthMod/textures/map.png"/>
+            <span style='width:auto;height:24px;line-height:20px;font-size:18px;font-weight:bold;margin-left:5px'>显示地图</span>
         </div>
-        <div style='position:absolute; width:160px; height:24px; left:130px; top:5px' onclick="SelectLocationTask.OnShowInfo()">
+        <div style='position:absolute; width:160px; height:24px; left:130px; top:5px;' onclick="SelectLocationTask.OnClickSelectLocationScript()">
+            <img style='width:24px;height:24px;border:none;' src="Mod/EarthMod/textures/icon.png"/>
+            <span style='width:auto;height:24px;line-height:20px;font-size:18px;font-weight:bold;margin-left:5px'>更新地图</span>
+        </div>
+        <div style='position:absolute; width:160px; height:24px; left:245px; top:5px' onclick="SelectLocationTask.OnShowInfo()">
             <img style='width:19px;height:22px;margin:1px 0;border:none;' src="script/apps/WebServer/admin/wp-content/pages/earth/assets/css/images/11.png"/>
             <span style='width:auto;height:24px;line-height:20px;font-size:18px;font-weight:bold;margin-left:5px'>地理信息</span>
         </div>

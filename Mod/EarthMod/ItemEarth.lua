@@ -42,21 +42,21 @@ function ItemEarth:OnSelect(itemStack)
 
 	-- call cefBrowser to open website
 	if(not WebServer:IsStarted()) then
-		GameLogic.SetStatus(L"On Select : Start Server");
+		-- GameLogic.SetStatus(L"On Select : Start Server");
 		--start server
 		WebServer:Start("script/apps/WebServer/admin", "0.0.0.0", 8099);
 
-		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
-		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -380, 0, 380, 380);
+		-- NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+		-- local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+		-- -- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+		-- NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -400, 0, 400, 400);
 	else
 		-- GameLogic.SetStatus(L"On Select : Show Browser");
 
-		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
-		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -380, 0, 380, 380);
+		-- NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+		-- local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+		-- -- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+		-- NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -400, 0, 400, 400);
 	end
 	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then

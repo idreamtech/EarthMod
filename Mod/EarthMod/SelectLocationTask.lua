@@ -164,7 +164,7 @@ function SelectLocationTask:ShowPage()
 		directPosition = true,
 			align = "_lt",
 			x = 0,
-			y = 0,
+			y = 60,
 			width = 320,
 			height = 120,
 		cancelShowAnimation = true,
@@ -247,4 +247,12 @@ end
 
 function SelectLocationTask:OnShowInfo()
 	SelectLocationTask.isShowInfo = not SelectLocationTask.isShowInfo
+end
+
+function SelectLocationTask:OnShowMap()
+	-- 切换地图显示
+	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+	-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+	NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -400, 0, 400, 400);
 end
