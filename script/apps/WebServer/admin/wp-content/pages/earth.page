@@ -233,7 +233,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
    // }
     
     var currentIcon = L.icon({
-        iconUrl: '/wp-content/pages/earth/assets/css/images/3.png',
+        iconUrl: '/wp-content/pages/earth/assets/css/images/marker-icon.png',
         iconSize: [14, 24],
     })
     var myIcon = L.icon({
@@ -241,7 +241,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
         iconSize: [14, 24],
     });
     var map  = L.map('map',{
-        zoomControl:false
+        zoomControl:false,
+        minZoom:4
     });
     var china = [37.899050079360935, 102.83203125]; 
     map.setView(china,4);
@@ -404,7 +405,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                 if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
                     // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
                     if (marker == null) {
-                        marker = L.marker([lat, lon]).addTo(map);
+                        marker = L.marker([lat, lon],{icon:currentIcon}).addTo(map);
                     } else {
                         marker.setLatLng([lat, lon]);
                     }
@@ -496,7 +497,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                                     var schoolLat = school.southWestLat;
                                     var schoolLng = school.southWestLng;
                                     // 将marker添加到地图中
-                                    var schoolMarker = L.marker([schoolLat, schoolLng]).addTo(map).bindTooltip(schoolName);;
+                                    var schoolMarker = L.marker([schoolLat, schoolLng],{icon:currentIcon}).addTo(map).bindTooltip(schoolName);;
                                     markerArray.push(schoolMarker);
 									for(var i=0;i<markerArray.length;i++){
                                         markerArray[i].on('click',function(e){
@@ -567,6 +568,10 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                     var currentSchool = res.data.schoolName;
                     document.getElementsByClassName('search-inp')[0].disabled = true;
                     document.getElementsByClassName('search-inp')[0].value = currentSchool;
+                    map.setMaxBounds(rec.getBounds());
+                    // var number = map.getZoom()
+                    // map.scrollWheelZoom.disable();
+                    
                 }else if(res != null && typeof(res) != "undefined" && res.status == 400){
                     // 400情况下,继续请求
                     getSchoolAreaInfo();
@@ -579,5 +584,4 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
             }
         })
     }
-
 </script>
