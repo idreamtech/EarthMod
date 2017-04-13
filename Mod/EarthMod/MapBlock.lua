@@ -34,8 +34,8 @@ function MapBlock:init()
 				name="MapBlock",
 				id=MapBlock.ID,
 				item_class="ItemColorBlock", -- 这个决定了颜色方块显示(来自彩色方块10)
-				text="地图方块",
-				searchkey="地图方块",
+				text="虚拟校园地图方块",
+				searchkey="虚拟校园地图方块",
 				disable_gen_icon="true",
 				icon="Texture/blocks/items/color_block.png",
 				texture="Texture/blocks/colorblock.png",
