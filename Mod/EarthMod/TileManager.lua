@@ -408,6 +408,8 @@ function TileManager:getForward(needStr) -- 正北为0度，东南西为90 180 2
 		if b <= dt then s = s1
 		elseif b >= 90 - dt then s = s2
 		else s = s1 .. s2 end
+		if s == "北东" then s = "东北" elseif s == "南东" then s = "东南"
+		elseif s == "南西" then s = "西南" elseif s == "北西" then s = "西北" end
 		return ro,s
 	end
 	return ro

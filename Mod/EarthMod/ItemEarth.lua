@@ -38,25 +38,8 @@ end
 
 function ItemEarth:OnSelect(itemStack)
 	ItemEarth._super.OnSelect(self,itemStack);
-	GameLogic.SetStatus(L"小提示:左上角菜单中地理信息按钮可以隐藏信息面板 ^_^");
-
-	-- call cefBrowser to open website
 	if(not WebServer:IsStarted()) then
-		-- GameLogic.SetStatus(L"On Select : Start Server");
-		--start server
 		WebServer:Start("script/apps/WebServer/admin", "0.0.0.0", 8099);
-
-		-- NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		-- local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		-- -- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
-		-- NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -400, 0, 400, 400);
-	else
-		-- GameLogic.SetStatus(L"On Select : Show Browser");
-
-		-- NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		-- local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		-- -- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
-		-- NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -400, 0, 400, 400);
 	end
 	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
@@ -65,11 +48,6 @@ function ItemEarth:OnSelect(itemStack)
 			self:boundaryCheck();
 		end end)
 	end end)
-	-- if(EarthMod:GetWorldData("alreadyBlock")) then
-	-- 	local coordinate = EarthMod:GetWorldData("coordinate");
-	-- 	CommandManager:RunCommand("/gis -already " .. coordinate.minlat .. " " .. coordinate.minlon.. " " .. coordinate.maxlat.. " " .. coordinate.maxlon);
-	-- 	self:boundaryCheck();
-	-- end
 end
 
 function ItemEarth:TryCreate(itemStack, entityPlayer, x, y, z, side, data, side_region)
