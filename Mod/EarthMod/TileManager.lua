@@ -143,7 +143,7 @@ function TileManager:reInit(para)
 	self.oPo = self:pAdd(self.oPo,self.deltaPo)
 	-- TileManager.tiles = {} -- 瓦片合集 以1,1为起点的瓦片合集
 	-- echo("__________ora____________");-- echo(self.tiles)
-	if self.tiles and #self.tiles > 0 then
+	if self.tiles and self.tiles ~= {} then
 		local tileNew = {}
 		for id,tile in pairs(self.tiles) do
 			if type(tile) == "table" then
