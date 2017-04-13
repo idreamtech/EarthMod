@@ -38,24 +38,25 @@ end
 
 function ItemEarth:OnSelect(itemStack)
 	ItemEarth._super.OnSelect(self,itemStack);
-	GameLogic.SetStatus(L"点击下方按钮调用内嵌浏览器");
+	GameLogic.SetStatus(L"小提示:左上角菜单中地理信息按钮可以隐藏信息面板 ^_^");
 
 	-- call cefBrowser to open website
 	if(not WebServer:IsStarted()) then
-		GameLogic.SetStatus(L"On Select : Start Server");
+		-- GameLogic.SetStatus(L"On Select : Start Server");
 		--start server
 		WebServer:Start("script/apps/WebServer/admin", "0.0.0.0", 8099);
 
-		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		-- Open a new window
-		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_lt", 100, 100, 800, 560);
+		-- NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+		-- local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+		-- -- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+		-- NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -400, 0, 400, 400);
 	else
-		GameLogic.SetStatus(L"On Select : Show Browser");
+		-- GameLogic.SetStatus(L"On Select : Show Browser");
 
-		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		NplCefWindowManager:Show("my_window", true);
+		-- NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+		-- local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+		-- -- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+		-- NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -400, 0, 400, 400);
 	end
 	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then

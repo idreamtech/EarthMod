@@ -34,8 +34,8 @@ function MapBlock:init()
 				name="MapBlock",
 				id=MapBlock.ID,
 				item_class="ItemColorBlock", -- 这个决定了颜色方块显示(来自彩色方块10)
-				text="地图方块",
-				searchkey="地图方块",
+				text="虚拟校园地图方块",
+				searchkey="虚拟校园地图方块",
 				disable_gen_icon="true",
 				icon="Texture/blocks/items/color_block.png",
 				texture="Texture/blocks/colorblock.png",
@@ -93,14 +93,16 @@ function MapBlock:addBlock(spx,spy,spz,color,isUpdate)
 			if self:isMap(spx,spy,spz,true) then
 				self:delete(spx,spy,spz)
 				insertBlock()
+				return true
 			end
 		else -- 更新模式
 			if self:isMap(spx,spy,spz) then
 				self:delete(spx,spy,spz)
 				insertBlock()
+				return true
 			end
 		end
-		return
+		return false
 	end
 	insertBlock()
 	-- local data = {attr={},{name="cmd","m"}} -- filename="Mod/EarthMod/textures/nil.fbx"
@@ -108,10 +110,10 @@ end
 
 -- {attr={filename="Mod/EarthMod/textures/nil.fbx"},{name="cmd","map"}}
 -- 检测是否是地图块
-function MapBlock:isMap(spx,spy,spz,checkGrass) -- ,func
+function MapBlock:isMap(spx,spy,spz,checkAir) -- ,func
 	local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 	if from_id then
-		if checkGrass then
+		if checkAir then
 			if tonumber(from_id) == 0 then return true end -- 检测草地(id:62) 空气0
 		else
 			if tonumber(from_id) == MapBlock.ID then return true end
@@ -127,6 +129,23 @@ end
 -- self:cmd("setblock " .. x .. " " .. y .. " " .. z .. " 0")
 function MapBlock:delete(x,y,z)
 	BlockEngine:SetBlockToAir(x,y,z)
+end
+
+-- 删除某区域内的地图元素 高,横向,竖向顺序：y,x,z
+function MapBlock:deleteArea(po1,po2,blockID)
+	po1 = {x=math.ceil(po1.x),y=math.ceil(po1.y),z=math.ceil(po1.z)}
+	po2 = {x=math.ceil(po2.x),y=math.ceil(po2.y),z=math.ceil(po2.z)}
+	blockID = blockID or MapBlock.ID
+	for y = po1.y,po2.y do -- 垂直
+		for x = po1.x,po2.x do -- 水平x
+			for z = po1.z,po2.z do -- 水平y
+				local id = BlockEngine:GetBlockId(x,y,z)
+				if id and id == blockID then
+					BlockEngine:SetBlockToAir(x,y,z)
+				end
+			end
+		end
+	end
 end
 
 -- self:DB():find({world=DBStore.GetInstance().worldName,x=spx,y=spy,z=spz}, function(err, data)  

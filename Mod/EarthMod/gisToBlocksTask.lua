@@ -62,26 +62,15 @@ gisToBlocks.crossPointLists = {};
 local factor = 1.19 -- 地图缩放比例
 local PngWidth = 256
 local FloorLevel = 5 -- 绘制地图层层高：草地层
+local buildLevelMax = 30 -- 绘制地图层层高：草地层
 
 --RGB, block_id
--- local block_colors = {
--- 	{221, 221, 221,	block_types.names.White_Wool},
--- 	{219,125,62,	block_types.names.Orange_Wool},
--- 	{179,80, 188,	block_types.names.Magenta_Wool},
--- 	{107, 138, 201,	block_types.names.Light_Blue_Wool},
--- 	{177,166,39,	block_types.names.Yellow_Wool},
--- 	{65, 174, 56,	block_types.names.Lime_Wool},
--- 	{208, 132, 153,	block_types.names.Pink_Wool},
--- 	{64, 64, 64,	block_types.names.Gray_Wool},
--- 	{154, 161, 161,	block_types.names.Light_Gray_Wool},
--- 	{46, 110, 137,	block_types.names.Cyan_Wool},
--- 	{126,61,181,	block_types.names.Purple_Wool},
--- 	{46,56,141,		block_types.names.Blue_Wool},
--- 	{79,50,31,		block_types.names.Brown_Wool},
--- 	{53,70,27,		block_types.names.Green_Wool},
--- 	{150, 52, 48,	block_types.names.Red_Wool},
--- 	{25, 22, 22,	block_types.names.Black_Wool},
--- }
+local block_colors = {
+	[51] = {14,189,203}, -- 沙子 Sand
+	[4] = {228,212,169}, -- 沙石 Sandstone
+	[76] = {221,234,240}, -- 静态水 Still_Water  75:动态水
+	[180] = {154,149,129}, -- 石砖台阶 StoneBrick_Slab
+}
 
 local function tile2deg(x, y, z)
     local n = 2 ^ z
@@ -225,17 +214,27 @@ function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data, tile)
 end
 
 
-function gisToBlocks:drawpixel(x, z, y, blockId)
+function gisToBlocks:drawpixel(x, z, y, block_data)
 	if TileManager.GetInstance():checkMarkArea(x,y,z) then -- 不绘制未加载的
-		BlockEngine:SetBlock(x,y,z,blockId,0); -- y + 1
+		-- BlockEngine:SetBlock(x,y,z,blockId,0); -- y + 1
+		local pixel = block_colors[block_data]
+		local color = ItemColorBlock:ColorToData(Color.RGBA_TO_DWORD(pixel[3],pixel[2],pixel[1], 0))
+		MapBlock:addBlock(x, y, z, color, "fill") -- 只要是空气就可以填补
 	end
 end
+
+-- function gisToBlocks:addSkipData(tile,x,y,z)
+-- 	x = math.ceil(x);y = math.ceil(y);z = math.ceil(z)
+-- 	tile.skips[y] = tile.skips[y] or {}
+-- 	tile.skips[y][x] = tile.skips[y][x] or {}
+-- 	tile.skips[y][x][z] = 1
+-- end
 
 function gisToBlocks:floodFillScanline()
 	
 end
 
-function gisToBlocks:drawline(x1, y1, x2, y2, z, blockId)
+function gisToBlocks:drawline(x1, y1, x2, y2, z, block_data)
 	--local x, y, dx, dy, s1, s2, p, temp, interchange, i;
 	if math.abs(x2-x1) > math.abs(y2-y1) then  
         steps = math.abs(x2 - x1);  
@@ -247,7 +246,7 @@ function gisToBlocks:drawline(x1, y1, x2, y2, z, blockId)
         x = x1;  
         y = y1;  
     for i = 0,steps do  
-        self:drawpixel(x,y,z,blockId);  
+        self:drawpixel(x,y,z,block_data);  
         x = x + increx;
         y = y + increy;
     end  
@@ -256,17 +255,7 @@ end
 function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
 	local tileX,tileY = tile.ranksID.x,tile.ranksID.y;
-
-	-- if(self.options == "coordinate") then
-	-- 	--echo("coordinate");
-	-- 	tileX = self.home.tileX;
-	-- 	tileY = self.home.tileY;
-	-- elseif(self.options == "already")then
-	-- 	--echo("already");
-	-- 	tileX = self.more.tileX;
-	-- 	tileY = self.more.tileY;
-	-- end
-
+	MapBlock:deleteArea({x = tile.rect.l,y = FloorLevel + 1,z = tile.rect.b},{x = tile.rect.r,y = FloorLevel + buildLevelMax + 1,z = tile.rect.t})
 	LOG.std(nil,"debug","tileX,tileY",{tileX,tileY});
 
 	if (not xmlRoot) then
@@ -286,7 +275,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 		count = count + 1;
 	end
 
-	local function draw2Point(self,PointList,blockId,type)
+	local function draw2Point(self,PointList,block_data,type)
 		local PNGSize = math.ceil(PngWidth*factor);
 		local pointA,pointB;
 
@@ -311,9 +300,9 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 
 					local function floor(self)
 						if (pointA.cx < pointB.cx) then
-							self:drawline(pointA.cx, pointA.cy, pointB.cx, pointB.cy, pointA.cz, blockId);
+							self:drawline(pointA.cx, pointA.cy, pointB.cx, pointB.cy, pointA.cz, block_data);
 						else
-							self:drawline(pointB.cx, pointB.cy, pointA.cx, pointA.cy, pointB.cz, blockId);
+							self:drawline(pointB.cx, pointB.cy, pointA.cx, pointA.cy, pointB.cz, block_data);
 						end
 					end
 
@@ -454,10 +443,12 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 								if(type == "waterMore") then
 									for i=1,4 do
 										height = height - 1;
-										BlockEngine:SetBlock(currentPoint.cx,height,loopY,blockId,0);
+										self:drawpixel(currentPoint.cx,loopY,height,blockId)
+										-- BlockEngine:SetBlock(currentPoint.cx,height,loopY,blockId,0);
 									end
 								else
-									BlockEngine:SetBlock(currentPoint.cx,height,loopY,blockId,0);
+									self:drawpixel(currentPoint.cx,loopY,height,blockId)
+									-- BlockEngine:SetBlock(currentPoint.cx,height,loopY,blockId,0);
 								end
 							end
 						end
@@ -1362,15 +1353,21 @@ function gisToBlocks:refreshPlayerInfo()
 				local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
 				local ro,str = TileManager.GetInstance():getForward(true)
 				local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
-				local poInfo = "经度:" .. lon .. " 纬度:" .. lat
-				local foInfo = "人物朝向: " .. ron .. "° " .. str
-				local mapPo = "坐标:(" .. x .. "," .. y .. "," .. z .. ")"
-				local fiInfo = "已加载:" .. TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count
-				GameLogic.AddBBS("statusBar", poInfo .. " " .. mapPo .. " " .. foInfo .. " " .. fiInfo, 15000, "223 81 145"); -- 显示提示条
+				-- local poInfo = "经度:" .. lon .. " 纬度:" .. lat
+				-- local foInfo = "人物朝向: " .. ron .. "° " .. str
+				-- local mapPo = "坐标:(" .. x .. "," .. y .. "," .. z .. ")"
+				-- local fiInfo = "已加载:" .. TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count
+				-- GameLogic.AddBBS("statusBar", poInfo .. " " .. mapPo .. " " .. foInfo .. " " .. fiInfo, 15000, "223 81 145"); -- 显示提示条
 				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
+				sltInstance:setInfor({
+					lon = lon,lat = lat,pos = "(" .. x .. "," .. y .. "," .. z .. ")",
+					loading = TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count,
+					forward = str .. " " .. ron .. "°"
+				});
 			end
 	end});
 	playerLocationTimer:Change(1000,1000);
+	if not SelectLocationTask.isShowInfo then SelectLocationTask.isShowInfo = true end
 end
 
 -- 存储一次数据

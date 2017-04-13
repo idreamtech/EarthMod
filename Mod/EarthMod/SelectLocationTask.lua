@@ -38,6 +38,8 @@ SelectLocationTask.player_curLat = nil;
 SelectLocationTask.player_curState = nil;
 SelectLocationTask.isDownLoaded = nil
 SelectLocationTask.schoolData = nil
+SelectLocationTask.isShowInfo = nil
+SelectLocationTask.playerInfo = {}
 
 function SelectLocationTask:ctor()
 end
@@ -160,11 +162,11 @@ function SelectLocationTask:ShowPage()
 		allowDrag = true,
 		bShow = bShow,
 		directPosition = true,
-			align = "_ctb",
+			align = "_lt",
 			x = 0,
-			y = -55,
-			width = 470,
-			height = 100,
+			y = 60,
+			width = 320,
+			height = 120,
 		cancelShowAnimation = true,
 	});
 end
@@ -187,7 +189,7 @@ function SelectLocationTask:Run()
 	-- local coordinate = EarthMod:GetWorldData("coordinate");
 	-- if(coordinate) then
 	-- end
-	-- self:ShowPage();
+	self:ShowPage();
 end
 
 function SelectLocationTask:setPlayerCoordinate(lon, lat)
@@ -239,3 +241,18 @@ function SelectLocationTask:getSchoolAreaInfo()
 	-- end
 end
 
+function SelectLocationTask:setInfor(para)
+	SelectLocationTask.playerInfo = para
+end
+
+function SelectLocationTask:OnShowInfo()
+	SelectLocationTask.isShowInfo = not SelectLocationTask.isShowInfo
+end
+
+function SelectLocationTask:OnShowMap()
+	-- 切换地图显示
+	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+	-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+	NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -400, 0, 400, 400);
+end

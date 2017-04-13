@@ -53,7 +53,7 @@ function EarthMod:init()
 
 		if(blocks) then
 			blocks[#blocks+1] = {name="block", attr = {name="Earth",
-				id = 10513, item_class="ItemEarth", text="NPL Earth",
+				id = 10513, item_class="ItemEarth", text="虚拟校园贴图",
 				icon = "Mod/EarthMod/textures/icon.png",
 			}}
 			LOG.std(nil, "info", "Earth", "Earth block is registered");
@@ -111,10 +111,10 @@ function EarthMod:OnWorldLoad()
 		                local areaInfo = res.data[1];
 		                -- 如果查询到的最新的经纬度范围不等于原有的范围,则更新已有tileManager信息
 		                -- echo(areaInfo.southWestLng .. " , " .. areaInfo.southWestLat .. " , " .. areaInfo.northEastLng .. " , " .. areaInfo.northEastLat)
-		                -- echo(tostring(areaInfo.southWestLng ~= coordinate.minlon) .. " , " .. tostring(areaInfo.southWestLat ~= coordinate.minlat) .. " , " .. tostring(areaInfo.northEastLng ~= coordinate.maxlon) .. " , " .. tostring(areaInfo.northEastLat ~= coordinate.maxlat))
+		                -- echo(tostring(tonumber(areaInfo.southWestLng) ~= tonumber(coordinate.minlon)) .. " , " .. tostring(tonumber(areaInfo.southWestLat) ~= tonumber(coordinate.minlat)) .. " , " .. tostring(tonumber(areaInfo.northEastLng) ~= tonumber(coordinate.maxlon)) .. " , " .. tostring(tonumber(areaInfo.northEastLat) ~= tonumber(coordinate.maxlat)))
 		                if areaInfo.southWestLng and areaInfo.southWestLat and areaInfo.northEastLng and areaInfo.northEastLat 
-		                	and (areaInfo.southWestLng ~= coordinate.minlon or areaInfo.southWestLat ~= coordinate.minlat 
-		                	or areaInfo.northEastLng ~= coordinate.maxlon or areaInfo.northEastLat ~= coordinate.maxlat) then
+		                	and (tonumber(areaInfo.southWestLng) ~= tonumber(coordinate.minlon) or tonumber(areaInfo.southWestLat) ~= tonumber(coordinate.minlat) 
+		                	or tonumber(areaInfo.northEastLng) ~= tonumber(coordinate.maxlon) or tonumber(areaInfo.northEastLat) ~= tonumber(coordinate.maxlat)) then
 		                	gisToBlocks.minlat = areaInfo.southWestLat
 							gisToBlocks.minlon = areaInfo.southWestLng
 							gisToBlocks.maxlat = areaInfo.northEastLat
