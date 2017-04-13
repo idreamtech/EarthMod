@@ -1353,15 +1353,21 @@ function gisToBlocks:refreshPlayerInfo()
 				local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
 				local ro,str = TileManager.GetInstance():getForward(true)
 				local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
-				local poInfo = "经度:" .. lon .. " 纬度:" .. lat
-				local foInfo = "人物朝向: " .. ron .. "° " .. str
-				local mapPo = "坐标:(" .. x .. "," .. y .. "," .. z .. ")"
-				local fiInfo = "已加载:" .. TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count
-				GameLogic.AddBBS("statusBar", poInfo .. " " .. mapPo .. " " .. foInfo .. " " .. fiInfo, 15000, "223 81 145"); -- 显示提示条
+				-- local poInfo = "经度:" .. lon .. " 纬度:" .. lat
+				-- local foInfo = "人物朝向: " .. ron .. "° " .. str
+				-- local mapPo = "坐标:(" .. x .. "," .. y .. "," .. z .. ")"
+				-- local fiInfo = "已加载:" .. TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count
+				-- GameLogic.AddBBS("statusBar", poInfo .. " " .. mapPo .. " " .. foInfo .. " " .. fiInfo, 15000, "223 81 145"); -- 显示提示条
 				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
+				sltInstance:setInfor({
+					lon = lon,lat = lat,pos = "(" .. x .. "," .. y .. "," .. z .. ")",
+					loading = TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count,
+					forward = str .. " " .. ron .. "°"
+				});
 			end
 	end});
 	playerLocationTimer:Change(1000,1000);
+	if not SelectLocationTask.isShowInfo then SelectLocationTask.isShowInfo = true end
 end
 
 -- 存储一次数据
