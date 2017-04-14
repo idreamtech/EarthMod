@@ -1329,7 +1329,7 @@ end
 -- 更新人物信息
 function gisToBlocks:refreshPlayerInfo()
 	local sltInstance = SelectLocationTask.GetInstance();
-	local playerLocationTimer = playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
+	self.playerLocationTimer = self.playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
 			-- 获取人物坐标信息
 			if SelectLocationTask.player_curLon and SelectLocationTask.player_curLat then
 				local curLon,curLat = SelectLocationTask.player_curLon,SelectLocationTask.player_curLat
@@ -1366,7 +1366,7 @@ function gisToBlocks:refreshPlayerInfo()
 				});
 			end
 	end});
-	playerLocationTimer:Change(1000,1000);
+	self.playerLocationTimer:Change(1000,1000);
 	if not SelectLocationTask.isShowInfo then SelectLocationTask.isShowInfo = true end
 end
 

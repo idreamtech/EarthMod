@@ -34,6 +34,7 @@ function DBStore:ctor()
 	self.dbPath = self.worldPath .. "EarthDB/"
 	self.db = TableDatabase:new():connect(self.dbPath, function() end);
 	curInstance = self
+	echo("onInit: DBStore")
 end
 
 function DBStore:ConfigDB()

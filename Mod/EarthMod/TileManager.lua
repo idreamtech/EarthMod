@@ -475,6 +475,7 @@ function TileManager:Load()
 		self.isLoaded = true
 	end)
 	-- get data
+	echo("onInit: TileManager")
 	-- return true
 	--
 end
