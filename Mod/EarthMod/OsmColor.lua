@@ -1,0 +1,59 @@
+--RGB, block_id
+local block_colors = {
+	apartments = {204,204,204}, -- 住宅区
+	farm = {234,216,189}, 		-- 农场
+	house = {204,204,204}, 		-- 房子(住宅区)
+	-- hotel = {},					-- 旅馆
+}
+-- detached
+-- residential
+-- dormitory
+-- terrace
+-- houseboat
+-- bungalow
+-- static_caravan
+-- commercial
+-- office
+-- industrial
+-- retail
+-- warehouse
+-- bakehouse
+-- cathedral
+-- chapel
+-- church
+-- mosque
+-- temple
+-- synagogue
+-- shrine
+-- civic
+-- hospital
+-- school
+-- stadium
+-- train_station
+-- transportation
+-- university
+-- public
+-- barn
+-- bridge
+-- bunker
+-- cabin
+-- construction
+-- cowshed
+-- digester
+-- farm_auxiliary
+-- garage
+-- garages
+-- greenhouse
+-- hangar
+-- hut
+-- roof
+-- shed
+-- stable
+-- sty
+-- transformer_tower
+-- service
+-- kiosk
+-- carport
+-- ruins
+-- yes
+-- user defined

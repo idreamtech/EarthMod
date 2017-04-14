@@ -172,4 +172,6 @@ end
 function ItemEarth:OnLeaveWorld()
   	-- 离开当前世界时候重新初始化变量
   	self.alreadyBlock = false;
+  	DBS = nil
+  	SysDB = nil
 end

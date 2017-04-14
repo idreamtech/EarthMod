@@ -32,6 +32,7 @@ function DBStore:ctor()
 	self.worldName = string.sub(self.worldPath,20,-1)
 	-- echo("加载世界：" .. self.worldName)
 	self.dbPath = self.worldPath .. "EarthDB/"
+	echo("connect to:" .. self.dbPath)
 	self.db = TableDatabase:new():connect(self.dbPath, function() end);
 	curInstance = self
 	echo("onInit: DBStore")

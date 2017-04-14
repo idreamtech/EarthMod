@@ -1375,3 +1375,10 @@ function gisToBlocks:saveOnFinish()
 	TileManager.GetInstance():Save()
 	CommandManager:RunCommand("/save");
 end
+
+function gisToBlocks:OnLeaveWorld()
+	DBS = nil
+	SysDB = nil
+	if gisToBlocks.timerGet then gisToBlocks.timerGet:Change();gisToBlocks.timerGet = nil end
+	if gisToBlocks.playerLocationTimer then gisToBlocks.playerLocationTimer:Change();gisToBlocks.playerLocationTimer = nil end
+end
