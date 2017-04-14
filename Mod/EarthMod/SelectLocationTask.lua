@@ -157,7 +157,7 @@ end
 
 function SelectLocationTask:ShowPage()
 	local window = self:CreateGetToolWindow();
-	SelectLocationTask.menuWidth = #SelectLocationTask.menus * 37
+	SelectLocationTask.menuWidth = #SelectLocationTask.menus * 42
 	System.App.Commands.Call("File.MCMLWindowFrame", {
 		url  = "Mod/EarthMod/SelectLocationTask.html", 
 		name = "SelectLocationTask", 
@@ -287,8 +287,8 @@ end
 -- 页面菜单
 SelectLocationTask.menus = {
     {order=1,name="地图",icon="mapBtn",func=SelectLocationTask.OnShowMap};
-    {order=2,name="更新瓦片",icon="updateBtn",func=SelectLocationTask.OnClickSelectLocationScript};
-    {order=3,name="信息",icon="geoBtn",func=SelectLocationTask.OnShowInfo};
+    {order=2,name="信息",icon="infoBtn",func=SelectLocationTask.OnShowInfo};
+    {order=3,name="更新瓦片",icon="updateBtn",func=SelectLocationTask.OnClickSelectLocationScript};
     -- add in other btn
     --
 }
