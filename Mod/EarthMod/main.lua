@@ -154,18 +154,23 @@ function EarthMod:OnLeaveWorld()
 		if gisToBlocks.timerGet then gisToBlocks.timerGet:Change();gisToBlocks.timerGet = nil end
 		if gisToBlocks.playerLocationTimer then gisToBlocks.playerLocationTimer:Change();gisToBlocks.playerLocationTimer = nil end
 		MapBlock:OnLeaveWorld()
-	end
-	-- 离开当前世界时候初始化所有变量
-	if (not SelectLocationTask.GetInstance()) then
-		echo("sltInstance nil")
-		SelectLocationTask:OnLeaveWorld();
-  		ItemEarth:OnLeaveWorld();
-  		DBStore:OnLeaveWorld();
-	else
-		echo("sltInstance not nil")
-		SelectLocationTask.GetInstance():OnLeaveWorld();
-  		ItemEarth:OnLeaveWorld();
-  		DBStore.GetInstance():OnLeaveWorld();
+
+		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+		NplCefWindowManager:Destroy("my_window");
+		
+		-- 离开当前世界时候初始化所有变量
+		if (not SelectLocationTask.GetInstance()) then
+			echo("sltInstance nil")
+			SelectLocationTask:OnLeaveWorld();
+	  		ItemEarth:OnLeaveWorld();
+	  		DBStore:OnLeaveWorld();
+		else
+			echo("sltInstance not nil")
+			SelectLocationTask.GetInstance():OnLeaveWorld();
+	  		ItemEarth:OnLeaveWorld();
+	  		DBStore.GetInstance():OnLeaveWorld();
+		end
 	end
 end
 

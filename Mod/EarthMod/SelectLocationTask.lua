@@ -41,6 +41,7 @@ SelectLocationTask.schoolData = nil
 SelectLocationTask.isShowInfo = nil
 SelectLocationTask.playerInfo = {}
 SelectLocationTask.menuWidth = nil
+SelectLocationTask.isRuned = nil
 
 function SelectLocationTask:ctor()
 end
@@ -204,24 +205,29 @@ function SelectLocationTask:ShowPage()
 end
 
 function SelectLocationTask:Run()
-	curInstance = self;
-	self.finished = false;
-	SelectLocationTask.player_curLon = nil;
-	SelectLocationTask.player_curLat = nil;
-	SelectLocationTask.player_curState = nil
-	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
-	DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
-		SelectLocationTask.isFirstSelect = false;
-		SelectLocationTask.isChage       = false;
-		SelectLocationTask.minlat = coordinate.minlat or 0;
-		SelectLocationTask.minlon = coordinate.minlon or 0;
-		SelectLocationTask.maxlat = coordinate.maxlat or 0;
-		SelectLocationTask.maxlon = coordinate.maxlon or 0;
-	end end)
-	-- local coordinate = EarthMod:GetWorldData("coordinate");
-	-- if(coordinate) then
-	-- end
-	self:ShowPage();
+	if not SelectLocationTask.isRuned then
+		SelectLocationTask.isRuned = true
+		echo("slt run")
+		curInstance = self;
+		self.finished = false;
+		SelectLocationTask.player_curLon = nil;
+		SelectLocationTask.player_curLat = nil;
+		SelectLocationTask.player_curState = nil
+		if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
+		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
+			SelectLocationTask.isFirstSelect = false;
+			SelectLocationTask.isChage       = false;
+			SelectLocationTask.minlat = coordinate.minlat or 0;
+			SelectLocationTask.minlon = coordinate.minlon or 0;
+			SelectLocationTask.maxlat = coordinate.maxlat or 0;
+			SelectLocationTask.maxlon = coordinate.maxlon or 0;
+		end end)
+		-- local coordinate = EarthMod:GetWorldData("coordinate");
+		-- if(coordinate) then
+		-- end
+		self:ShowPage();
+		self:onInit();
+	end
 end
 
 function SelectLocationTask:setPlayerCoordinate(lon, lat)
@@ -249,6 +255,7 @@ function SelectLocationTask:getSchoolAreaInfo()
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
 		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
 			DBS:getValue(SysDB,"schoolName",function(schoolName) if schoolName then
+				echo("schoolName is : "..schoolName)
 				self.schoolData = {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat, schoolName = schoolName}}
 			else
 				self.schoolData = {status = 300, data = nil}
@@ -290,8 +297,12 @@ function SelectLocationTask:OnShowMap()
 	-- 切换地图显示
 	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-	-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
-	NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_lt", 5, 70, 400, 400);
+	if NplCefWindowManager:GetPageCtrl("my_window") then
+		NplCefWindowManager:Destroy("my_window")
+	else
+		-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_lt", 5, 70, 400, 400);
+	end
 end
 -- 页面菜单
 SelectLocationTask.menus = {
@@ -320,4 +331,5 @@ function SelectLocationTask:OnLeaveWorld()
   	SelectLocationTask.isShowInfo = nil
   	SelectLocationTask.playerInfo = {}
   	SelectLocationTask.menuWidth = nil
+  	SelectLocationTask.isRuned = nil
 end

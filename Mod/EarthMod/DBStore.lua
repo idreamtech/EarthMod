@@ -165,5 +165,10 @@ function table.clone( object )
 end
 
 function DBStore:OnLeaveWorld()
+	if self.db then
+		-- self.db.Sysm:flush({});
+		-- self.db.Config:flush({});
+		self.db = nil
+	end
 	curInstance = nil;
 end
