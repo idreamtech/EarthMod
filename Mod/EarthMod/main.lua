@@ -151,10 +151,8 @@ end
 function EarthMod:OnLeaveWorld()
 	echo("On Leave World")
 	if TileManager.GetInstance() then
-		if gisToBlocks.timerGet then gisToBlocks.timerGet:Change();gisToBlocks.timerGet = nil end
-		if gisToBlocks.playerLocationTimer then gisToBlocks.playerLocationTimer:Change();gisToBlocks.playerLocationTimer = nil end
 		MapBlock:OnLeaveWorld()
-
+		gisToBlocks:OnLeaveWorld()
 		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
 		NplCefWindowManager:Destroy("my_window");
@@ -171,6 +169,8 @@ function EarthMod:OnLeaveWorld()
 	  		ItemEarth:OnLeaveWorld();
 	  		DBStore.GetInstance():OnLeaveWorld();
 		end
+		DBS = nil
+		SysDB = nil
 	end
 end
 
