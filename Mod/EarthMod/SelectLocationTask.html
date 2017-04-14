@@ -3,39 +3,25 @@
         <![CDATA[
             SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
             SelectLocationTask.InitPage(Page);
-            task = SelectLocationTask.GetInstance();
+            menus = SelectLocationTask.menus
+            menuWidth = SelectLocationTask.menuWidth
+            function clickMenu(name, mcmlNode)
+                local id = tonumber(string.sub(name, 4, -1))
+                SelectLocationTask.menus[id].func()
+            end
+            function getMenu()
+                return menus
+            end
         ]]>
     </script>
     <!-- <pe:container style="padding:5px;background-color:#ff0000"> -->
-    <div style='width:320px;height:120px;'>
-        <div style='position:absolute; width:160px; height:24px; left:10px; top:5px' onclick="SelectLocationTask.OnShowMap()">
-            <img style='width:28px;height:26px;border:none;' src="Mod/EarthMod/textures/map.png"/>
-            <span style='width:auto;height:24px;line-height:20px;font-size:18px;font-weight:bold;margin-left:5px'>显示地图</span>
-        </div>
-        <div style='position:absolute; width:160px; height:24px; left:130px; top:5px;' onclick="SelectLocationTask.OnClickSelectLocationScript()">
-            <img style='width:24px;height:24px;border:none;' src="Mod/EarthMod/textures/icon.png"/>
-            <span style='width:auto;height:24px;line-height:20px;font-size:18px;font-weight:bold;margin-left:5px'>更新地图</span>
-        </div>
-        <div style='position:absolute; width:160px; height:24px; left:245px; top:5px' onclick="SelectLocationTask.OnShowInfo()">
-            <img style='width:19px;height:22px;margin:1px 0;border:none;' src="script/apps/WebServer/admin/wp-content/pages/earth/assets/css/images/11.png"/>
-            <span style='width:auto;height:24px;line-height:20px;font-size:18px;font-weight:bold;margin-left:5px'>地理信息</span>
-        </div>
-        <pe:if condition='<%=task.isShowInfo%>'>
-            <div style='position:absolute; width:160px; height:20px; left:10px; top:34px;'>
-                <span style='width:auto;height:20px;line-height:20px;font-size:18px; color:#0000FF'>经度:<%=task.playerInfo.lon or ""%></span>
+    <div style='height:30px; float:left;' width="<%=menuWidth%>px">
+        <pe:repeat DataSource="<%=getMenu()%>">
+        <pe:repeatitem>
+            <div style='float:left;margin-right:2px;width:40px;height:30px;' onclick="clickMenu" name="<%= 'id_' .. order %>">
+                <a href="<%= '/' .. name %>" style='width:40px;height:30px;'><img style='width:40px;height:30px;border:none;' src="<%=format('Mod/EarthMod/textures/%s.png',icon)%>"/></a>
             </div>
-            <div style='position:absolute; width:160px; height:20px; left:140px; top:34px;'>
-                <span style='width:auto;height:20px;line-height:20px;font-size:18px; color:#0000FF'>纬度:<%=task.playerInfo.lat or ""%></span>
-            </div>
-            <div style='position:absolute; width:160px; height:20px; left:10px; top:59px'>
-                <span style='width:auto;height:20px;line-height:20px;font-size:18px; color:#0000FF'>坐标:<%=task.playerInfo.pos or ""%></span>
-            </div>
-            <div style='position:absolute; width:160px; height:20px; left:200px; top:59px'>
-                <span style='width:auto;height:20px;line-height:20px;font-size:18px; color:#FF0000'>瓦片:<%=task.playerInfo.loading or ""%></span>
-            </div>
-            <div style='position:absolute; width:320px; height:20px; left:10px; top:84px'>
-                <span style='width:auto;height:20px;line-height:20px;font-size:18px; color:#0000FF'>人物朝向:<%=task.playerInfo.forward or ""%></span>
-            </div>
-        </pe:if>
+        </pe:repeatitem>
+        </pe:repeat>
     </div>
 </pe:mcml>
