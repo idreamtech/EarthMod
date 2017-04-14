@@ -37,7 +37,7 @@ function ItemEarth:ctor()
 end
 
 function ItemEarth:OnSelect(itemStack)
-	ItemEarth._super.OnSelect(self,itemStack);
+	ItemEarth._super._super.OnSelect(self,itemStack);
 	if(not WebServer:IsStarted()) then
 		WebServer:Start("script/apps/WebServer/admin", "0.0.0.0", 8099);
 	end
@@ -167,4 +167,9 @@ function ItemEarth:CreateTask(itemStack)
 	local task = SelectLocationTask:new();
 	task:SetItemStack(itemStack);
 	return task;
+end
+
+function ItemEarth:OnLeaveWorld()
+  	-- 离开当前世界时候重新初始化变量
+  	self.alreadyBlock = false;
 end

@@ -162,3 +162,7 @@ function table.clone( object )
     end
     return copyObj( object )
 end
+
+function DBStore:OnLeaveWorld()
+	curInstance = nil;
+end

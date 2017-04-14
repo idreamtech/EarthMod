@@ -134,7 +134,7 @@ function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon,schoolName
 		if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 		DBS:setValue(SysDB,"schoolName",schoolName);
 		DBS:setValue(SysDB,"coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
-		DBS:flush(SysDB)
+		-- DBS:flush(SysDB)
 		-- EarthMod:SetWorldData("schoolName",schoolName);
 		-- EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
 		-- EarthMod:SaveWorldData();
@@ -147,11 +147,20 @@ function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon,schoolName
 		end
 	end
 	DBS:getValue(SysDB,"schoolName",function(name)
-		if (not name) or name == schoolName then
-			doFunc()
-		else
-			echo("学校已创建，取消操作")
-		end
+		-- if (not name) or name == schoolName then
+	    --  doFunc()
+	    -- else
+	    --  echo("学校已创建，取消操作")
+	    -- end
+
+	    if name and name ~= schoolName and SelectLocationTask.isDownLoaded == true then
+	      -- 学校已经生成且学校名字不等于已有名字的情况下,提示学校已经创建,不允许重新赋值经纬度范围
+	      if name ~= nil then
+	        echo("学校["..name.."]已创建，取消操作")
+	      end
+	    else
+	      doFunc()
+	    end
 	end)
 end
 
@@ -292,3 +301,23 @@ SelectLocationTask.menus = {
     -- add in other btn
     --
 }
+
+function SelectLocationTask:OnLeaveWorld()
+    -- 离开当前世界时候重新初始化变量
+  	SelectLocationTask.isFirstSelect = true;
+  	-- this is always a top level task. 
+  	SelectLocationTask.is_top_level  = true;
+  	SelectLocationTask.getMoreTiles  = false;
+
+  	-- 人物坐标对应经纬度
+  	SelectLocationTask.playerLon  = nil;
+  	SelectLocationTask.playerLat  = nil;
+  	SelectLocationTask.player_curLon = nil;
+  	SelectLocationTask.player_curLat = nil;
+  	SelectLocationTask.player_curState = nil;
+  	SelectLocationTask.isDownLoaded = nil
+  	SelectLocationTask.schoolData = nil
+  	SelectLocationTask.isShowInfo = nil
+  	SelectLocationTask.playerInfo = {}
+  	SelectLocationTask.menuWidth = nil
+end
