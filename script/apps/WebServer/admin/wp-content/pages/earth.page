@@ -71,13 +71,14 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 
 ?>
 <style>
+
     ul{
         list-style: none;
         margin: 0px;
         padding: 0px;
     }
     .earth-main{
-        position: relative;
+        /*position: relative;*/
     }
     .search{
         /*position: absolute;*/
@@ -100,16 +101,11 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
         margin-bottom: 15px;
         font-weight: 100;
     }
-
-    .earth-main #map {
-        height: 500px;
-    }
-
     .earth-main button {
         margin-top: 20px;
     }
     .container{
-        width:100% !important;
+        /*width:100% !important;*/
         /*margin:0px !important;*/
         /*padding: 0px !important;*/
     }
@@ -118,7 +114,13 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
         height:16px;
     }
     #map{
-        width:100%;
+        /*width:100%;*/
+        position:fixed;
+        top:0px;
+        bottom:0px;
+        left:0px;
+        right:0px;
+        z-index:999;
     }
     /*.query-list{*/
         /*width:98%;*/
@@ -163,7 +165,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 </div>
 
 <script>
-   $('#map').height($(window).height());
+   // $('#map').height($(window).height());
    // alert(ipLocation);
    // var uniData = {
    //  hz:{
@@ -242,10 +244,10 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     });
     var map  = L.map('map',{
         zoomControl:false,
-        minZoom:4
+        minZoom:3
     });
     var china = [37.899050079360935, 102.83203125]; 
-    map.setView(china,4);
+    map.setView(china,3);
     var corner1 = L.latLng(54.559322, -5.767822),
         corner2 = L.latLng(56.1210604, -3.021240),
         bounds = L.latLngBounds(corner1, corner2);
@@ -453,8 +455,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     map.on('click', onMapClick);
 
     $(function(){
-        $('.navbar').remove();
-        $('.footer').remove();
+        // $('.navbar').remove();
+        // $('.footer').remove();
 
         getSchoolAreaInfo();
 
