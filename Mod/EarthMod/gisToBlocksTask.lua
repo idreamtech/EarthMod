@@ -1359,8 +1359,8 @@ function gisToBlocks:refreshPlayerInfo()
 				-- local fiInfo = "已加载:" .. TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count
 				-- GameLogic.AddBBS("statusBar", poInfo .. " " .. mapPo .. " " .. foInfo .. " " .. fiInfo, 15000, "223 81 145"); -- 显示提示条
 				sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
-				sltInstance:setInfor({
-					lon = lon,lat = lat,pos = "(" .. x .. "," .. y .. "," .. z .. ")",
+				sltInstance:setInfor({-- lon = lon,lat = lat, 经纬度
+					pos = "(" .. x .. "," .. y .. "," .. z .. ")",
 					loading = TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count,
 					forward = str .. " " .. ron .. "°"
 				});

@@ -40,6 +40,7 @@ SelectLocationTask.isDownLoaded = nil
 SelectLocationTask.schoolData = nil
 SelectLocationTask.isShowInfo = nil
 SelectLocationTask.playerInfo = {}
+SelectLocationTask.menuWidth = nil
 
 function SelectLocationTask:ctor()
 end
@@ -52,14 +53,17 @@ function SelectLocationTask:GetItemStack()
 	return self.itemStack;
 end
 
-local page;
+local page,pageInfo;
 function SelectLocationTask.InitPage(Page)
 	page = Page;
 end
+function SelectLocationTask.InitPageInfo(Page)
+	pageInfo = Page
+end
 
 function SelectLocationTask:RefreshPage()
-	if(page) then
-		page:Refresh(0.01);
+	if(pageInfo) then
+		pageInfo:Refresh(0.01);
 	end
 end
 
@@ -102,6 +106,7 @@ end
 
 function SelectLocationTask.OnClickConfirm()
 	page:CloseWindow();
+	pageInfo:CloseWindow();
 end
 
 function SelectLocationTask.OnClickCancel()
@@ -113,6 +118,7 @@ function SelectLocationTask.OnClickCancel()
 	end
 
 	page:CloseWindow();
+	pageInfo:CloseWindow();
 end
 
 function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon,schoolName)
@@ -151,7 +157,7 @@ end
 
 function SelectLocationTask:ShowPage()
 	local window = self:CreateGetToolWindow();
-
+	SelectLocationTask.menuWidth = #SelectLocationTask.menus * 37
 	System.App.Commands.Call("File.MCMLWindowFrame", {
 		url  = "Mod/EarthMod/SelectLocationTask.html", 
 		name = "SelectLocationTask", 
@@ -159,14 +165,31 @@ function SelectLocationTask:ShowPage()
 		DestroyOnClose = true, -- prevent many ViewProfile pages staying in memory / false will only hide window
 		style = CommonCtrl.WindowFrame.ContainerStyle,
 		zorder = 0,
-		allowDrag = true,
+		allowDrag = false,
 		bShow = bShow,
 		directPosition = true,
-			align = "_lt",
+			align = "_rt",
+			x = -7 - SelectLocationTask.menuWidth,
+			y = 35,
+			width = SelectLocationTask.menuWidth,
+			height = 30,
+		cancelShowAnimation = true,
+	});
+	System.App.Commands.Call("File.MCMLWindowFrame", {
+		url  = "Mod/EarthMod/SelectLocationTaskInfo.html", 
+		name = "SelectLocationTaskInfo", 
+		isShowTitleBar = false,
+		DestroyOnClose = true, -- prevent many ViewProfile pages staying in memory / false will only hide window
+		style = CommonCtrl.WindowFrame.ContainerStyle,
+		zorder = 0,
+		allowDrag = false,
+		bShow = bShow,
+		directPosition = true,
+			align = "_ctt",
 			x = 0,
-			y = 60,
-			width = 320,
-			height = 120,
+			y = 37,
+			width = 600,
+			height = 32,
 		cancelShowAnimation = true,
 	});
 end
@@ -248,11 +271,24 @@ end
 function SelectLocationTask:OnShowInfo()
 	SelectLocationTask.isShowInfo = not SelectLocationTask.isShowInfo
 end
-
+-- 初始化一次
+function SelectLocationTask:onInit()
+	GameLogic.SetStatus(L"小提示:左上角菜单中地理信息按钮可以隐藏信息面板 ^_^");
+	self:OnShowMap()
+end
+-- 显示地图
 function SelectLocationTask:OnShowMap()
 	-- 切换地图显示
 	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
 	-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
-	NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_rt", -400, 0, 400, 400);
+	NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_lt", 5, 70, 400, 400);
 end
+-- 页面菜单
+SelectLocationTask.menus = {
+    {order=1,name="地图",icon="mapBtn",func=SelectLocationTask.OnShowMap};
+    {order=2,name="更新瓦片",icon="updateBtn",func=SelectLocationTask.OnClickSelectLocationScript};
+    {order=3,name="信息",icon="geoBtn",func=SelectLocationTask.OnShowInfo};
+    -- add in other btn
+    --
+}

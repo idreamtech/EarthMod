@@ -1,0 +1,24 @@
+﻿<pe:mcml>
+    <script type="text/npl" src="SelectLocationTask.lua" refresh="false">
+        <![CDATA[
+            SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
+            SelectLocationTask.InitPageInfo(Page);
+            task = SelectLocationTask.GetInstance();
+            task:onInit();
+        ]]>
+    </script>
+    <!-- <pe:container style="padding:5px;background-color:#ff0000"> opacity: 0.5; background-color:#00FF00 -->
+    <pe:if condition='<%=task.isShowInfo%>'>
+        <pe:container style='width:600px;height:32px; color:#444444; font-size:14px; line-height:28px;'>
+            <div style='position:absolute; width:205px; height:32px; left:30px; top:0px;'>
+                <span style="font-weight:bold;">坐标：</span><%=task.playerInfo.pos or ""%>
+            </div>
+            <div style='position:absolute; width:205px; height:32px; left:240px; top:0px;'>
+                <span style="font-weight:bold;">人物朝向：</span><%=task.playerInfo.forward or ""%>
+            </div>
+            <div style='position:absolute; width:130px; height:32px; left:450px; top:0px;'>
+                <span style="font-weight:bold;">瓦片：</span><span style='color:#ff0000'><%=task.playerInfo.loading or ""%></span>
+            </div>
+        </pe:container>
+    </pe:if>
+</pe:mcml>
