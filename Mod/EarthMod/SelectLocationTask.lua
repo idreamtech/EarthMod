@@ -332,6 +332,11 @@ function SelectLocationTask:OnLeaveWorld()
   	SelectLocationTask.playerInfo = {}
   	SelectLocationTask.menuWidth = nil
   	SelectLocationTask.isRuned = nil
+
+
+	SelectLocationTask.player_lon = nil;
+	SelectLocationTask.player_lat = nil;
+
   	DBS = nil
   	SysDB = nil
 end
