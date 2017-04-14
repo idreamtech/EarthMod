@@ -152,6 +152,7 @@ function EarthMod:OnLeaveWorld()
 	echo("On Leave World")
 	if TileManager.GetInstance() then
 		if gisToBlocks.timerGet then gisToBlocks.timerGet:Change();gisToBlocks.timerGet = nil end
+		if gisToBlocks.playerLocationTimer then gisToBlocks.playerLocationTimer:Change();gisToBlocks.playerLocationTimer = nil end
 		MapBlock:OnLeaveWorld()
 	end
 	-- 离开当前世界时候初始化所有变量
