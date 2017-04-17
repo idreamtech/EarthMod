@@ -488,8 +488,9 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                         // res.data是数组
                         // console.log(res.data);
                         for(var i=0;i<res.data.length;i++){
-                            if(res.data[i].schoolName){
-                                arr.push(res.data[i].schoolName)
+                            var school = res.data[i];
+                            if(school.schoolName && typeof(school.northEastLat) != "undefined" && typeof(school.southWestLat) != "undefined" && typeof(school.southWestLng) != "undefined" && typeof(school.northEastLng) != "undefined"){
+                                arr.push(school.schoolName)
                             }
                         }
                         $('.search-inp').typeahead({
@@ -537,10 +538,11 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                 dataType:"json",
                 success:function(res){
                     // console.log(res);
+                    document.getElementsByClassName('search-inp')[0].value = schoolName;
                     if(res && res.error && res.data && res.error.id == 0){
                         // 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
                         // res.data是数组
-                        console.log(res.data);
+                        // console.log(res.data);
                         renderUniversity(schoolName,res.data[0]);
                     }else{
                         alert("学校信息不存在")
