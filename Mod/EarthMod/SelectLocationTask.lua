@@ -281,6 +281,8 @@ function SelectLocationTask:getSchoolAreaInfo()
 end
 
 function SelectLocationTask:setInfor(para)
+	echo("SelectLocationTask:setInfor")
+	echo(para)
 	SelectLocationTask.playerInfo = para
 end
 
@@ -319,7 +321,6 @@ function SelectLocationTask:OnLeaveWorld()
   	-- this is always a top level task. 
   	SelectLocationTask.is_top_level  = true;
   	SelectLocationTask.getMoreTiles  = false;
-
   	-- 人物坐标对应经纬度
   	SelectLocationTask.playerLon  = nil;
   	SelectLocationTask.playerLat  = nil;
@@ -332,11 +333,9 @@ function SelectLocationTask:OnLeaveWorld()
   	SelectLocationTask.playerInfo = {}
   	SelectLocationTask.menuWidth = nil
   	SelectLocationTask.isRuned = nil
-
-
 	SelectLocationTask.player_lon = nil;
 	SelectLocationTask.player_lat = nil;
-
   	DBS = nil
   	SysDB = nil
+  	curInstance = nil
 end
