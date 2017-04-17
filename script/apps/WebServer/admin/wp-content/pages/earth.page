@@ -236,7 +236,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     
     var currentIcon = L.icon({
         iconUrl: '/wp-content/pages/earth/assets/css/images/marker-icon.png',
-        iconSize: [14, 24],
+        iconSize: [15, 47],
     })
     var myIcon = L.icon({
         iconUrl: '/wp-content/pages/earth/assets/css/images/4.png',
