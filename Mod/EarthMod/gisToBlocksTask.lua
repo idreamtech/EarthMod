@@ -1181,6 +1181,8 @@ function gisToBlocks:downloadMap(i,j)
 			TileManager.GetInstance().pushMapFlag[i][j] = nil
 			TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes - 1
 			if TileManager.GetInstance().curTimes < 0 then TileManager.GetInstance().curTimes = 0 end
+			getOsmService.isUpdateMode = true
+			getOsmService.isUpdateModeOSM = true
 		end
 	end
 	TileManager.GetInstance().pushMapFlag[i] = TileManager.GetInstance().pushMapFlag[i] or {}
@@ -1203,7 +1205,7 @@ function gisToBlocks:startDrawTiles()
 		getOsmService.tileX = tile.ranksID.x;
 		getOsmService.tileY = tile.ranksID.y;
 		self:GetData(tile.ranksID.x,tile.ranksID.y,tile.x,tile.y,function(raster,vector)
-			LOG.std(nil,"debug","gosToBlocks","getData");
+			LOG.std(nil,"gosToBlocks","gosToBlocks","getData");
 			self:LoadToScene(raster,vector,po.x,po.y,po.z,tile);
 		end);
 		LOG.std(nil,"debug","gosToBlocks","一张下载完成，开始绘制..");
@@ -1336,12 +1338,12 @@ function gisToBlocks:refreshPlayerInfo()
 				local curLon,curLat = SelectLocationTask.player_curLon,SelectLocationTask.player_curLat
 				SelectLocationTask.player_lon = curLon
 				SelectLocationTask.player_lat = curLat
-				local po = TileManager.GetInstance():getParaPo(curLon,curLat)
-				CommandManager:RunCommand("/goto " .. po.x .. " " .. (po.y + 2) .. " " .. po.z)
+				local po = self:getRoleFloor(TileManager.GetInstance():getParaPo(curLon,curLat))
+				CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
 				echo("人物跳转开始");echo(po)
+				SelectLocationTask.player_curState = po
 				SelectLocationTask.player_curLon = nil
 				SelectLocationTask.player_curLat = nil
-				SelectLocationTask.player_curState = po
 			else
 				local x, y, z = EntityManager.GetFocus():GetBlockPos();
 				if SelectLocationTask.player_curState then
@@ -1382,4 +1384,18 @@ function gisToBlocks:OnLeaveWorld()
 	SysDB = nil
 	if gisToBlocks.timerGet then gisToBlocks.timerGet:Change();gisToBlocks.timerGet = nil end
 	if gisToBlocks.playerLocationTimer then gisToBlocks.playerLocationTimer:Change();gisToBlocks.playerLocationTimer = nil end
+end
+
+function gisToBlocks:getRoleFloor(po)
+	local function checkRoleCanSit(p)
+		local id1,id2 = BlockEngine:GetBlockId(p.x,p.y + 1,p.z),BlockEngine:GetBlockId(p.x,p.y + 2,p.z)
+		if id1 and id2 and id1 == 0 and id2 == 0 then -- 检测草地(id:62) 空气0
+			return true
+		end
+		return false
+	end
+	while (not checkRoleCanSit(po)) do
+		po.y = po.y + 1
+	end
+	return po
 end
