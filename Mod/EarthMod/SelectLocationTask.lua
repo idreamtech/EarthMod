@@ -35,7 +35,6 @@ SelectLocationTask.playerLon  = nil;
 SelectLocationTask.playerLat  = nil;
 SelectLocationTask.player_curLon = nil;
 SelectLocationTask.player_curLat = nil;
-SelectLocationTask.player_curState = nil;
 SelectLocationTask.isDownLoaded = nil
 SelectLocationTask.schoolData = nil
 SelectLocationTask.isShowInfo = nil
@@ -212,7 +211,6 @@ function SelectLocationTask:Run()
 		self.finished = false;
 		SelectLocationTask.player_curLon = nil;
 		SelectLocationTask.player_curLat = nil;
-		SelectLocationTask.player_curState = nil
 		if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
 			SelectLocationTask.isFirstSelect = false;
@@ -246,7 +244,6 @@ function SelectLocationTask:setPlayerLocation(lon, lat)
 	-- GameLogic.AddBBS("statusBar", str, 15000, "223 81 145"); -- 显示提示条
 	SelectLocationTask.player_curLon = lon;
 	SelectLocationTask.player_curLat = lat;
-	SelectLocationTask.player_curState = nil
 	LOG.std(nil,"RunFunction","SelectLocationTask",str)
 end
 
@@ -326,7 +323,6 @@ function SelectLocationTask:OnLeaveWorld()
   	SelectLocationTask.playerLat  = nil;
   	SelectLocationTask.player_curLon = nil;
   	SelectLocationTask.player_curLat = nil;
-  	SelectLocationTask.player_curState = nil;
   	SelectLocationTask.isDownLoaded = nil
   	SelectLocationTask.schoolData = nil
   	SelectLocationTask.isShowInfo = nil
