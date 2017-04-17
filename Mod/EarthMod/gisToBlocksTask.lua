@@ -253,6 +253,7 @@ function gisToBlocks:drawline(x1, y1, x2, y2, z, block_data)
 end
 
 function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
+	if not vector then return end
 	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
 	local tileX,tileY = tile.ranksID.x,tile.ranksID.y;
 	MapBlock:deleteArea({x = tile.rect.l,y = FloorLevel + 1,z = tile.rect.b},{x = tile.rect.r,y = FloorLevel + buildLevelMax + 1,z = tile.rect.t})
@@ -1069,7 +1070,7 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,tile)
 end
 
 function gisToBlocks:GetData(x,y,i,j,_callback)
-	local raster,vector;
+	local raster;
 	local tileX,tileY = x,y
 	local dtop,dbottom,dleft,dright;
 	gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(tileX,tileY,0,0,self.zoom);

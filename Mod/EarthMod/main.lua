@@ -156,19 +156,11 @@ function EarthMod:OnLeaveWorld()
 		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
 		NplCefWindowManager:Destroy("my_window");
-		
 		-- 离开当前世界时候初始化所有变量
-		if (not SelectLocationTask.GetInstance()) then
-			echo("sltInstance nil")
-			SelectLocationTask:OnLeaveWorld();
-	  		ItemEarth:OnLeaveWorld();
-	  		DBStore:OnLeaveWorld();
-		else
-			echo("sltInstance not nil")
-			SelectLocationTask.GetInstance():OnLeaveWorld();
-	  		ItemEarth:OnLeaveWorld();
-	  		DBStore.GetInstance():OnLeaveWorld();
-		end
+		echo("sltInstance set nil")
+		SelectLocationTask:OnLeaveWorld();
+  		ItemEarth:OnLeaveWorld();
+  		DBStore:OnLeaveWorld();
 		DBS = nil
 		SysDB = nil
 	end
