@@ -244,6 +244,7 @@ function SelectLocationTask:ShowPage()
 			height = 32,
 		cancelShowAnimation = true,
 	});
+
 end
 
 function SelectLocationTask:Run()
@@ -368,6 +369,7 @@ function SelectLocationTask:OnLeaveWorld()
   	SelectLocationTask.schoolData = nil
   	SelectLocationTask.isShowInfo = nil
   	SelectLocationTask.playerInfo = {}
+  	SelectLocationTask:RefreshPage()
   	SelectLocationTask.menuWidth = nil
   	SelectLocationTask.isRuned = nil
 	SelectLocationTask.player_lon = nil;
