@@ -59,6 +59,8 @@ gisToBlocks.concurrent_creation_point_count = 1;
 gisToBlocks.colors = 32;
 gisToBlocks.zoom   = 17;
 gisToBlocks.crossPointLists = {};
+gisToBlocks.isDrawingMap = nil
+
 local factor = 1.19 -- 地图缩放比例
 local PngWidth = 256
 local FloorLevel = 5 -- 绘制地图层层高：草地层
@@ -930,8 +932,10 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 						self:fillingGap()
 					end
 					TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes + 1
+					if TileManager.GetInstance().curTimes > TileManager.GetInstance().count then TileManager.GetInstance().curTimes = TileManager.GetInstance().count end
 					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
 					self:saveOnFinish()
+					self.isDrawingMap = nil
 				end
 			end})
 			timer:Change(30,30);
@@ -941,6 +945,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 			LOG.std(nil, "error", "PNGToBlockScale", "format not supported process: %d / %d", TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
 			raster:close();
 			TileManager.GetInstance().passTimes = TileManager.GetInstance().passTimes + 1
+					if TileManager.GetInstance().curTimes > TileManager.GetInstance().count then TileManager.GetInstance().curTimes = TileManager.GetInstance().count end
 		end
 	end
 end
@@ -1171,6 +1176,7 @@ end
 function gisToBlocks:downloadMap(i,j)
 	local po,tile = nil,nil
 	if (not i) and (not j) then
+		if self.isDrawingMap then return end
 		local px, py, pz = EntityManager.GetFocus():GetBlockPos();
 		i, j = TileManager.GetInstance():getInTile(px, py, pz)
 		if type(i) == "table" then j = i.y; i = i.x end
@@ -1193,6 +1199,7 @@ function gisToBlocks:downloadMap(i,j)
 			LOG.std(nil,"debug","gosToBlocks","添加绘制任务 " .. tile.x .. "," .. tile.y);
 			TileManager.GetInstance():push(tile)
 			TileManager.GetInstance().pushMapFlag[i][j] = true
+			self.isDrawingMap = true
 		end
 	end
 end
@@ -1368,6 +1375,7 @@ end
 function gisToBlocks:OnLeaveWorld()
 	DBS = nil
 	SysDB = nil
+	self.isDrawingMap = nil
 	if gisToBlocks.timerGet then gisToBlocks.timerGet:Change();gisToBlocks.timerGet = nil end
 	if gisToBlocks.playerLocationTimer then gisToBlocks.playerLocationTimer:Change();gisToBlocks.playerLocationTimer = nil end
 end
