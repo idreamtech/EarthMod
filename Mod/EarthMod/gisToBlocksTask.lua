@@ -24,6 +24,16 @@ NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 
+-- 配置参数 --
+local CorrectMode = nil -- 开启矫正模式  矫正地图定位偏差
+local DrawAllMap = nil -- 开启全部自动绘制
+local factor = 1 -- 地图缩放比例 .19
+local PngWidth = 256
+local FloorLevel = 5 -- 绘制地图层层高：草地层
+local buildLevelMax = 30 -- 绘制地图层层高：草地层
+--------------
+
+
 local Color           = commonlib.gettable("System.Core.Color");
 local ItemColorBlock  = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
 local UndoManager     = commonlib.gettable("MyCompany.Aries.Game.UndoManager");
@@ -61,11 +71,6 @@ gisToBlocks.zoom   = 17;
 gisToBlocks.crossPointLists = {};
 gisToBlocks.isMapping = nil -- 是否正在绘制地图
 
-local factor = 1 -- 地图缩放比例 .19
-local PngWidth = 256
-local FloorLevel = 5 -- 绘制地图层层高：草地层
-local buildLevelMax = 30 -- 绘制地图层层高：草地层
-local CorrectMode = nil -- 开启矫正模式  矫正地图定位偏差
 
 --RGB, block_id
 local block_colors = {
@@ -1159,6 +1164,16 @@ end
 -- 绘制玩家周围一圈地图
 function gisToBlocks:BoundaryCheck(px, py, pz)
 	-- if self.isDrawing then return false end
+	if DrawAllMap then -- 自动全部绘制
+		DrawAllMap = nil
+		self.cols, self.rows = TileManager.GetInstance():getIterSize();
+		for x = 1,self.cols do
+			for y=1,self.rows do
+				self:downloadMap(x,y)
+			end
+		end
+		return
+	end
 	if px == nil and py == nil and pz == nil then
 		px, py, pz = EntityManager.GetFocus():GetBlockPos();
 	end

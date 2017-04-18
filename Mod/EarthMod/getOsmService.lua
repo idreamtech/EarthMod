@@ -20,9 +20,13 @@ local Encoding      = commonlib.gettable("System.Encoding");
 getOsmService.osmHost   = "openstreetmap.org";
 getOsmService.tryTimes  = 0;
 getOsmService.worldName = GameLogic.GetWorldDirectory();
-getOsmService.Draw3DBuilding = true -- 是否绘制地上建筑
 getOsmService.isUpdateMode = nil
 getOsmService.isUpdateModeOSM = nil
+
+-- 配置参数 --
+getOsmService.Draw3DBuilding = nil -- 是否绘制地上建筑
+
+--------------
 
 function getOsmService:ctor()
 end
