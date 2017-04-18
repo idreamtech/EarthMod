@@ -23,7 +23,11 @@ DBStore.dbPath = nil
 DBStore.db = nil -- database directory
 local XML_MODE = 1 -- xml
 local TDB_MODE = 0 -- table database
+
+-- 配置参数 --
 local saveMode = XML_MODE -- 存储模式
+
+--------------
 
 function DBStore.GetInstance()
 	if curInstance == nil then return DBStore:new() end
@@ -237,10 +241,11 @@ function DBStore:transXmlDataToDB(toDb,keys)
 	self:saveTable(toDb)
 end
 --[[ using for transfer code
+NPL.load("(gl)Mod/EarthMod/TileManager.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
-NPL.load("(gl)Mod/EarthMod/TileManager.lua");
-local TileManager = commonlib.gettable("Mod.EarthMod.TileManager");
+local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
+-- echo(TileManager.GetInstance().popID)
 local dbs = DBStore.GetInstance()
 local sys = dbs:SystemDB()
 local arr = {"alreadyBlock",schoolName="中国财经大学","coordinate","boundary"}
@@ -252,6 +257,33 @@ local func = function(str)
 end
 dbs:transXmlDataToDB(sys,arr)
 dbs:packDatabase(sys,arr,func)
+
+1.设置gisToBlocks中CorrectMode为true 开启测试模式
+1.跑transXmlDataToDB
+2.packDatabase
+3.配置xml位置到服务器校园位置
+3.重启。
+4.定点校准，重启,关闭CorrectMode模式,开启DrawAllMap
+5.绘制完后重启，关闭DrawAllMap
+5.后期删除多余建筑
+
+
+-- 坐标换算：
+-- northEastLng <=> maxlon <=> southEastLng
+-- southWestLng <=> minlon <=> norhtWestLng
+-- northEastLat <=> maxlat <=> northWestLat
+-- southWestLat <=> minlat <=> southEastLat
+-- 删除建筑代码
+local BlockEngine = commonlib.gettable("MyCompany.Aries.Game.BlockEngine");
+po1 = {x=21637,y=34,z=20351}
+po2 = {x=23315,y=34,z=21681}
+for y = po1.y,po2.y do -- 垂直
+	for x = po1.x,po2.x do -- 水平x
+		for z = po1.z,po2.z do -- 水平y
+			BlockEngine:SetBlockToAir(x,y,z)
+		end
+	end
+end
 ]]
 
 function DBStore:OnLeaveWorld()
