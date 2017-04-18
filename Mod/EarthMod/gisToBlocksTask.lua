@@ -65,6 +65,7 @@ local factor = 1 -- 地图缩放比例 .19
 local PngWidth = 256
 local FloorLevel = 5 -- 绘制地图层层高：草地层
 local buildLevelMax = 30 -- 绘制地图层层高：草地层
+local CorrectMode = nil -- 开启矫正模式  矫正地图定位偏差
 
 --RGB, block_id
 local block_colors = {
@@ -1347,18 +1348,20 @@ function gisToBlocks:refreshPlayerInfo()
 	local sltInstance = SelectLocationTask.GetInstance();
 	self.playerLocationTimer = self.playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
 			-- 获取人物坐标信息
-			local x,y,z = nil,nil,nil
+			local x,y,z = EntityManager.GetFocus():GetBlockPos()
 			if SelectLocationTask.player_curLon and SelectLocationTask.player_curLat then
 				local curLon,curLat = SelectLocationTask.player_curLon,SelectLocationTask.player_curLat
 				SelectLocationTask.player_lon = curLon
 				SelectLocationTask.player_lat = curLat
-				local po = TileManager.GetInstance():getParaPo(curLon,curLat) -- self:getRoleFloor()
-				GameLogic.GetPlayer():SetBlockPos(po.x,po.y,po.z)
+				if CorrectMode then -- 矫正模式
+					TileManager.GetInstance():correctPositionSystem(x,y,z,curLon,curLat)
+				else -- 跳转模式
+					local po = TileManager.GetInstance():getParaPo(curLon,curLat) -- self:getRoleFloor()
+					GameLogic.GetPlayer():SetBlockPos(po.x,po.y,po.z)
+					x,y,z = po.x,po.y,po.z
+				end
 				SelectLocationTask.player_curLon = nil
 				SelectLocationTask.player_curLat = nil
-				x,y,z = po.x,po.y,po.z
-			else
-				x,y,z = EntityManager.GetFocus():GetBlockPos();
 			end
 			local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
 			local ro,str = TileManager.GetInstance():getForward(true)

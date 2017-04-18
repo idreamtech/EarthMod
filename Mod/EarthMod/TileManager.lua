@@ -389,6 +389,18 @@ function TileManager:getParaPo(lon,lat)
 	return {x = math.round(dx),y = self.firstBlockPo.y,z = math.round(dz)}
 end
 
+-- 坐标系矫正函数
+function TileManager:correctPositionSystem(x,y,z,lon,lat)
+	local pSys = self:getParaPo(lon,lat) -- 系统中的位置
+	local pCur = {x=x,y=self.firstBlockPo.y,z=z} -- 当前实际位置
+	local mov = self:pSub(pCur,pSys)
+	echo("矫正 oraPo:");echo(self.firstBlockPo)
+	self.firstBlockPo = self:pAdd(self.firstBlockPo,mov)
+	self.oPo = self:pAdd(self.oPo,mov)
+	echo("toPo:");echo(self.firstBlockPo)
+	self:Save()
+end
+
 -- 获取人物面向朝向
 function TileManager:getForward(needStr) -- 正北为0度，东南西为90 180 270
 	local player = ParaScene.GetPlayer()
@@ -437,17 +449,10 @@ function TileManager:Save()
 	tileData.firstGPo = self.firstGPo -- 传入地理位置信息
 	tileData.lastGPo = self.lastGPo
 	tileData.idHL = self.idHL
-	--
 	DBStore.GetInstance():saveTable(self:db(),tileData)
-	-- 
-	-- EarthMod:SetWorldData("tileData",json);
-	-- EarthMod:SaveWorldData();
 end
 -- 读取参数
 function TileManager:Load()
-	-- local json = EarthMod:GetWorldData("tileData")
-	-- if not json then return nil end
-	-- local tileData = commonlib.Json.Decode(json)
 	DBStore.GetInstance():loadTable(self:db(),function(tileData)
 		self.tiles = tileData.tiles
 		self.tileSize = tileData.tileSize
@@ -470,10 +475,7 @@ function TileManager:Load()
 		self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 		self.isLoaded = true
 	end)
-	-- get data
 	echo("onInit: TileManager")
-	-- return true
-	--
 end
 
 -- 检查坐标点是否在标记区域内
