@@ -103,7 +103,7 @@ function SelectLocationTask.checkUpdateMap()
 		                -- 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
 		                local areaInfo = res.data[1];
 		                -- 如果查询到的最新的经纬度范围不等于原有的范围,则更新已有tileManager信息
-		                if areaInfo.southWestLng and areaInfo.southWestLat and areaInfo.northEastLng and areaInfo.northEastLat 
+		                if areaInfo and areaInfo.southWestLng and areaInfo.southWestLat and areaInfo.northEastLng and areaInfo.northEastLat 
 		                	and (tonumber(areaInfo.southWestLng) ~= tonumber(coordinate.minlon) or tonumber(areaInfo.southWestLat) ~= tonumber(coordinate.minlat) 
 		                	or tonumber(areaInfo.northEastLng) ~= tonumber(coordinate.maxlon) or tonumber(areaInfo.northEastLat) ~= tonumber(coordinate.maxlat)) then
 		                	gisToBlocks.minlat = areaInfo.southWestLat

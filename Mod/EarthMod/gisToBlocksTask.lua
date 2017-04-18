@@ -1180,8 +1180,10 @@ end
 
 -- 申请下载地图
 function gisToBlocks:downloadMap(i,j)
-	local po,tile = nil,nil
+	if CorrectMode then return end
+	local po,tile,isUpdate = nil,nil,nil
 	if (not i) and (not j) then
+		isUpdate = true
 		local px, py, pz = EntityManager.GetFocus():GetBlockPos();
 		i, j = TileManager.GetInstance():getInTile(px, py, pz)
 		if type(i) == "table" then j = i.y; i = i.x end
@@ -1206,8 +1208,10 @@ function gisToBlocks:downloadMap(i,j)
 				end
 				LOG.std(nil,"debug","gosToBlocks","添加绘制任务 " .. tile.x .. "," .. tile.y);
 				TileManager.GetInstance().pushMapFlag[i][j] = true
-				TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes - 1
-				if TileManager.GetInstance().curTimes < 0 then TileManager.GetInstance().curTimes = 0 end
+				if isUpdate then
+					TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes - 1
+					if TileManager.GetInstance().curTimes < 0 then TileManager.GetInstance().curTimes = 0 end
+				end
 			end
 		end
 	end
