@@ -115,7 +115,7 @@ function EarthMod:OnWorldLoad()
 		                -- 如果查询到的最新的经纬度范围不等于原有的范围,则更新已有tileManager信息
 		                -- echo(areaInfo.southWestLng .. " , " .. areaInfo.southWestLat .. " , " .. areaInfo.northEastLng .. " , " .. areaInfo.northEastLat)
 		                -- echo(tostring(tonumber(areaInfo.southWestLng) ~= tonumber(coordinate.minlon)) .. " , " .. tostring(tonumber(areaInfo.southWestLat) ~= tonumber(coordinate.minlat)) .. " , " .. tostring(tonumber(areaInfo.northEastLng) ~= tonumber(coordinate.maxlon)) .. " , " .. tostring(tonumber(areaInfo.northEastLat) ~= tonumber(coordinate.maxlat)))
-		                if areaInfo.southWestLng and areaInfo.southWestLat and areaInfo.northEastLng and areaInfo.northEastLat 
+		                if areaInfo and areaInfo.southWestLng and areaInfo.southWestLat and areaInfo.northEastLng and areaInfo.northEastLat 
 		                	and (tonumber(areaInfo.southWestLng) ~= tonumber(coordinate.minlon) or tonumber(areaInfo.southWestLat) ~= tonumber(coordinate.minlat) 
 		                	or tonumber(areaInfo.northEastLng) ~= tonumber(coordinate.maxlon) or tonumber(areaInfo.northEastLat) ~= tonumber(coordinate.maxlat)) then
 		                	gisToBlocks.minlat = areaInfo.southWestLat
