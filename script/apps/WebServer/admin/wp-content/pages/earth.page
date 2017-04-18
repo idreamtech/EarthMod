@@ -214,6 +214,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
             var input = L.DomUtil.create("input", "search-inp");
             input.placeholder = "请输入校园名称";
             input.setAttribute('data-provide','typeahead');
+            input.setAttribute('maxlength','50');
             input.ondblclick = this._ondblclick;
             container.onclick = this._onclick;
             // container.stopPropagation();
