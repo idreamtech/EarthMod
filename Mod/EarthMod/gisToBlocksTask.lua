@@ -59,9 +59,9 @@ gisToBlocks.concurrent_creation_point_count = 1;
 gisToBlocks.colors = 32;
 gisToBlocks.zoom   = 17;
 gisToBlocks.crossPointLists = {};
-gisToBlocks.isDrawingMap = nil
+gisToBlocks.isMapping = nil -- 是否正在绘制地图
 
-local factor = 1.19 -- 地图缩放比例
+local factor = 1 -- 地图缩放比例 .19
 local PngWidth = 256
 local FloorLevel = 5 -- 绘制地图层层高：草地层
 local buildLevelMax = 30 -- 绘制地图层层高：草地层
@@ -848,6 +848,13 @@ end
 -- 扩大地图到1:1 需修改factor为1.19
 function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 	local colors = self.colors;
+	local function onFinish()
+		TileManager.GetInstance():onFinishPop(tile.id) -- 清空标志可以继续下载
+		if gisToBlocks.isMapping and #TileManager.GetInstance().popID < 1 then
+			gisToBlocks.isMapping = nil
+			self:onMappingEnd()
+		end
+	end
 	if(raster:IsValid()) then
 		local ver           = raster:ReadInt();
 		local width         = raster:ReadInt();
@@ -932,20 +939,20 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 						self:fillingGap()
 					end
 					TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes + 1
-					if TileManager.GetInstance().curTimes > TileManager.GetInstance().count then TileManager.GetInstance().curTimes = TileManager.GetInstance().count end
+					-- if TileManager.GetInstance().curTimes > TileManager.GetInstance().count then TileManager.GetInstance().curTimes = TileManager.GetInstance().count end
 					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
 					self:saveOnFinish()
-					self.isDrawingMap = nil
+					onFinish()
 				end
 			end})
 			timer:Change(30,30);
-
 			UndoManager.PushCommand(self);
 		else
 			LOG.std(nil, "error", "PNGToBlockScale", "format not supported process: %d / %d", TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
 			raster:close();
 			TileManager.GetInstance().passTimes = TileManager.GetInstance().passTimes + 1
-					if TileManager.GetInstance().curTimes > TileManager.GetInstance().count then TileManager.GetInstance().curTimes = TileManager.GetInstance().count end
+			onFinish()
+			-- if TileManager.GetInstance().curTimes > TileManager.GetInstance().count then TileManager.GetInstance().curTimes = TileManager.GetInstance().count end
 		end
 	end
 end
@@ -1084,12 +1091,10 @@ function gisToBlocks:GetData(x,y,i,j,_callback)
 	dbottom = gisToBlocks.dbottom;
 	dleft   = gisToBlocks.dleft;
 	dright  = gisToBlocks.dright;
-	GameLogic.SetStatus(L"下载数据中");
 	LOG.std(nil,"debug","gisToBlocks","下载数据中");
 	getOsmService:getOsmPNGData(x,y,i,j,function(raster)
 		getOsmService:getOsmXMLData(x,y,i,j,dleft,dbottom,dright,dtop,function(vector)
 			raster = ParaIO.open("tile_"..x.."_"..y..".png", "image");
-			GameLogic.SetStatus(L"下载成功");
 			LOG.std(nil,"debug","gisToBlocks","下载成功");
 			_callback(raster,vector);
 		end);
@@ -1176,7 +1181,6 @@ end
 function gisToBlocks:downloadMap(i,j)
 	local po,tile = nil,nil
 	if (not i) and (not j) then
-		if self.isDrawingMap then return end
 		local px, py, pz = EntityManager.GetFocus():GetBlockPos();
 		i, j = TileManager.GetInstance():getInTile(px, py, pz)
 		if type(i) == "table" then j = i.y; i = i.x end
@@ -1185,8 +1189,6 @@ function gisToBlocks:downloadMap(i,j)
 			tile.isDrawed = nil
 			TileManager.GetInstance().pushMapFlag[i] = TileManager.GetInstance().pushMapFlag[i] or {}
 			TileManager.GetInstance().pushMapFlag[i][j] = nil
-			TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes - 1
-			if TileManager.GetInstance().curTimes < 0 then TileManager.GetInstance().curTimes = 0 end
 			getOsmService.isUpdateMode = true
 			getOsmService.isUpdateModeOSM = true
 		end
@@ -1196,10 +1198,16 @@ function gisToBlocks:downloadMap(i,j)
 		if not tile then po,tile = TileManager.GetInstance():getDrawPosition(i,j); end
 		if tile and (not tile.isDrawed) then
 			if TileManager.GetInstance().pushMapFlag[i][j] == 1 then tile.needFill = true end -- 填补模式
-			LOG.std(nil,"debug","gosToBlocks","添加绘制任务 " .. tile.x .. "," .. tile.y);
-			TileManager.GetInstance():push(tile)
-			TileManager.GetInstance().pushMapFlag[i][j] = true
-			self.isDrawingMap = true
+			if TileManager.GetInstance():push(tile) then
+				if not gisToBlocks.isMapping then
+					gisToBlocks.isMapping = true
+					self:onMappingBegin()
+				end
+				LOG.std(nil,"debug","gosToBlocks","添加绘制任务 " .. tile.x .. "," .. tile.y);
+				TileManager.GetInstance().pushMapFlag[i][j] = true
+				TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes - 1
+				if TileManager.GetInstance().curTimes < 0 then TileManager.GetInstance().curTimes = 0 end
+			end
 		end
 	end
 end
@@ -1218,7 +1226,7 @@ function gisToBlocks:startDrawTiles()
 		LOG.std(nil,"debug","gosToBlocks","一张下载完成，开始绘制..");
 	end
 	self.timerGet = commonlib.Timer:new({callbackFunc = function(timer)
-		tile,popCount = TileManager.GetInstance():pop()
+		tile = TileManager.GetInstance():pop()
 		if tile and (not tile.isDrawed) then
 			onDraw(tile)
 		end
@@ -1375,7 +1383,6 @@ end
 function gisToBlocks:OnLeaveWorld()
 	DBS = nil
 	SysDB = nil
-	self.isDrawingMap = nil
 	if gisToBlocks.timerGet then gisToBlocks.timerGet:Change();gisToBlocks.timerGet = nil end
 	if gisToBlocks.playerLocationTimer then gisToBlocks.playerLocationTimer:Change();gisToBlocks.playerLocationTimer = nil end
 end
@@ -1393,4 +1400,15 @@ function gisToBlocks:getRoleFloor(po)
 		po.y = po.y + 1
 	end
 	return po
+end
+
+-- 下载开始
+function gisToBlocks:onMappingBegin()
+	echo("onMappingBegin 下载开始")
+	GameLogic.AddBBS("statusBar","开始地图绘制..", 2000, "223 81 145")
+end
+-- 绘制结束
+function gisToBlocks:onMappingEnd()
+	echo("onMappingEnd 绘制结束")
+	GameLogic.AddBBS("statusBar","地图绘制完成。", 2000, "223 81 145")
 end
