@@ -46,33 +46,6 @@ function math.round(decimal)
     return decimal--  * 0.01
 end
 
-function handler(obj, method)
-    return function(...)
-       return method(obj,...)
-    end
-end
-
--- -- @param object 要克隆的值
--- -- @return objectCopy 返回值的副本
--- function table.clone( object )
---     local lookup_table = {}
---     local function copyObj( object )
---         if type( object ) ~= "table" then
---             return object
---         elseif lookup_table[object] then
---             return lookup_table[object]
---         end
-       
---         local new_table = {}
---         lookup_table[object] = new_table
---         for key, value in pairs( object ) do
---             new_table[copyObj( key )] = copyObj( value )
---         end
---         return setmetatable( new_table, getmetatable( object ) )
---     end
---     return copyObj( object )
--- end
-
 -- get current instance
 function TileManager.GetInstance()
 	return curInstance;

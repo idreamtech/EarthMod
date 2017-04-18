@@ -12,13 +12,18 @@ local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 
 NPL.load("(gl)script/ide/System/Database/TableDatabase.lua");
 NPL.load("(gl)script/ide/Json.lua");
+NPL.load("(gl)Mod/EarthMod/main.lua");
 local TableDatabase = commonlib.gettable("System.Database.TableDatabase");
 local DBStore = commonlib.inherit(nil,commonlib.gettable("Mod.EarthMod.DBStore"));
+local EarthMod = commonlib.gettable("Mod.EarthMod");
 local curInstance;
 DBStore.worldName = nil
 DBStore.worldPath = nil
 DBStore.dbPath = nil
 DBStore.db = nil -- database directory
+local XML_MODE = 1 -- xml
+local TDB_MODE = 0 -- table database
+local saveMode = XML_MODE -- 存储模式
 
 function DBStore.GetInstance()
 	if curInstance == nil then return DBStore:new() end
@@ -27,16 +32,14 @@ end
 
 function DBStore:ctor()
 	self.worldPath = ParaWorld.GetWorldDirectory() -- echo:"worlds/DesignHouse/ccc/"
-	echo("world path:")
-	echo(self.worldPath)
 	self.worldName = string.sub(self.worldPath,20,-1)
-	-- echo("加载世界：" .. self.worldName)
 	self.dbPath = self.worldPath .. "EarthDB/"
 	echo("connect to:" .. self.dbPath)
 	self.db = TableDatabase:new():connect(self.dbPath, function() end);
 	curInstance = self
 	echo("onInit: DBStore")
 end
+
 
 function DBStore:ConfigDB()
 	return self.db.Config
@@ -50,7 +53,42 @@ function DBStore:SystemDB()
 	return self.db.Sysm
 end
 
--- 将table数据转换为数据库格式数据 local json = commonlib.Json.Encode(tileData)
+-- common function
+-- 克隆
+function table.clone( object )
+    local lookup_table = {}
+    local function copyObj( object )
+        if type( object ) ~= "table" then
+            return object
+        elseif lookup_table[object] then
+            return lookup_table[object]
+        end
+       
+        local new_table = {}
+        lookup_table[object] = new_table
+        for key, value in pairs( object ) do
+            new_table[copyObj( key )] = copyObj( value )
+        end
+        return setmetatable( new_table, getmetatable( object ) )
+    end
+    return copyObj( object )
+end
+-- table转换为json(字符串)
+function table.toJson(tb)
+	return commonlib.Json.Encode(tb)
+end
+-- json(字符串)转换为table
+function table.fromJson(str)
+	return commonlib.Json.Decode(str)
+end
+function handler(obj, method)
+    return function(...)
+       return method(obj,...)
+    end
+end
+-- 
+
+-- 将table数据转换为数据库格式数据
 function DBStore:genTable(k,dt)
 	if type(dt) == "table" then
 		dt.key = k
@@ -80,7 +118,7 @@ function DBStore:saveTable(db,tb)
 		end
 		self:setValue(db,"keyTable",keyTable,true)
 		self:flush(db)
-		-- echo("DBStore:save table ok")
+		echo("DBStore:save table ok")
 	end
 end
 
@@ -111,6 +149,43 @@ function DBStore:loadTable(db,func,keyTable)
 		end)
 	end
 end
+
+function DBStore:packDatabase(db,keys,func)
+	if not db then return end
+	local function doPack(index)
+		self.readData = {}
+		self.readCount = #index
+		for k,key in pairs(index) do
+			self:getValue(db,key,function(data)
+				if data then
+					self.readData[key] = data
+				end
+				self.readCount = self.readCount - 1
+				if self.readCount == 0 then
+					local str = table.toJson(self.readData)
+					func(str) -- 读取完所有表数据
+				end
+			end)
+		end
+	end
+	if keys then
+		doPack(keys)
+	else
+		self:getOraValue(db,"keyTable",function(err,index)
+			if index then
+				doPack(index)
+			end
+		end)
+	end
+end
+
+function DBStore:unpackDatabase(str,db)
+	if not str then return end
+	local tb = table.fromJson(str)
+	if not db then return tb end
+	self:saveTable(db,tb)
+end
+
 -- 获取数据库中某键的值(如果没有值则err和data都为nil)
 function DBStore:getValue(db,k,func)
 	db:findOne({key = k}, function(err, data) func(self:getTableValue(data)) end)
@@ -144,31 +219,43 @@ function DBStore:flush(db,isNow)
 	end
 end
 
--- @param object 要克隆的值
--- @return objectCopy 返回值的副本
-function table.clone( object )
-    local lookup_table = {}
-    local function copyObj( object )
-        if type( object ) ~= "table" then
-            return object
-        elseif lookup_table[object] then
-            return lookup_table[object]
-        end
-       
-        local new_table = {}
-        lookup_table[object] = new_table
-        for key, value in pairs( object ) do
-            new_table[copyObj( key )] = copyObj( value )
-        end
-        return setmetatable( new_table, getmetatable( object ) )
-    end
-    return copyObj( object )
+-- 将WorldData xml存档转换为数据库数据存储起来
+function DBStore:transXmlDataToDB(toDb,keys)
+	for k,value in pairs(keys) do
+		local xmlData,key
+		if type(k) == "string" then key = k else key = value end
+		xmlData = EarthMod:GetWorldData(value)
+		echo("xmlData " .. key .. " :");echo(xmlData)
+		if xmlData and xmlData ~= "" then
+			self:setValue(toDb,key,xmlData)
+		else
+			if type(k) == "string" then
+				self:setValue(toDb,k,value)
+			end
+		end
+	end
+	self:saveTable(toDb)
 end
+--[[ using for transfer code
+NPL.load("(gl)Mod/EarthMod/DBStore.lua");
+local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
+NPL.load("(gl)Mod/EarthMod/TileManager.lua");
+local TileManager = commonlib.gettable("Mod.EarthMod.TileManager");
+local dbs = DBStore.GetInstance()
+local sys = dbs:SystemDB()
+local arr = {"alreadyBlock",schoolName="中国财经大学","coordinate","boundary"}
+local func = function(str)
+    echo("____db____")
+    echo(str)
+    echo("____tb____")
+    echo(dbs:unpackDatabase(str))
+end
+dbs:transXmlDataToDB(sys,arr)
+dbs:packDatabase(sys,arr,func)
+]]
 
 function DBStore:OnLeaveWorld()
 	if self.db then
-		-- self.db.Sysm:flush({});
-		-- self.db.Config:flush({});
 		self.db = nil
 	end
 	curInstance = nil;
