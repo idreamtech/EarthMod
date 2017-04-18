@@ -32,8 +32,10 @@ function DBStore:ctor()
 	self.worldName = string.sub(self.worldPath,20,-1)
 	-- echo("加载世界：" .. self.worldName)
 	self.dbPath = self.worldPath .. "EarthDB/"
+	echo("connect to:" .. self.dbPath)
 	self.db = TableDatabase:new():connect(self.dbPath, function() end);
 	curInstance = self
+	echo("onInit: DBStore")
 end
 
 function DBStore:ConfigDB()
@@ -161,4 +163,13 @@ function table.clone( object )
         return setmetatable( new_table, getmetatable( object ) )
     end
     return copyObj( object )
+end
+
+function DBStore:OnLeaveWorld()
+	if self.db then
+		-- self.db.Sysm:flush({});
+		-- self.db.Config:flush({});
+		self.db = nil
+	end
+	curInstance = nil;
 end

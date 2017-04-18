@@ -20,6 +20,9 @@ local Encoding      = commonlib.gettable("System.Encoding");
 getOsmService.osmHost   = "openstreetmap.org";
 getOsmService.tryTimes  = 0;
 getOsmService.worldName = GameLogic.GetWorldDirectory();
+getOsmService.Draw3DBuilding = true -- 是否绘制地上建筑
+getOsmService.isUpdateMode = nil
+getOsmService.isUpdateModeOSM = nil
 
 function getOsmService:ctor()
 end
@@ -74,54 +77,67 @@ function getOsmService:getOsmXMLData(x,y,i,j,dleft,dbottom,dright,dtop,_callback
 	osmXMLUrl = osmXMLUrl:gsub("{right}",dright);
 	osmXMLUrl = osmXMLUrl:gsub("{top}",dtop);
 
-	-- _callback();
-	echo("downloadOSMurl:" .. osmXMLUrl)
-	-- 使用定时器,错开多次请求OSM节点数据的接口调用,避免出现短时间内请求达到100次峰值之后无法获取到OSM节点数据的情况
-	local downOsmXMLTimer = commonlib.Timer:new({callbackFunc = function(downOsmXMLTimer)
-		self:GetUrl(osmXMLUrl,function(data,err)
-			if(err == 200) then
-				--[[local file = ParaIO.open("/xml.osm", "w");
-				file:write(data,#data);
-				file:close();]]
-
-				local fileExt = ParaIO.open("xml_"..x.."_"..y..".osm", "w");
-				LOG.std(nil,"debug","gisOsmService","xml_"..x.."_"..y..".osm");
-				local ret = fileExt:write(data,#data);
-				fileExt:close();
-
-				_callback(data);
-			else
-				echo("download failse" .. tostring(err))
-				return nil;
+	if getOsmService.Draw3DBuilding then
+		echo("downloadOSMurl:" .. osmXMLUrl)
+		-- 使用定时器,错开多次请求OSM节点数据的接口调用,避免出现短时间内请求达到100次峰值之后无法获取到OSM节点数据的情况
+		local path = "xml_"..x.."_"..y..".osm"
+		if getOsmService.isUpdateModeOSM then getOsmService.isUpdateModeOSM = nil
+		else
+			if ParaIO.DoesFileExist(path) then
+				echo("downloadOSMurl: load local data")
+				local vectorFile = ParaIO.open(path, "r");
+				local vector = vectorFile:GetText(0, -1);
+				vectorFile:close();
+				_callback(vector);
+				return
 			end
-		end);
-	end})
-
-	-- start the timer after i milliseconds, and stop it immediately.
-	downOsmXMLTimer:Change(i*3000, nil);
+		end
+		-- download
+		local downOsmXMLTimer = commonlib.Timer:new({callbackFunc = function(downOsmXMLTimer)
+			self:GetUrl(osmXMLUrl,function(data,err)
+				if(err == 200) then
+					echo("downloadOSMurl: download server data")
+					local fileExt = ParaIO.open(path, "w");
+					LOG.std(nil,"debug","gisOsmService",path);
+					local ret = fileExt:write(data,#data);
+					fileExt:close();
+					_callback(data);
+				else
+					echo("download failse" .. tostring(err))
+					return nil;
+				end
+			end);
+		end})
+		-- start the timer after i milliseconds, and stop it immediately.
+		downOsmXMLTimer:Change(i*3000, nil);
+	else
+		_callback();
+	end
 end
 
 function getOsmService:getOsmPNGData(x,y,i,j,_callback)
 	local osmPNGUrl = getOsmService.osmPNGUrl();
-
 	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(x)); -- + 1 测试更新
 	osmPNGUrl = osmPNGUrl:gsub("{y}",tostring(y));
-
-	-- _callback();
-
+	local path = "tile_"..x.."_"..y..".png"
+	if getOsmService.isUpdateMode then
+		getOsmService.isUpdateMode = nil
+	else
+		if ParaIO.DoesFileExist(path) then
+			echo("getOsmPNGData: load local data")
+			_callback();
+			return
+		end
+	end
 	-- 使用定时器,错开多次请求PNG图片的接口调用,避免出现短时间内请求达到100次峰值之后无法获取到PNG图片的情况
 	local downLoadPngTimer = commonlib.Timer:new({callbackFunc = function(downLoadPngTimer)
 		self:GetUrl(osmPNGUrl,function(data,err)
 			if(err == 200) then
-				--[[local file = ParaIO.open("/tile.png", "w");
-				file:write(data,#data);
-				file:close();]]
-
-				local fileExt = ParaIO.open("tile_"..x.."_"..y..".png", "w");
-				LOG.std(nil,"debug","gisOsmService","tile_"..x.."_"..y..".png");
+				echo("getOsmPNGData: download server data")
+				local fileExt = ParaIO.open(path, "w");
+				LOG.std(nil,"debug","gisOsmService",path);
 				local ret = fileExt:write(data,#data);
 				fileExt:close();
-
 				_callback(data);
 			else
 				return nil;

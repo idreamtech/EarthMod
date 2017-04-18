@@ -18,6 +18,7 @@ NPL.load("(gl)script/apps/WebServer/WebServer.lua");
 NPL.load("(gl)Mod/EarthMod/TileManager.lua");
 NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
+NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
 
 local EarthMod       = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
 local gisCommand     = commonlib.gettable("Mod.EarthMod.gisCommand");
@@ -27,6 +28,8 @@ local MapBlock = commonlib.gettable("Mod.EarthMod.MapBlock");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 local DBS,SysDB
 local gisToBlocks = commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks");
+local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
+local ItemEarth = commonlib.gettable("MyCompany.Aries.Game.Items.ItemEarth");
 --LOG.SetLogLevel("DEBUG");
 EarthMod:Property({"Name", "EarthMod"});
 function EarthMod:ctor()
@@ -146,9 +149,20 @@ end
 -- called when a world is unloaded. 
 
 function EarthMod:OnLeaveWorld()
+	echo("On Leave World")
 	if TileManager.GetInstance() then
-		if gisToBlocks.timerGet then gisToBlocks.timerGet:Change();gisToBlocks.timerGet = nil end
 		MapBlock:OnLeaveWorld()
+		gisToBlocks:OnLeaveWorld()
+		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+		NplCefWindowManager:Destroy("my_window");
+		-- 离开当前世界时候初始化所有变量
+		echo("sltInstance set nil")
+		SelectLocationTask:OnLeaveWorld();
+  		ItemEarth:OnLeaveWorld();
+  		DBStore:OnLeaveWorld();
+		DBS = nil
+		SysDB = nil
 	end
 end
 

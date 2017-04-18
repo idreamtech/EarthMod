@@ -11,12 +11,12 @@ local MapBlock = commonlib.gettable("Mod.EarthMod.MapBlock");
 ]]
 NPL.load("(gl)script/apps/Aries/Creator/Game/blocks/block_types.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
-NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 local block_types = commonlib.gettable("MyCompany.Aries.Game.block_types");
 local MapBlock = commonlib.inherit(nil,commonlib.gettable("Mod.EarthMod.MapBlock"));
 local BlockEngine = commonlib.gettable("MyCompany.Aries.Game.BlockEngine");
 local CommandManager  = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
-local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
+-- NPL.load("(gl)Mod/EarthMod/DBStore.lua");
+-- local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 
 MapBlock.ID = 2333
 
@@ -74,9 +74,9 @@ function MapBlock:OnWorldLoad()
 	self.isInited = true;
 end
 
-function MapBlock:DB()
-	return DBStore.GetInstance():MapDB()
-end
+-- function MapBlock:DB()
+-- 	return DBStore.GetInstance():MapDB()
+-- end
 
 function MapBlock:OnLeaveWorld()
 	-- self:DB():flush({})

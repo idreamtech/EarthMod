@@ -167,7 +167,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 <script>
     var currentIcon = L.icon({
         iconUrl: '/wp-content/pages/earth/assets/css/images/marker-icon.png',
-        iconSize: [14, 24],
+        iconSize: [15, 47],
     })
     var myIcon = L.icon({
         iconUrl: '/wp-content/pages/earth/assets/css/images/4.png',
@@ -336,6 +336,9 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     })
 
     var marker = null;
+    // 搜索框状态
+    var searchInpState = true;
+    // 获取当前玩家在paracraft中的位置及是否已经进行了贴图操作,如果已经贴图,则禁用搜索框
     function getCurrentPostionInParacraft(){
         $.ajax({
             url:"/ajax/earth?action=get_player_coordinate",
@@ -351,6 +354,10 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                         marker = L.marker([lat, lon],{icon:currentIcon}).addTo(map);
                     } else {
                         marker.setLatLng([lat, lon]);
+                    }
+                    if (searchInpState == true) {
+                        searchInpState = false;
+                        document.getElementsByClassName('search-inp')[0].disabled = true;
                     }
                 }
             },
@@ -422,8 +429,9 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                         // res.data是数组
                         // console.log(res.data);
                         for(var i=0;i<res.data.length;i++){
-                            if(res.data[i].schoolName){
-                                arr.push(res.data[i].schoolName)
+                            var school = res.data[i];
+                            if(school.schoolName && typeof(school.northEastLat) != "undefined" && typeof(school.southWestLat) != "undefined" && typeof(school.southWestLng) != "undefined" && typeof(school.northEastLng) != "undefined"){
+                                arr.push(school.schoolName)
                             }
                         }
                         $('.search-inp').typeahead({
@@ -471,10 +479,11 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                 dataType:"json",
                 success:function(res){
                     // console.log(res);
+                    document.getElementsByClassName('search-inp')[0].value = schoolName;
                     if(res && res.error && res.data && res.error.id == 0){
                         // 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
                         // res.data是数组
-                        console.log(res.data);
+                        // console.log(res.data);
                         renderUniversity(schoolName,res.data[0]);
                     }else{
                         alert("学校信息不存在")
@@ -512,6 +521,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                     document.getElementsByClassName('search-inp')[0].disabled = true;
                     document.getElementsByClassName('search-inp')[0].value = currentSchool;
                     map.setMaxBounds(rec.getBounds());
+                    // 将搜索框状态标记为不可用
+                    searchInpState = false;
                     // var number = map.getZoom()
                     // map.scrollWheelZoom.disable();
                     
