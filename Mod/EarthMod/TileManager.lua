@@ -29,7 +29,7 @@ TileManager.oPo = nil -- 最左下角瓦片位置(paracraft坐标系)
 TileManager.tiles = {} -- 瓦片合集 以1,1为起点的瓦片合集
 TileManager.blocks = {} -- 砖块合集 以1,1为起点的方块合集
 TileManager.mapStack = {}
-TileManager.popCount = 0
+TileManager.popID = nil
 TileManager.isLoaded = nil
 TileManager.curTimes = 0
 TileManager.passTimes = 0
@@ -82,7 +82,7 @@ function TileManager:ctor()
 	self.tiles = {}
 	self.blocks = {}
 	self.mapStack = {}
-	self.popCount = 0
+	self.popID = {}
 	self.isLoaded = nil
 	self.curTimes = 0
 	self.passTimes = 0
@@ -359,16 +359,39 @@ function TileManager:getMapPosition(para)
 end
 
 function TileManager:push(data)
+	if data.id then
+		for k,v in pairs(self.popID) do
+			if v == data.id then return false end
+		end
+		for k,v in pairs(self.mapStack) do
+			if v and v.id == data.id then return false end
+		end
+	end
 	table.insert(self.mapStack,data)
+	return true
+end
+
+function TileManager:onFinishPop(id)
+	for k,v in pairs(self.popID) do
+		if v == id then
+			table.remove(self.popID,k)
+			return
+		end
+	end
 end
 
 function TileManager:pop()
 	local len = #self.mapStack
-	if len < 1 then return nil,self.popCount end
+	if len < 1 then return nil end
 	local endData = self.mapStack[len]
 	table.remove(self.mapStack, len)
-	self.popCount = self.popCount + 1
-	return endData,self.popCount
+	for k,v in pairs(self.popID) do
+		if v == endData.id then
+			return endData
+		end
+	end
+	table.insert(self.popID,endData.id)
+	return endData
 end
 
 -- parancraft坐标系转gps经纬度
