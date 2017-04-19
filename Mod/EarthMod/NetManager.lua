@@ -12,6 +12,7 @@ local NetManager = commonlib.gettable("Mod.EarthMod.NetManager");
 
 local NetManager = commonlib.inherit(nil,commonlib.gettable("Mod.EarthMod.NetManager"));
 local Commands = commonlib.gettable("MyCompany.Aries.Game.Commands");
+local CmdParser = commonlib.gettable("MyCompany.Aries.Game.CmdParser");
 
 local curInstance;
 NetManager.name = nil
@@ -59,85 +60,30 @@ function NetManager:OnLeaveWorld()
 	curInstance = nil;
 end
 
-
-Commands["earthnet"] = {
-	name="earthnet", 
-	quick_ref="/net [-user] [name] [-k] [key] [-v] [value]",
-	desc=[[
-		
-	]],
+-- 定义指令donet用于处理消息回调
+Commands["donet"] = {
+	name="donet", 
+	quick_ref="/donet @name -key [value]",
+	desc=[[receive data from dest player
+@param @name: @all for all connected players. @p for last trigger entity. @name for given player name. `__MP__` can be ignored.
+@param -key,value: key and value for send
+Examples:
+/donet @__MP__admin -k say -v hello
+/donet @default -k del -v block1
+]],
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
-		-- local lat,lon,minlat,minlon,maxlat,maxlon;
-		-- -- 深圳大学区域信息
-		-- -- local minlat,minlon,maxlat,maxlon=22.5308,113.9250,22.5424,113.9402;
-		-- options, cmd_text = CmdParser.ParseOptions(cmd_text);
-		-- --LOG.std(nil,"debug","options",options);
-		-- if options.already then
-		-- 	optionsType = "already";
-		-- 	minlat, cmd_text = CmdParser.ParseString(cmd_text);
-		-- 	minlon, cmd_text = CmdParser.ParseString(cmd_text);
-		-- 	maxlat, cmd_text = CmdParser.ParseString(cmd_text);
-		-- 	maxlon, cmd_text = CmdParser.ParseString(cmd_text);
-		-- 	LOG.std(nil,"debug","minlat,minlon,maxlat,maxlon",{minlat,minlon,maxlat,maxlon});
-		-- 	if(options.cache) then
-		-- 		cache, cmd_text = CmdParser.ParseString(cmd_text);
-		-- 	else
-		-- 		cache = 'false';
-		-- 	end
-		-- 	gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon,cache=cache});
-		-- 	return;
-		-- elseif options.coordinate then
-		-- 	minlat, cmd_text = CmdParser.ParseString(cmd_text);
-		-- 	minlon, cmd_text = CmdParser.ParseString(cmd_text);
-		-- 	maxlat, cmd_text = CmdParser.ParseString(cmd_text);
-		-- 	maxlon, cmd_text = CmdParser.ParseString(cmd_text);
-
-		-- 	LOG.std(nil,"debug","minlat,minlon,maxlat,maxlon",{minlat,minlon,maxlat,maxlon});
-
-		-- 	optionsType = "coordinate";
-
-		-- 	options, cmd_text = CmdParser.ParseOptions(cmd_text);
-
-		-- 	--echo(options);
-
-		-- 	if(options.cache) then
-		-- 		cache, cmd_text = CmdParser.ParseString(cmd_text);
-		-- 	else
-		-- 		cache = 'false';
-		-- 	end
-
-		-- 	gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon,cache=cache});
-		-- 	gisCommand.gis:Run();
-		-- 	return;
-		-- end
-
-		-- if(options.undo) then
-		-- 	if(gisCommand.gis) then
-		-- 		gisCommand.gis:Undo();
-		-- 	end
-		-- 	return;
-		-- end
-
-		-- if(options.boundary) then
-		-- 	if(gisCommand.gis) then
-		-- 		gisCommand.getMoreTiles = gisCommand.gis:BoundaryCheck();
-		-- 	end
-		-- 	return;
-		-- end
-
-		-- if(options.more) then
-		-- 	if(gisCommand.gis) then
-		-- 		options, cmd_text = CmdParser.ParseOptions(cmd_text);
-
-		-- 		if(options) then
-		-- 			cache, cmd_text = CmdParser.ParseString(cmd_text);
-		-- 		else
-		-- 			cache = 'false';
-		-- 		end
-
-		-- 		gisCommand.gis.cache = cache;
-		-- 		gisCommand.gis:MoreScene();
-		-- 	end
-		-- end
+		local playername, key, value
+		playername, cmd_text = CmdParser.ParseFormated(cmd_text, "@%S+");
+		if(playername) then
+			playername = playername:gsub("^@", "");
+		else playername = "default" end
+		echo("donet name: " .. playername)
+		cmd_text = cmd_text:gsub("^%s+", "");
+		key, cmd_text = CmdParser.ParseOptions(cmd_text);
+		if key then
+			echo("donet key: ");echo(key)
+			value, cmd_text = CmdParser.ParseString(cmd_text);
+			echo("value:");echo(value)
+		end
 	end,
 };
