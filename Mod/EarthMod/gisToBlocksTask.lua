@@ -197,10 +197,6 @@ function gisToBlocks:ctor()
 end
 
 function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data, tile)
-	-- local px, py, pz = EntityManager.GetFocus():GetBlockPos();
-	-- if spx == px and spy == py and spz == pz then
-	-- 	-- CommandManager:RunCommand("/goto " .. px .. " " .. py .. " " .. pz) -- 当画到脚下那块时人物跳起来
-	-- end
 	if(self.add_to_history) then
 		local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 		local from_data, from_entity_data;
@@ -1087,6 +1083,16 @@ function gisToBlocks:LoadToScene(raster,vector,px,py,pz,tile)
 	self:OSMToBlock(vector, px, py, pz, tile);
 end
 
+-- 人物起飞（开始绘制地图了）
+function gisToBlocks:fly()
+	local entityPlayer = EntityManager.GetFocus();
+	if entityPlayer and (not entityPlayer:IsFlying()) then
+		GameLogic.ToggleFly();
+		local x, y, z = EntityManager.GetFocus():GetBlockPos();
+		GameLogic.GetPlayer():SetBlockPos(x,y + 1,z)
+	end
+end
+
 function gisToBlocks:GetData(x,y,i,j,_callback)
 	local raster;
 	local tileX,tileY = x,y
@@ -1228,6 +1234,8 @@ function gisToBlocks:downloadMap(i,j)
 				if isUpdate then
 					TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes - 1
 					if TileManager.GetInstance().curTimes < 0 then TileManager.GetInstance().curTimes = 0 end
+				else
+					self:fly()
 				end
 			end
 		end
