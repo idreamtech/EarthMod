@@ -18,6 +18,12 @@ local CommandManager  = commonlib.gettable("MyCompany.Aries.Game.CommandManager"
 -- NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 -- local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 
+-- 配置参数 --
+local DrawAllMap = nil -- 修补旧校区贴图模式（将不贴图）
+local fillAirMode = nil -- 填充所有空气
+local fillAll = nil -- 填充所有方块
+--------------
+
 MapBlock.ID = 2333
 
 function MapBlock:ctor()
@@ -84,6 +90,7 @@ end
 
 -- 添加地图模块
 function MapBlock:addBlock(spx,spy,spz,color,isUpdate)
+	if DrawAllMap then return true end
 	local function insertBlock()
 		BlockEngine:SetBlock(spx,spy,spz, MapBlock.ID, color) -- , nil, data
 		-- self:DB():insertOne(nil, {world=DBStore.GetInstance().worldName,x=spx,y=spy,z=spz,type="map"})
@@ -111,9 +118,10 @@ end
 -- {attr={filename="Mod/EarthMod/textures/nil.fbx"},{name="cmd","map"}}
 -- 检测是否是地图块
 function MapBlock:isMap(spx,spy,spz,checkAir) -- ,func
+	if fillAll then return true end
 	local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 	if from_id then
-		if checkAir then
+		if checkAir or fillAirMode then
 			if tonumber(from_id) == 0 then return true end -- 检测草地(id:62) 空气0
 		else
 			if tonumber(from_id) == MapBlock.ID then return true end

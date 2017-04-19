@@ -97,23 +97,23 @@ function getOsmService:getOsmXMLData(x,y,i,j,dleft,dbottom,dright,dtop,_callback
 			end
 		end
 		-- download
-		local downOsmXMLTimer = commonlib.Timer:new({callbackFunc = function(downOsmXMLTimer)
-			self:GetUrl(osmXMLUrl,function(data,err)
-				if(err == 200) then
-					echo("downloadOSMurl: download server data")
-					local fileExt = ParaIO.open(path, "w");
-					LOG.std(nil,"debug","gisOsmService",path);
-					local ret = fileExt:write(data,#data);
-					fileExt:close();
-					_callback(data);
-				else
-					echo("download failse" .. tostring(err))
-					return nil;
-				end
-			end);
-		end})
-		-- start the timer after i milliseconds, and stop it immediately.
-		downOsmXMLTimer:Change(i*3000, nil);
+		-- local downOsmXMLTimer = commonlib.Timer:new({callbackFunc = function(downOsmXMLTimer)
+		self:GetUrl(osmXMLUrl,function(data,err)
+			if(err == 200) then
+				echo("downloadOSMurl: download server data")
+				local fileExt = ParaIO.open(path, "w");
+				LOG.std(nil,"debug","gisOsmService",path);
+				local ret = fileExt:write(data,#data);
+				fileExt:close();
+				_callback(data);
+			else
+				echo("download failse" .. tostring(err))
+				return nil;
+			end
+		end);
+		-- end})
+		-- -- start the timer after i milliseconds, and stop it immediately.
+		-- downOsmXMLTimer:Change(i*3000, nil);
 	else
 		_callback();
 	end
@@ -134,21 +134,21 @@ function getOsmService:getOsmPNGData(x,y,i,j,_callback)
 		end
 	end
 	-- 使用定时器,错开多次请求PNG图片的接口调用,避免出现短时间内请求达到100次峰值之后无法获取到PNG图片的情况
-	local downLoadPngTimer = commonlib.Timer:new({callbackFunc = function(downLoadPngTimer)
-		self:GetUrl(osmPNGUrl,function(data,err)
-			if(err == 200) then
-				echo("getOsmPNGData: download server data")
-				local fileExt = ParaIO.open(path, "w");
-				LOG.std(nil,"debug","gisOsmService",path);
-				local ret = fileExt:write(data,#data);
-				fileExt:close();
-				_callback(data);
-			else
-				return nil;
-			end
-		end);
-	end})
+	-- local downLoadPngTimer = commonlib.Timer:new({callbackFunc = function(downLoadPngTimer)
+	self:GetUrl(osmPNGUrl,function(data,err)
+		if(err == 200) then
+			echo("getOsmPNGData: download server data")
+			local fileExt = ParaIO.open(path, "w");
+			LOG.std(nil,"debug","gisOsmService",path);
+			local ret = fileExt:write(data,#data);
+			fileExt:close();
+			_callback(data);
+		else
+			return nil;
+		end
+	end);
+	-- end})
 
-	-- start the timer after i milliseconds, and stop it immediately.
-	downLoadPngTimer:Change(i*5000, nil);
+	-- -- start the timer after i milliseconds, and stop it immediately.
+	-- downLoadPngTimer:Change(i*5000, nil);
 end
