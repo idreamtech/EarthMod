@@ -1415,8 +1415,8 @@ end
 function gisToBlocks:OnLeaveWorld()
 	DBS = nil
 	SysDB = nil
-	if gisToBlocks.timerGet then gisToBlocks.timerGet:Change();gisToBlocks.timerGet = nil end
-	if gisToBlocks.playerLocationTimer then gisToBlocks.playerLocationTimer:Change();gisToBlocks.playerLocationTimer = nil end
+	if self.timerGet then self.timerGet:Change();self.timerGet = nil end
+	if self.playerLocationTimer then self.playerLocationTimer:Change();self.playerLocationTimer = nil end
 end
 
 -- 获取地面上能容纳一个人（两格）的位置
