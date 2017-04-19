@@ -57,7 +57,7 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x, y, z, side, data, side_
 	end
 
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
-		_guihelper.MessageBox(L"地图已生成");
+		-- _guihelper.MessageBox(L"地图已生成");
 	else
 		_guihelper.MessageBox(L"点击确认后开始地图绘制", function(res)
 			if(res and res == _guihelper.DialogResult.Yes) then
