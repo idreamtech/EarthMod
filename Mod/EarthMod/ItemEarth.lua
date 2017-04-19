@@ -96,14 +96,14 @@ function ItemEarth:CompareItems(left, right)
 end
 
 function ItemEarth:boundaryCheck()
-	self.BoundaryTimer = self.BoundaryTimer or commonlib.Timer:new({callbackFunc = function(timer)
+	ItemEarth.BoundaryTimer = ItemEarth.BoundaryTimer or commonlib.Timer:new({callbackFunc = function(timer)
 			CommandManager:RunCommand("/gis -boundary");
 			--echo(gisCommand.getMoreTiles);
 			SelectLocationTask.getMoreTiles = gisCommand.getMoreTiles;
 			SelectLocationTask:RefreshPage();
 		end});
 
-	self.BoundaryTimer:Change(300, 300);
+	ItemEarth.BoundaryTimer:Change(300, 300);
 end
 
 function ItemEarth:MoreScence()
@@ -174,5 +174,5 @@ function ItemEarth:OnLeaveWorld()
   	self.alreadyBlock = false;
   	DBS = nil
   	SysDB = nil
-  	if self.BoundaryTimer then self.BoundaryTimer:Change(); self.BoundaryTimer = nil end
+  	if ItemEarth.BoundaryTimer then ItemEarth.BoundaryTimer:Change(); ItemEarth.BoundaryTimer = nil end
 end
