@@ -257,6 +257,8 @@ local func = function(str)
 end
 dbs:transXmlDataToDB(sys,arr)
 dbs:packDatabase(sys,arr,func)
+-- 坐标系手动微调
+TileManager.GetInstance():correctPo({x=-1,y=0,z=1})
 
 1.设置gisToBlocks中CorrectMode为true 开启测试模式
 1.跑transXmlDataToDB
@@ -275,7 +277,7 @@ dbs:packDatabase(sys,arr,func)
 -- southWestLat <=> minlat <=> southEastLat
 -- 删除建筑代码
 local BlockEngine = commonlib.gettable("MyCompany.Aries.Game.BlockEngine");
-po1 = {x=21637,y=34,z=20351}
+po1 = {x=21135,y=34,z=20351}
 po2 = {x=23315,y=34,z=21681}
 for y = po1.y,po2.y do -- 垂直
 	for x = po1.x,po2.x do -- 水平x

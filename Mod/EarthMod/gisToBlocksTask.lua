@@ -1098,10 +1098,12 @@ function gisToBlocks:GetData(x,y,i,j,_callback)
 	dleft   = gisToBlocks.dleft;
 	dright  = gisToBlocks.dright;
 	LOG.std(nil,"debug","gisToBlocks","下载数据中");
+	GameLogic.AddBBS("statusBar","下载数据中", 2000, "0 0 0")
 	getOsmService:getOsmPNGData(x,y,i,j,function(raster)
 		getOsmService:getOsmXMLData(x,y,i,j,dleft,dbottom,dright,dtop,function(vector)
 			raster = ParaIO.open("tile_"..x.."_"..y..".png", "image");
 			LOG.std(nil,"debug","gisToBlocks","下载成功");
+			GameLogic.AddBBS("statusBar","下载成功", 3000, "0 0 0")
 			_callback(raster,vector);
 		end);
 	end);
@@ -1427,10 +1429,10 @@ end
 -- 下载开始
 function gisToBlocks:onMappingBegin()
 	echo("onMappingBegin 下载开始")
-	GameLogic.AddBBS("statusBar","开始地图绘制..", 2000, "223 81 145")
+	GameLogic.AddBBS("statusBar","开始地图绘制..", 10000, "223 81 145")
 end
 -- 绘制结束
 function gisToBlocks:onMappingEnd()
 	echo("onMappingEnd 绘制结束")
-	GameLogic.AddBBS("statusBar","地图绘制完成。", 2000, "223 81 145")
+	GameLogic.AddBBS("statusBar","地图绘制完成。", 5000, "223 81 145")
 end

@@ -400,6 +400,14 @@ function TileManager:correctPositionSystem(x,y,z,lon,lat)
 	echo("toPo:");echo(self.firstBlockPo)
 	self:Save()
 end
+-- 坐标系手动微调
+function TileManager:correctPo(poDt)
+	echo("correctPo oraPo:");echo(self.firstBlockPo)
+	self.firstBlockPo = self:pAdd(self.firstBlockPo,poDt)
+	self.oPo = self:pAdd(self.oPo,poDt)
+	echo("矫正位置 toPo:");echo(self.firstBlockPo)
+	self:Save()
+end
 
 -- 获取人物面向朝向
 function TileManager:getForward(needStr) -- 正北为0度，东南西为90 180 270
