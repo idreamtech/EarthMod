@@ -19,6 +19,7 @@ NPL.load("(gl)Mod/EarthMod/TileManager.lua");
 NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
+NPL.load("(gl)Mod/EarthMod/NetManager.lua");
 
 local EarthMod       = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
 local gisCommand     = commonlib.gettable("Mod.EarthMod.gisCommand");
@@ -30,6 +31,7 @@ local DBS,SysDB
 local gisToBlocks = commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks");
 local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 local ItemEarth = commonlib.gettable("MyCompany.Aries.Game.Items.ItemEarth");
+local NetManager = commonlib.gettable("Mod.EarthMod.NetManager");
 --LOG.SetLogLevel("DEBUG");
 EarthMod:Property({"Name", "EarthMod"});
 function EarthMod:ctor()
@@ -74,7 +76,8 @@ function EarthMod:init()
 		end
 		return xmlRoot;
 	end)
-
+	-- add net Filter
+	NetManager.GetInstance()
 	MapBlock:init()
 end
 

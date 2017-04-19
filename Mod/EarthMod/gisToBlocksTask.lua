@@ -1255,13 +1255,13 @@ function gisToBlocks:startDrawTiles()
 		end);
 		LOG.std(nil,"debug","gosToBlocks","一张下载完成，开始绘制..");
 	end
-	self.timerGet = commonlib.Timer:new({callbackFunc = function(timer)
+	gisToBlocks.timerGet = commonlib.Timer:new({callbackFunc = function(timer)
 		tile = TileManager.GetInstance():pop()
 		if tile and (not tile.isDrawed) then
 			onDraw(tile)
 		end
 	end})
-	self.timerGet:Change(2000,2000); -- 每秒获取一次图片状态
+	gisToBlocks.timerGet:Change(2000,2000); -- 每秒获取一次图片状态
 end
 
 function gisToBlocks:Run()
@@ -1375,7 +1375,7 @@ end
 -- 更新人物信息
 function gisToBlocks:refreshPlayerInfo()
 	local sltInstance = SelectLocationTask.GetInstance();
-	self.playerLocationTimer = self.playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
+	gisToBlocks.playerLocationTimer = gisToBlocks.playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
 			-- 获取人物坐标信息
 			local x,y,z = EntityManager.GetFocus():GetBlockPos()
 			if SelectLocationTask.player_curLon and SelectLocationTask.player_curLat then
@@ -1402,7 +1402,7 @@ function gisToBlocks:refreshPlayerInfo()
 				forward = str .. " " .. ron .. "°"
 			});
 	end});
-	self.playerLocationTimer:Change(1000,1000);
+	gisToBlocks.playerLocationTimer:Change(1000,1000);
 	if not SelectLocationTask.isShowInfo then SelectLocationTask.isShowInfo = true end
 end
 
@@ -1413,10 +1413,11 @@ function gisToBlocks:saveOnFinish()
 end
 
 function gisToBlocks:OnLeaveWorld()
+	echo("gisToBlocks:OnLeaveWorld");
 	DBS = nil
 	SysDB = nil
-	if self.timerGet then self.timerGet:Change();self.timerGet = nil end
-	if self.playerLocationTimer then self.playerLocationTimer:Change();self.playerLocationTimer = nil end
+	if gisToBlocks.timerGet then gisToBlocks.timerGet:Change();gisToBlocks.timerGet = nil end
+	if gisToBlocks.playerLocationTimer then echo("on leave timer");gisToBlocks.playerLocationTimer:Change();gisToBlocks.playerLocationTimer = nil end
 end
 
 -- 获取地面上能容纳一个人（两格）的位置
