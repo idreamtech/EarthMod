@@ -177,6 +177,7 @@ function SelectLocationTask.setCoordinate(minlat,minlon,maxlat,maxlon,schoolName
 		if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 		DBS:setValue(SysDB,"schoolName",schoolName);
 		DBS:setValue(SysDB,"coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
+		SelectLocationTask.schoolData = {status = 100, data = {minlon = minlon, minlat = minlat, maxlon = maxlon, maxlat = maxlat, schoolName = schoolName}}
 		-- DBS:flush(SysDB)
 		-- EarthMod:SetWorldData("schoolName",schoolName);
 		-- EarthMod:SetWorldData("coordinate",{minlat=tostring(minlat),minlon=tostring(minlon),maxlat=tostring(maxlat),maxlon=tostring(maxlon)});
@@ -297,21 +298,24 @@ function SelectLocationTask:getSchoolAreaInfo()
 		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
 			DBS:getValue(SysDB,"schoolName",function(schoolName) if schoolName then
 				echo("schoolName is : "..schoolName)
-				self.schoolData = {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat, schoolName = schoolName}}
+				SelectLocationTask.schoolData = {status = 100, data = {minlon = coordinate.minlon, minlat = coordinate.minlat, maxlon = coordinate.maxlon, maxlat = coordinate.maxlat, schoolName = schoolName}}
 			else
-				self.schoolData = {status = 300, data = nil}
+				SelectLocationTask.schoolData = {status = 300, data = nil}
 			end end)
 		else
-			self.schoolData = {status = 300, data = nil}
+			SelectLocationTask.schoolData = {status = 300, data = nil}
 		end end)
 	else
-		self.schoolData = {status = 300, data = nil}
+		SelectLocationTask.schoolData = {status = 300, data = nil}
 	end end)
 
-	if self.schoolData then
-		return self.schoolData
-	else 
-		return {status = 400, data = nil}
+	if SelectLocationTask.schoolData then
+		echo(SelectLocationTask.schoolData)
+		return SelectLocationTask.schoolData
+	else
+		SelectLocationTask.schoolData = {status = 400, data = nil}
+		echo(SelectLocationTask.schoolData)
+		return SelectLocationTask.schoolData
 	end
 	-- if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
 	-- 	local coordinate = EarthMod:GetWorldData("coordinate");
@@ -374,6 +378,7 @@ function SelectLocationTask:OnLeaveWorld()
   	SelectLocationTask.isRuned = nil
 	SelectLocationTask.player_lon = nil;
 	SelectLocationTask.player_lat = nil;
+	SelectLocationTask.schoolData = nil;
   	DBS = nil
   	SysDB = nil
   	curInstance = nil

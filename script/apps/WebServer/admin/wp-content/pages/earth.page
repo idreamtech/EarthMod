@@ -531,9 +531,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                     // 400情况下,继续请求
                     getSchoolAreaInfo();
                 }else{
-                    // 300情况也继续请求
                     console.log("学校信息未指定")
-                    getSchoolAreaInfo();
                 }
             },
             error:function(){
