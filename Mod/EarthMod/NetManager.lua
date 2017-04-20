@@ -20,6 +20,7 @@ NetManager.netReceiveFunc = nil -- 消息监听函数
 NetManager.gameEventFunc = nil -- 游戏事件监听
 NetManager.netMessageQueue = {}
 NetManager.connectState = nil -- local:本地，server:服务器，client:客户端
+NetManager.isConnecting = nil
 local heartBeat = 1000
 
 -- 初始化网络管理器
@@ -41,6 +42,7 @@ function NetManager.init(eventFunc,receiveFunc)
 		else -- 连上了客户端
 			echo("NetManager client 客户端登入")
 			NetManager.connectState = "client"
+			NetManager.isConnecting = nil
 		end
 		if NetManager.gameEventFunc then NetManager.gameEventFunc(NetManager.connectState) end
         return true;
@@ -65,15 +67,17 @@ end
 function NetManager.startServer(port)
 	port = port or 8099
 	GameLogic.RunCommand("/startserver 0 " .. port);
-	NetManager.name == "__MP__admin"
+	NetManager.name = "__MP__admin"
 	NetManager.connectState = "server"
 	echo("NetManager server 服务器登入")
+	if NetManager.gameEventFunc then NetManager.gameEventFunc(NetManager.connectState) end
 end
 
 -- 启动客户端
 function NetManager.connectServer(ip,port)
 	port = port or 8099
 	GameLogic.RunCommand("/connect " .. ip .. " " .. port);
+	NetManager.isConnecting = true
 end
 
 -- 检测网络状态
@@ -90,6 +94,7 @@ end
 
 -- 世界离开的时候关闭网络通讯
 function NetManager.OnLeaveWorld()
+	if NetManager.isConnecting then return end
 	if NetManager.msgTimer then NetManager.msgTimer:Change(); NetManager.msgTimer = nil end
 	NetManager.netReceiveFunc = nil
 	NetManager.netMessageQueue = {}
@@ -170,6 +175,33 @@ Examples:
 				if isKey then keyName = kName end
 			end
 			NetManager.addMessage(senderName,keyName,value,tonumber(delay))
+		end
+	end,
+};
+
+Commands["net"] = {
+	name="net", 
+	quick_ref="/net -mode [ip] [port]",
+	desc=[[start earth mode with client and server
+@param mode: client,server
+@param ip: client connect ip
+@param port: client connect port default 8099
+Examples:
+/net -server
+/net -server 8099
+/net -client 192.168.0.1 8099
+/net -client 192.168.0.1
+]],
+	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
+		local mode, ip, port
+		mode, cmd_text = CmdParser.ParseOptions(cmd_text);
+		if mode.client then
+			ip, cmd_text = CmdParser.ParseString(cmd_text);
+			port, cmd_text = CmdParser.ParseString(cmd_text);
+			NetManager.connectServer(ip,port)
+		elseif mode.server then
+			port, cmd_text = CmdParser.ParseString(cmd_text);
+			NetManager.startServer(port)
 		end
 	end,
 };
