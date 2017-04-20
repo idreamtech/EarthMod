@@ -65,7 +65,7 @@ end
 function NetManager.startServer(port)
 	port = port or 8099
 	GameLogic.RunCommand("/startserver 0 " .. port);
-	NetManager.name == "__MP__admin"
+	NetManager.name = "__MP__admin"
 	NetManager.connectState = "server"
 	echo("NetManager server 服务器登入")
 end
