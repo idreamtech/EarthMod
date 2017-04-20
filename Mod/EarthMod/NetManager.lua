@@ -61,6 +61,21 @@ function NetManager.init(eventFunc,receiveFunc)
 	echo("onInit: NetManager")
 end
 
+-- 启动服务器
+function NetManager.startServer(port)
+	port = port or 8099
+	GameLogic.RunCommand("/startserver 0 " .. port);
+	NetManager.name == "__MP__admin"
+	NetManager.connectState = "server"
+	echo("NetManager server 服务器登入")
+end
+
+-- 启动客户端
+function NetManager.connectServer(ip,port)
+	port = port or 8099
+	GameLogic.RunCommand("/connect " .. ip .. " " .. port);
+end
+
 -- 检测网络状态
 function NetManager.isOnline()
 	if NetManager.connectState == nil or NetManager.connectState == "local" then return false end

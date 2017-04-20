@@ -177,7 +177,15 @@ end
 
 -- 游戏事件 local:本地登录，server:服务器连接成功，client:客户端连接成功
 function EarthMod:onGameEvent(event)
-	if event == "client" then
+	if event == "local" then
+		if ComVar.openNetwork then
+			if ComVar.isServer then -- 启动服务器
+				NetManager.startServer()
+			else
+				NetManager.connectServer(ComVar.serverIP)
+			end
+		end
+	elseif event == "client" then
 		NetManager.sendMessage("admin","reqDb")
 	end
 end
@@ -200,6 +208,7 @@ function EarthMod:onReceiveMessage(data)
 		end
 	end
 end
+
 -- 发送系统数据库给客户端
 function EarthMod:sendSysmDB(data,func)
 	local arr = {"alreadyBlock","schoolName","coordinate","boundary"}
@@ -208,6 +217,7 @@ function EarthMod:sendSysmDB(data,func)
 		if func then func(data) end
 	end)
 end
+
 -- 发送配置数据库给客户端
 function EarthMod:sendConfigDB(data)
 	local arr = {"alreadyBlock","schoolName","coordinate","boundary"}
