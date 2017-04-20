@@ -378,7 +378,6 @@ function SelectLocationTask:OnLeaveWorld()
   	SelectLocationTask.isRuned = nil
 	SelectLocationTask.player_lon = nil;
 	SelectLocationTask.player_lat = nil;
-	SelectLocationTask.schoolData = nil;
   	DBS = nil
   	SysDB = nil
   	curInstance = nil
