@@ -361,6 +361,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                         document.getElementsByClassName('search-inp')[0].disabled = true;
                     }
                 }
+                map.setView(marker._latlng);
             },
             error:function(){
                 console.log("获取人物当前坐标失败");
@@ -449,7 +450,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                                     var schoolLat = school.southWestLat;
                                     var schoolLng = school.southWestLng;
                                     // 将marker添加到地图中
-                                    var schoolMarker = L.marker([schoolLat, schoolLng],{icon:currentIcon}).addTo(map).bindTooltip(schoolName);;
+                                    var schoolMarker = L.marker([schoolLat, schoolLng],{icon:currentIcon}).addTo(map).bindTooltip(schoolName);
                                     markerArray.push(schoolMarker);
 									for(var i=0;i<markerArray.length;i++){
                                         markerArray[i].on('click',function(e){
@@ -522,6 +523,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                     document.getElementsByClassName('search-inp')[0].disabled = true;
                     document.getElementsByClassName('search-inp')[0].value = currentSchool;
                     map.setMaxBounds(rec.getBounds());
+                    // var curPos = marker.getBounds();
+                    console.log(map);
                     // 将搜索框状态标记为不可用
                     searchInpState = false;
                     // var number = map.getZoom()
