@@ -66,7 +66,6 @@ end
 
 -- lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
 -- rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
--- bx = px,by = py,bz = pz,tileSize = math.ceil(PngWidth * factor),firstPo,lastPo
 function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐标（左下点），瓦片大小
 	self.tileSize = para.tileSize or TILE_SIZE
 	self.oPo = {x = para.bx,y = para.by,z = para.bz}
