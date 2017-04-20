@@ -249,6 +249,12 @@ function SelectLocationTask:ShowPage()
 end
 
 function SelectLocationTask:Run()
+	if not ComVar.openNetwork then
+		self:toRun()
+	end
+end
+
+function SelectLocationTask:toRun()
 	if not SelectLocationTask.isRuned then
 		SelectLocationTask.isRuned = true
 		echo("slt run")
@@ -378,7 +384,6 @@ function SelectLocationTask:OnLeaveWorld()
   	SelectLocationTask.isRuned = nil
 	SelectLocationTask.player_lon = nil;
 	SelectLocationTask.player_lat = nil;
-	SelectLocationTask.schoolData = nil;
   	DBS = nil
   	SysDB = nil
   	curInstance = nil

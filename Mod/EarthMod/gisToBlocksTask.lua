@@ -23,6 +23,7 @@ NPL.load("(gl)script/apps/Aries/Creator/Game/Items/ItemColorBlock.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
+NPL.load("(gl)Mod/EarthMod/NetManager.lua");
 
 local PngWidth = 256
 local Color           = commonlib.gettable("System.Core.Color");
@@ -40,6 +41,7 @@ local EarthMod        = commonlib.gettable("Mod.EarthMod");
 local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
 local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 local MapBlock = commonlib.gettable("Mod.EarthMod.MapBlock");
+local NetManager = commonlib.gettable("Mod.EarthMod.NetManager");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 local DBS,SysDB
 
@@ -1114,6 +1116,7 @@ end
 
 -- 申请下载地图
 function gisToBlocks:downloadMap(i,j)
+	if NetManager.isConnecting then return end
 	if ComVar.CorrectMode then return end
 	local po,tile,isUpdate = nil,nil,nil
 	if (not i) and (not j) then
@@ -1154,6 +1157,7 @@ function gisToBlocks:downloadMap(i,j)
 end
 
 function gisToBlocks:startDrawTiles()
+	if NetManager.isConnecting then return end
 	local function onDraw(tile)
 		LOG.std(nil,"debug","gosToBlocks","绘制地图： " .. tile.x .. "," .. tile.y);
 		tile.isDrawed = true

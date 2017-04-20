@@ -22,9 +22,7 @@ ComVar = {
 	fillAirMode = nil; -- 填充所有空气
 	fillAll = nil; -- 填充所有方块
 	-- net
-	openNetwork = nil; -- 是否打开网络通讯
-	isServer = nil; -- 是否是服务端
-	serverIP = "192.168.1.169"; -- 如果是客户端，连接服务端的ip填这里
+	openNetwork = true; -- 是否打开网络通讯
 }
 
 
