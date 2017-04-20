@@ -21,13 +21,6 @@ DBStore.worldName = nil
 DBStore.worldPath = nil
 DBStore.dbPath = nil
 DBStore.db = nil -- database directory
-local XML_MODE = 1 -- xml
-local TDB_MODE = 0 -- table database
-
--- 配置参数 --
-local saveMode = XML_MODE -- 存储模式
-
---------------
 
 function DBStore.GetInstance()
 	if curInstance == nil then return DBStore:new() end
@@ -56,41 +49,6 @@ end
 function DBStore:SystemDB()
 	return self.db.Sysm
 end
-
--- common function
--- 克隆
-function table.clone( object )
-    local lookup_table = {}
-    local function copyObj( object )
-        if type( object ) ~= "table" then
-            return object
-        elseif lookup_table[object] then
-            return lookup_table[object]
-        end
-       
-        local new_table = {}
-        lookup_table[object] = new_table
-        for key, value in pairs( object ) do
-            new_table[copyObj( key )] = copyObj( value )
-        end
-        return setmetatable( new_table, getmetatable( object ) )
-    end
-    return copyObj( object )
-end
--- table转换为json(字符串)
-function table.toJson(tb)
-	return commonlib.Json.Encode(tb)
-end
--- json(字符串)转换为table
-function table.fromJson(str)
-	return commonlib.Json.Decode(str)
-end
-function handler(obj, method)
-    return function(...)
-       return method(obj,...)
-    end
-end
--- 
 
 -- 将table数据转换为数据库格式数据
 function DBStore:genTable(k,dt)

@@ -20,6 +20,8 @@ NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
 NPL.load("(gl)Mod/EarthMod/NetManager.lua");
+NPL.load("(gl)Mod/EarthMod/Com.lua"); -- 导入全局函数变量
+require("Mod/EarthMod/Com.lua")
 
 local EarthMod       = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
 local gisCommand     = commonlib.gettable("Mod.EarthMod.gisCommand");
@@ -77,7 +79,7 @@ function EarthMod:init()
 		return xmlRoot;
 	end)
 	-- add net Filter
-	NetManager.GetInstance()
+	NetManager.init(handler(self,self.onGameEvent),handler(self,self.onReceiveMessage))
 	MapBlock:init()
 end
 
@@ -164,10 +166,52 @@ function EarthMod:OnLeaveWorld()
 		SelectLocationTask:OnLeaveWorld();
   		ItemEarth:OnLeaveWorld();
   		DBStore:OnLeaveWorld();
+		NetManager.OnLeaveWorld()
 		DBS = nil
 		SysDB = nil
 	end
 end
 
 function EarthMod:OnDestroy()
+end
+
+-- 游戏事件 local:本地登录，server:服务器连接成功，client:客户端连接成功
+function EarthMod:onGameEvent(event)
+	if event == "client" then
+		NetManager.sendMessage("admin","reqDb")
+	end
+end
+
+-- 消息处理 {name,key,value,delay}
+function EarthMod:onReceiveMessage(data)
+	echo("do message");echo(data)
+	if NetManager.connectState == "server" then -- 服务端
+		if data.key == "reqDb" then
+			echo("NetManager:服务器接收客户端的配置请求，发送配置信息")
+			self:sendSysmDB(data,handler(self,self.sendConfigDB))
+		end
+	elseif NetManager.connectState == "client" then -- 客户端
+		if data.key == "sysData" then
+			DBS:unpackDatabase(data.value,SysDB)
+			echo("NetManager:客户端接收并拷贝服务器的系统数据库SysDB")
+		elseif data.key == "cfgData" then
+			DBS:unpackDatabase(data.value,DBS:ConfigDB())
+			echo("NetManager:客户端接收并拷贝服务器的配置数据库ConfigDB")
+		end
+	end
+end
+-- 发送系统数据库给客户端
+function EarthMod:sendSysmDB(data,func)
+	local arr = {"alreadyBlock","schoolName","coordinate","boundary"}
+	DBS:packDatabase(SysDB,arr,function(str)
+		NetManager.sendMessage(data.name,"sysData",str)
+		if func then func(data) end
+	end)
+end
+-- 发送配置数据库给客户端
+function EarthMod:sendConfigDB(data)
+	local arr = {"alreadyBlock","schoolName","coordinate","boundary"}
+	DBS:packDatabase(DBS:ConfigDB(),nil,function(str)
+		NetManager.sendMessage(data.name,"cfgData",str)
+	end)
 end

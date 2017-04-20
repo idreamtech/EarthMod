@@ -24,16 +24,7 @@ NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 
--- 配置参数 --
-local CorrectMode = nil -- 开启矫正模式  矫正地图定位偏差
-local DrawAllMap = nil -- 开启全部自动绘制
-local factor = 1 -- 地图缩放比例 .19
 local PngWidth = 256
-local FloorLevel = 5 -- 绘制地图层层高：草地层
-local buildLevelMax = 30 -- 绘制地图层层高：草地层
---------------
-
-
 local Color           = commonlib.gettable("System.Core.Color");
 local ItemColorBlock  = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
 local UndoManager     = commonlib.gettable("MyCompany.Aries.Game.UndoManager");
@@ -70,6 +61,7 @@ gisToBlocks.colors = 32;
 gisToBlocks.zoom   = 17;
 gisToBlocks.crossPointLists = {};
 gisToBlocks.isMapping = nil -- 是否正在绘制地图
+gisToBlocks.isDrawedAllMap = nil
 
 
 --RGB, block_id
@@ -260,7 +252,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 	if not vector then return end
 	local xmlRoot = ParaXML.LuaXML_ParseString(vector);
 	local tileX,tileY = tile.ranksID.x,tile.ranksID.y;
-	MapBlock:deleteArea({x = tile.rect.l,y = FloorLevel + 1,z = tile.rect.b},{x = tile.rect.r,y = FloorLevel + buildLevelMax + 1,z = tile.rect.t})
+	MapBlock:deleteArea({x = tile.rect.l,y = ComVar.FloorLevel + 1,z = tile.rect.b},{x = tile.rect.r,y = ComVar.FloorLevel + ComVar.buildLevelMax + 1,z = tile.rect.t})
 	LOG.std(nil,"debug","tileX,tileY",{tileX,tileY});
 
 	if (not xmlRoot) then
@@ -281,7 +273,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 	end
 
 	local function draw2Point(self,PointList,block_data,type)
-		local PNGSize = math.ceil(PngWidth*factor);
+		local PNGSize = math.ceil(PngWidth*ComVar.factor);
 		local pointA,pointB;
 
 		if (PointList) then
@@ -293,11 +285,11 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 					pointB = PointList[i + 1];
 
 					if(type ~= "buildingMore" and type ~= "waterMore") then
-						pointA.cx = px + math.ceil(pointA.x*factor) - PNGSize/2;
-						pointA.cy = pz - math.ceil(pointA.y*factor) + PNGSize - PNGSize/2;
+						pointA.cx = px + math.ceil(pointA.x*ComVar.factor) - PNGSize/2;
+						pointA.cy = pz - math.ceil(pointA.y*ComVar.factor) + PNGSize - PNGSize/2;
 
-						pointB.cx = px + math.ceil(pointB.x*factor) - PNGSize/2;
-						pointB.cy = pz - math.ceil(pointB.y*factor) + PNGSize - PNGSize/2;
+						pointB.cx = px + math.ceil(pointB.x*ComVar.factor) - PNGSize/2;
+						pointB.cy = pz - math.ceil(pointB.y*ComVar.factor) + PNGSize - PNGSize/2;
 					end
 
 					pointA.cz = pointA.z;
@@ -865,7 +857,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 		LOG.std(nil, "info", "PNGToBlockScale", {ver, width, height, bytesPerPixel});
 		local block_world = GameLogic.GetBlockWorld();
 		local function CreateBlock_(ix, iy, block_id, block_data)
-			local spx, spy, spz = px+ix-(PngWidth/2 * factor), py, pz+iy-(PngWidth/2 * factor);
+			local spx, spy, spz = px+ix-(PngWidth/2 * ComVar.factor), py, pz+iy-(PngWidth/2 * ComVar.factor);
 			if TileManager.GetInstance():checkMarkArea(spx,spy,spz) then
 				ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
 				self:AddBlock(spx, spy, spz, block_id, block_data, tile);
@@ -889,7 +881,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 			local worker_thread_co = coroutine.create(function ()
 				for iy=1, width do
 					for ix=1, height do
-						local x,y = math.round(ix * factor), math.round(iy * factor)
+						local x,y = math.round(ix * ComVar.factor), math.round(iy * ComVar.factor)
 						pixel = raster:ReadBytes(bytesPerPixel, pixel);
 						blocksHistory[y] = blocksHistory[y] or {}
 						blocksHistory[y][x] = {pixel[1],pixel[2],pixel[3],pixel[4]}
@@ -974,87 +966,6 @@ function gisToBlocks:fillingGap()
 	echo("填补色块：" .. ct)
 	-- end
 end
-
--- function gisToBlocks:MoreScene()
--- 	LOG.std(nil,"debug","direction",gisToBlocks.direction);
--- 	LOG.std(nil,"debug","{dleft,dtop,dright.dbottom}",{gisToBlocks.dleft,gisToBlocks.dtop,gisToBlocks.dright,gisToBlocks.dbottom});
-
--- 	self.options = "already";
--- 	echo(self.options);
-
--- 	local abslat = math.abs(gisToBlocks.dleft - gisToBlocks.dright)/2;
--- 	local abslon = math.abs(gisToBlocks.dtop  - gisToBlocks.dbottom)/2;
-
--- 	echo(tostring(abslat));
--- 	echo(tostring(abslon));
-
--- 	local direction = gisToBlocks.direction;
-
--- 	if(direction == "top") then
--- 		px, py, pz = gisToBlocks.pleft + 128, 5 , gisToBlocks.ptop + 128;
--- 		gisToBlocks.morelat = gisToBlocks.dright - abslat;
--- 		gisToBlocks.morelon = gisToBlocks.dtop + abslon;
--- 	end
-
--- 	if(direction == "bottom") then
--- 		px, py, pz = gisToBlocks.pleft + 128 , 5 , gisToBlocks.pbottom - 128;
--- 		gisToBlocks.morelat = gisToBlocks.dright - abslat;   
--- 		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
--- 	end
-
--- 	if(direction == "left") then
--- 		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.ptop - 128;
--- 		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
--- 		gisToBlocks.morelon = gisToBlocks.dtop - abslon;
--- 	end
-
--- 	if(direction == "right") then
--- 		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.ptop - 128;
--- 		gisToBlocks.morelat = gisToBlocks.dright + abslat;
--- 		gisToBlocks.morelon = gisToBlocks.dtop - abslon;
--- 	end
-
--- 	if(direction == "lefttop") then
--- 		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.ptop + 128;
--- 		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
--- 		gisToBlocks.morelon = gisToBlocks.dtop + abslat;
--- 	end
-
--- 	if(direction == "righttop") then
--- 		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.ptop + 128;
--- 		gisToBlocks.morelat = gisToBlocks.dright + abslat;
--- 		gisToBlocks.morelon = gisToBlocks.dtop + abslon;
--- 	end
-
--- 	if(direction == "leftbottom") then
--- 		px, py, pz = gisToBlocks.pleft - 128, 5 , gisToBlocks.pbottom - 128;
--- 		gisToBlocks.morelat = gisToBlocks.dleft - abslat;
--- 		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
--- 	end
-
--- 	if(direction == "rightbottom") then
--- 		px, py, pz = gisToBlocks.pright + 128, 5 , gisToBlocks.pbottom - 128;
--- 		gisToBlocks.morelat = gisToBlocks.dright + abslat;
--- 		gisToBlocks.morelon = gisToBlocks.dbottom - abslon;
--- 	end
-
--- 	gisToBlocks.mTileX,gisToBlocks.mTileY = deg2tile(gisToBlocks.morelat,gisToBlocks.morelon,self.zoom);
-
--- 	gisToBlocks.mdleft , gisToBlocks.mdtop    = pixel2deg(gisToBlocks.mTileX,gisToBlocks.mTileY,0,0,self.zoom);
--- 	gisToBlocks.mdright, gisToBlocks.mdbottom = pixel2deg(gisToBlocks.mTileX,gisToBlocks.mTileY,255,255,self.zoom);
-
--- 	echo({px,py,pz});
--- 	LOG.std(nil,"debug","morelat,morelon",{gisToBlocks.morelat,gisToBlocks.morelon});
-
--- 	-- self:GetData(function(raster,vector)
--- 	-- 	if factor > 1 then
--- 	-- 		self:PNGToBlockScale(raster, px, py, pz);
--- 	-- 	else
--- 	-- 		self:PNGToBlock(raster, px, py, pz);
--- 	-- 	end
--- 	-- 	-- self:OSMToBlock(vector, px, py, pz);
--- 	-- end);
--- end
 
 function gisToBlocks:LoadToScene(raster,vector,px,py,pz,tile)
 	local colors = self.colors;
@@ -1172,8 +1083,8 @@ end
 -- 绘制玩家周围一圈地图
 function gisToBlocks:BoundaryCheck(px, py, pz)
 	-- if self.isDrawing then return false end
-	if DrawAllMap then -- 自动全部绘制
-		DrawAllMap = nil
+	if ComVar.DrawAllMap and (not self.isDrawedAllMap) then -- 自动全部绘制
+		self.isDrawedAllMap = true
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
 		for x = 1,self.cols do
 			for y=1,self.rows do
@@ -1203,7 +1114,7 @@ end
 
 -- 申请下载地图
 function gisToBlocks:downloadMap(i,j)
-	if CorrectMode then return end
+	if ComVar.CorrectMode then return end
 	local po,tile,isUpdate = nil,nil,nil
 	if (not i) and (not j) then
 		isUpdate = true
@@ -1355,7 +1266,7 @@ function gisToBlocks:initWorld()
 		local tileManager = TileManager.GetInstance():init({
 			lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
 			rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
-			bx = px,by = FloorLevel,bz = pz,tileSize = math.ceil(PngWidth * factor),
+			bx = px,by = ComVar.FloorLevel,bz = pz,tileSize = math.ceil(PngWidth * ComVar.factor),
 			firstPo = {lat=self.minlat,lon=self.minlon},lastPo = {lat=self.maxlat,lon=self.maxlon}, -- 传入地理位置信息
 		})
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
@@ -1382,7 +1293,7 @@ function gisToBlocks:refreshPlayerInfo()
 				local curLon,curLat = SelectLocationTask.player_curLon,SelectLocationTask.player_curLat
 				SelectLocationTask.player_lon = curLon
 				SelectLocationTask.player_lat = curLat
-				if CorrectMode then -- 矫正模式
+				if ComVar.CorrectMode then -- 矫正模式
 					TileManager.GetInstance():correctPositionSystem(x,y,z,curLon,curLat)
 				else -- 跳转模式
 					local po = TileManager.GetInstance():getParaPo(curLon,curLat) -- self:getRoleFloor()
