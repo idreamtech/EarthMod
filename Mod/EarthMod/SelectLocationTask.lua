@@ -14,9 +14,11 @@ task:Run();
 NPL.load("(gl)Mod/EarthMod/main.lua");
 NPL.load("(gl)Mod/EarthMod/gisToBlocksTask.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
+NPL.load("(gl)Mod/EarthMod/NetManager.lua");
 
 local SelectLocationTask = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask"));
 local EarthMod           = commonlib.gettable("Mod.EarthMod");
+local NetManager = commonlib.gettable("Mod.EarthMod.NetManager");
 local gisToBlocks = commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 local DBS,SysDB
@@ -288,6 +290,21 @@ function SelectLocationTask.setPlayerCoordinate(lon, lat)
 end
 
 function SelectLocationTask:getPlayerCoordinate()
+	if SelectLocationTask.allPlayerPo then
+		if NetManager.connectState == "client" then
+			for name,data in pairs(SelectLocationTask.allPlayerPo) do
+				if name == NetManager.name then
+					SelectLocationTask.allPlayerPo["me"] = data
+					SelectLocationTask.allPlayerPo[name] = nil
+					break
+				end
+			end
+		elseif NetManager.connectState == "server" then
+			SelectLocationTask.allPlayerPo["me"] = SelectLocationTask.allPlayerPo["admin"]
+			SelectLocationTask.allPlayerPo["admin"] = nil
+		end
+	end
+
 	return SelectLocationTask.player_lon, SelectLocationTask.player_lat, SelectLocationTask.allPlayerPo;
 end
 
