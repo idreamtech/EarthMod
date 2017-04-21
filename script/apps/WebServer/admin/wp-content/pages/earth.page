@@ -172,7 +172,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     })
     var myIcon = L.icon({
         iconUrl: '/wp-content/pages/earth/assets/css/images/4.png',
-        iconSize: [14, 24],
+        iconSize: [15, 47],
     });
     var map  = L.map('map',{
         zoomControl:false,
@@ -384,8 +384,13 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                             }
                         }
                         if (index == null) {
-                            // 将marker添加到地图中
-                            var playerMarker = L.marker([postionData.lat, postionData.lon],{icon:currentIcon}).addTo(map).bindTooltip(playerName);
+                            // 将marker添加到地图中,如果playerName=me则图标为红色图标
+                            var playerMarker = null;
+                            if (playerName == "me") {
+                                playerMarker = L.marker([postionData.lat, postionData.lon],{icon:myIcon}).addTo(map).bindTooltip(playerName);
+                            }else{
+                                playerMarker = L.marker([postionData.lat, postionData.lon],{icon:currentIcon}).addTo(map).bindTooltip(playerName);
+                            }
                             allPlayerMarkers.push(playerMarker)
                         }else{
                             console.log("modify player postion " + index)

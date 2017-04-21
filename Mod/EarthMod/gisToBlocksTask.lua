@@ -1304,14 +1304,14 @@ function gisToBlocks:refreshPlayerInfo()
 				-- 如果当前运行的是客户端,则将人物位置信息发送给服务器
 				if player_latLon and player_latLon.lon and player_latLon.lat then
 					local po_tb = {lon = player_latLon.lon, lat = player_latLon.lat}
-					NetManager.sendMessage("admin","cl_po",table.toJson(po_tb))
+					NetManager.sendMessage("admin","cl_po",table.toJson(po_tb),-1)
 				end
 			elseif NetManager.connectState == "server" then
 				if player_latLon and player_latLon.lon and player_latLon.lat then
 					local po_tb = {lon = player_latLon.lon, lat = player_latLon.lat}
 					SelectLocationTask:setPlayerPoTableData("admin", po_tb)
 					-- 广播全玩家坐标信息
-					NetManager.sendMessage("all","all_po",table.toJson(SelectLocationTask.allPlayerPo))
+					NetManager.sendMessage("all","all_po",table.toJson(SelectLocationTask.allPlayerPo),-1)
 				end
 			end
 			local sltInstance = SelectLocationTask.GetInstance();
