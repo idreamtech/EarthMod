@@ -396,7 +396,22 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                             console.log("modify player postion " + index)
                             allPlayerMarkers[index].setLatLng([postionData.lat, postionData.lon]);
                         }
-                    }); 
+                    });
+
+                    allPlayerMarkers.forEach(function (item, index, array) {
+                        var markerContent = item.getTooltip()._content;
+                        // 默认不存在
+                        var flag = false;
+                        $.each(allPlayerPo, function(playerName, postionData){
+                            // 如果姓名与content的值相等,则视为玩家仍然保持连接,反之删除玩家marker标记
+                            if (playerName == markerContent) {
+                                flag = true;
+                            }
+                        });
+                        if (flag == false) {
+                            item.remove();
+                        }
+                    });
                 }
             },
             error:function(){

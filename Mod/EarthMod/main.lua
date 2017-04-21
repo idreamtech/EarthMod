@@ -170,7 +170,7 @@ function EarthMod:onReceiveMessage(data)
 			local tb = table.fromJson(data.value)
 			for name,v in pairs(tb) do
 				if name == NetManager.name then
-					tb["me"] == v
+					tb["me"] = v
 					tb[name] = nil
 				end
 			end
