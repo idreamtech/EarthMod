@@ -1084,6 +1084,7 @@ end
 
 -- 绘制玩家周围一圈地图
 function gisToBlocks:BoundaryCheck(px, py, pz)
+	if NetManager.connectState == "client" then return end
 	-- if self.isDrawing then return false end
 	if ComVar.DrawAllMap and (not self.isDrawedAllMap) then -- 自动全部绘制
 		self.isDrawedAllMap = true
@@ -1230,8 +1231,7 @@ function gisToBlocks:reInitWorld()
 		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
 		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
 		-- 更新SelectLocationTask.player_lon和SelectLocationTask.player_lat(人物当前所处经纬度)信息
-		local sltInstance = SelectLocationTask.GetInstance();
-		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
+		SelectLocationTask.setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
 		-- timer定时更新人物坐标信息
 		self:refreshPlayerInfo()
 		SelectLocationTask.isDownLoaded = true
@@ -1271,8 +1271,7 @@ function gisToBlocks:initWorld()
 		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
 		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
 		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
-		local sltInstance = SelectLocationTask.GetInstance();
-		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
+		SelectLocationTask.setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
 		self:refreshPlayerInfo()
 		SelectLocationTask.isDownLoaded = true
 	end
@@ -1280,7 +1279,6 @@ end
 
 -- 更新人物信息
 function gisToBlocks:refreshPlayerInfo()
-	local sltInstance = SelectLocationTask.GetInstance();
 	gisToBlocks.playerLocationTimer = gisToBlocks.playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
 			-- 获取人物坐标信息
 			local x,y,z = EntityManager.GetFocus():GetBlockPos()
@@ -1301,12 +1299,15 @@ function gisToBlocks:refreshPlayerInfo()
 			local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
 			local ro,str = TileManager.GetInstance():getForward(true)
 			local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
-			sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
-			sltInstance:setInfor({-- lon = lon,lat = lat, 经纬度
-				pos = "(" .. x .. "," .. y .. "," .. z .. ")",
-				loading = TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count,
-				forward = str .. " " .. ron .. "°"
-			});
+			SelectLocationTask.setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
+			local sltInstance = SelectLocationTask.GetInstance();
+			if sltInstance then
+				sltInstance:setInfor({-- lon = lon,lat = lat, 经纬度
+					pos = "(" .. x .. "," .. y .. "," .. z .. ")",
+					loading = TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count,
+					forward = str .. " " .. ron .. "°"
+				});
+			end
 	end});
 	gisToBlocks.playerLocationTimer:Change(1000,1000);
 	if not SelectLocationTask.isShowInfo then SelectLocationTask.isShowInfo = true end

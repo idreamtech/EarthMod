@@ -138,16 +138,12 @@ function EarthMod:onGameEvent(event)
 		NetManager.sendMessage("admin","reqDb")
 	elseif event == "server" then
 		CommandManager:RunCommand("/take 10513");
-		SelectLocationTask:toRun()
-		self:initMap(function()
-			ItemEarth:boundaryCheck()
-		end)
+		self:startGame()
 	end
 end
 
 -- 消息处理 {name,key,value,delay}
 function EarthMod:onReceiveMessage(data)
-	echo("do message");echo(data)
 	if NetManager.connectState == "server" then -- 服务端
 		if data.key == "reqDb" then
 			echo("NetManager:服务器接收客户端的配置请求，发送配置信息")
@@ -160,9 +156,8 @@ function EarthMod:onReceiveMessage(data)
 		elseif data.key == "cfgData" then
 			DBS:unpackDatabase(data.value,DBS:ConfigDB())
 			echo("NetManager:客户端接收并拷贝服务器的配置数据库ConfigDB")
-			self:initMap()
 			table.remove(SelectLocationTask.menus,3)
-			SelectLocationTask:toRun()
+			self:startGame()
 		end
 	end
 end
@@ -181,6 +176,14 @@ function EarthMod:sendConfigDB(data)
 	local arr = {"alreadyBlock","schoolName","coordinate","boundary"}
 	DBS:packDatabase(DBS:ConfigDB(),nil,function(str)
 		NetManager.sendMessage(data.name,"cfgData",str)
+	end)
+end
+
+-- 服务器和客户端启动游戏
+function EarthMod:startGame()
+	self:initMap(function()
+		SelectLocationTask:toRun()
+		ItemEarth:boundaryCheck()
 	end)
 end
 
