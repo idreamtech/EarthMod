@@ -141,10 +141,6 @@ function EarthMod:onGameEvent(event)
 		SelectLocationTask:toRun()
 		self:initMap(function()
 			ItemEarth:boundaryCheck()
-			-- 设置到正中心位置
-			local po = TileManager.GetInstance():getParaPo()
-			GameLogic.GetPlayer():SetBlockPos(po.x,po.y,po.z)
-			GameLogic.SetHomePosition(po.x,po.y,po.z)
 		end)
 	end
 end
