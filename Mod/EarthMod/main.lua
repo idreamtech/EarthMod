@@ -154,7 +154,9 @@ function EarthMod:onReceiveMessage(data)
 		elseif data.key == "NetDisConn" then
 			echo("player " .. data.name .. " leave the world.")
 			SelectLocationTask.allPlayerPo[data.name] = nil
-			-- 
+			NetManager.sendMsg("玩家 " .. data.name .. " 离开了游戏")
+		elseif data.key == "msg" then
+			NetManager.showMsg(data)
 		end
 	elseif NetManager.connectState == "client" then -- 客户端
 		if data.key == "sysData" then
@@ -175,6 +177,8 @@ function EarthMod:onReceiveMessage(data)
 				end
 			end
 			SelectLocationTask.allPlayerPo = tb
+		elseif data.key == "msg" then
+			NetManager.showMsg(data)
 		end
 	end
 end
