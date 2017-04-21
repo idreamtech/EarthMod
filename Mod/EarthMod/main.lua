@@ -151,6 +151,10 @@ function EarthMod:onReceiveMessage(data)
 		elseif data.key == "cl_po" then
 			-- 服务端接收到客户端的人物坐标信息之后,将其添加到全玩家坐标信息table中
 			SelectLocationTask:setPlayerPoTableData(data.name, table.fromJson(data.value))
+		elseif data.key == "NetDisConn" then
+			echo("player " .. data.name .. " leave the world.")
+			SelectLocationTask.allPlayerPo[data.name] = nil
+			-- 
 		end
 	elseif NetManager.connectState == "client" then -- 客户端
 		if data.key == "sysData" then
@@ -163,7 +167,14 @@ function EarthMod:onReceiveMessage(data)
 			self:startGame()
 		elseif data.key == "all_po" then
 			-- 接收到所有玩家的位置信息
-			SelectLocationTask.allPlayerPo = table.fromJson(data.value)
+			local tb = table.fromJson(data.value)
+			for name,v in pairs(tb) do
+				if name == NetManager.name then
+					tb["me"] == v
+					tb[name] = nil
+				end
+			end
+			SelectLocationTask.allPlayerPo = tb
 		end
 	end
 end

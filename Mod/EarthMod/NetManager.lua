@@ -92,9 +92,10 @@ function NetManager.setHandler(eventFunc,receiveFunc)
 	NetManager.netReceiveFunc = receiveFunc -- 消息监听函数
 end
 
--- 世界离开的时候关闭网络通讯
+-- 世界离开的时候关闭网络通讯(同时向服务器发送NetDisConn指令)
 function NetManager.OnLeaveWorld()
 	if NetManager.isConnecting then return end
+	if NetManager.connectState == "client" then NetManager.sendMessage("admin","NetDisConn",nil,-1) end
 	if NetManager.msgTimer then NetManager.msgTimer:Change(); NetManager.msgTimer = nil end
 	NetManager.netReceiveFunc = nil
 	NetManager.netMessageQueue = {}
