@@ -148,6 +148,9 @@ function EarthMod:onReceiveMessage(data)
 		if data.key == "reqDb" then
 			echo("NetManager:服务器接收客户端的配置请求，发送配置信息")
 			self:sendSysmDB(data,handler(self,self.sendConfigDB))
+		elseif data.key == "cl_po" then
+			-- 服务端接收到客户端的人物坐标信息之后,将其添加到全玩家坐标信息table中
+			SelectLocationTask:setPlayerPoTableData(data.name, table.fromJson(data.value))
 		end
 	elseif NetManager.connectState == "client" then -- 客户端
 		if data.key == "sysData" then
@@ -158,6 +161,9 @@ function EarthMod:onReceiveMessage(data)
 			echo("NetManager:客户端接收并拷贝服务器的配置数据库ConfigDB")
 			table.remove(SelectLocationTask.menus,3)
 			self:startGame()
+		elseif data.key == "all_po" then
+			-- 接收到所有玩家的位置信息
+			SelectLocationTask.allPlayerPo = table.fromJson(data.value)
 		end
 	end
 end

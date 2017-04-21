@@ -42,6 +42,9 @@ SelectLocationTask.playerInfo = {}
 SelectLocationTask.menuWidth = nil
 SelectLocationTask.isRuned = nil
 
+-- 全玩家坐标信息
+SelectLocationTask.allPlayerPo = nil
+
 function SelectLocationTask:ctor()
 end
 
@@ -285,7 +288,7 @@ function SelectLocationTask.setPlayerCoordinate(lon, lat)
 end
 
 function SelectLocationTask:getPlayerCoordinate()
-	return SelectLocationTask.player_lon, SelectLocationTask.player_lat;
+	return SelectLocationTask.player_lon, SelectLocationTask.player_lat, SelectLocationTask.allPlayerPo;
 end
 
 -- 设置并跳转人物
@@ -356,6 +359,25 @@ function SelectLocationTask.OnShowMap()
 	end
 end
 
+-- 添加玩家坐标信息
+function  SelectLocationTask:setPlayerPoTableData(name, playerPo)
+	if name and playerPo then
+		SelectLocationTask.allPlayerPo = SelectLocationTask.allPlayerPo or {}
+		for n,p in pairs(SelectLocationTask.allPlayerPo) do
+			if n == name then
+				SelectLocationTask.allPlayerPo[n] = playerPo
+				return
+			end
+		end
+		SelectLocationTask.allPlayerPo[name] = playerPo
+	end
+end
+
+-- 返回全玩家位置信息到网页端
+function  SelectLocationTask:getPlayerPoTableData()
+	return SelectLocationTask.allPlayerPo;
+end
+
 -- 页面菜单
 SelectLocationTask.menus = {
     {order=1,name="地图",icon="mapBtn",func=SelectLocationTask.OnShowMap};
@@ -367,15 +389,15 @@ SelectLocationTask.menus = {
 
 function SelectLocationTask:OnLeaveWorld()
     -- 离开当前世界时候重新初始化变量
-  	SelectLocationTask.isFirstSelect = true;
+  	SelectLocationTask.isFirstSelect = true
   	-- this is always a top level task. 
-  	SelectLocationTask.is_top_level  = true;
-  	SelectLocationTask.getMoreTiles  = false;
+  	SelectLocationTask.is_top_level  = true
+  	SelectLocationTask.getMoreTiles  = false
   	-- 人物坐标对应经纬度
-  	SelectLocationTask.playerLon  = nil;
-  	SelectLocationTask.playerLat  = nil;
-  	SelectLocationTask.player_curLon = nil;
-  	SelectLocationTask.player_curLat = nil;
+  	SelectLocationTask.playerLon  = nil
+  	SelectLocationTask.playerLat  = nil
+  	SelectLocationTask.player_curLon = nil
+  	SelectLocationTask.player_curLat = nil
   	SelectLocationTask.isDownLoaded = nil
   	SelectLocationTask.schoolData = nil
   	SelectLocationTask.isShowInfo = nil
@@ -383,8 +405,9 @@ function SelectLocationTask:OnLeaveWorld()
   	SelectLocationTask.RefreshPage()
   	SelectLocationTask.menuWidth = nil
   	SelectLocationTask.isRuned = nil
-	SelectLocationTask.player_lon = nil;
-	SelectLocationTask.player_lat = nil;
+	SelectLocationTask.player_lon = nil
+	SelectLocationTask.player_lat = nil
+	SelectLocationTask.allPlayerPo = nil
   	DBS = nil
   	SysDB = nil
   	curInstance = nil

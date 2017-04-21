@@ -32,10 +32,11 @@ if(is_ajax()) then
 
     add_action('wp_ajax_get_player_coordinate' , function()
         --获取人物坐标
-        local playerLon, playerLat = SelectLocationTask:getPlayerCoordinate();
+        local playerLon, playerLat, allPlayerPo = SelectLocationTask:getPlayerCoordinate();
         local ret = {};
         ret["lon"] = playerLon;
         ret["lat"] = playerLat;
+        ret["allPlayerPo"] = allPlayerPo;
         response:send_json(ret);
         return;
     end);
@@ -349,19 +350,25 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                 // console.log(res);
                 var lon = res.lon;
                 var lat = res.lat;
-                if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
-                    // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
-                    if (marker == null) {
-                        marker = L.marker([lat, lon],{icon:currentIcon}).addTo(map);
-                    } else {
-                        marker.setLatLng([lat, lon]);
+                var allPlayerPo = res.allPlayerPo;
+                // 如果allPlayerPo为空,则为脱机模式
+                if (allPlayerPo == null || typeof(allPlayerPo) != "undefined") {
+                    if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
+                        // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
+                        if (marker == null) {
+                            marker = L.marker([lat, lon],{icon:currentIcon}).addTo(map);
+                        } else {
+                            marker.setLatLng([lat, lon]);
+                        }
+                        if (searchInpState == true) {
+                            searchInpState = false;
+                            document.getElementsByClassName('search-inp')[0].disabled = true;
+                        }
                     }
-                    if (searchInpState == true) {
-                        searchInpState = false;
-                        document.getElementsByClassName('search-inp')[0].disabled = true;
-                    }
+                    map.setView(marker._latlng);
+                }else if (allPlayerPo != null && typeof(allPlayerPo) != "undefined") {
+                    console.log(allPlayerPo)
                 }
-                map.setView(marker._latlng);
             },
             error:function(){
                 console.log("获取人物当前坐标失败");

@@ -1300,6 +1300,20 @@ function gisToBlocks:refreshPlayerInfo()
 			local ro,str = TileManager.GetInstance():getForward(true)
 			local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
 			SelectLocationTask.setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
+			if NetManager.connectState == "client" then 
+				-- 如果当前运行的是客户端,则将人物位置信息发送给服务器
+				if player_latLon and player_latLon.lon and player_latLon.lat then
+					local po_tb = {lon = player_latLon.lon, lat = player_latLon.lat}
+					NetManager.sendMessage("admin","cl_po",table.toJson(po_tb))
+				end
+			elseif NetManager.connectState == "server" then
+				if player_latLon and player_latLon.lon and player_latLon.lat then
+					local po_tb = {lon = player_latLon.lon, lat = player_latLon.lat}
+					SelectLocationTask:setPlayerPoTableData("admin", po_tb)
+					-- 广播全玩家坐标信息
+					NetManager.sendMessage("all","all_po",table.toJson(SelectLocationTask.allPlayerPo))
+				end
+			end
 			local sltInstance = SelectLocationTask.GetInstance();
 			if sltInstance then
 				sltInstance:setInfor({-- lon = lon,lat = lat, 经纬度
