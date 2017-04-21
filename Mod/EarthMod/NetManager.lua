@@ -147,6 +147,18 @@ function NetManager.pop()
 	return endData
 end
 
+-- 广播消息
+function NetManager.sendMsg(msg)
+	NetManager.sendMessage("all","msg",msg,-1)
+end
+
+-- 显示广播信息
+function NetManager.showMsg(data,delay,color)
+	data.time = data.time or 5000
+	data.color = data.color or "0 255 0"
+	GameLogic.AddBBS("statusBar",data.value, data.time, data.color)
+end
+
 -- 定义指令donet用于处理消息回调 发送：runat @admin /donet @selfname 0 -reqDb
 Commands["donet"] = {
 	name="donet", 
