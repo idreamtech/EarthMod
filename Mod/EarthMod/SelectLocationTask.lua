@@ -61,7 +61,7 @@ function SelectLocationTask.InitPageInfo(Page)
 	pageInfo = Page
 end
 
-function SelectLocationTask:RefreshPage()
+function SelectLocationTask.RefreshPage()
 	if(pageInfo) then
 		pageInfo:Refresh(0.01);
 	end
@@ -279,7 +279,7 @@ function SelectLocationTask:toRun()
 	end
 end
 
-function SelectLocationTask:setPlayerCoordinate(lon, lat)
+function SelectLocationTask.setPlayerCoordinate(lon, lat)
 	SelectLocationTask.player_lon = lon;
 	SelectLocationTask.player_lat = lat;
 end
@@ -380,7 +380,7 @@ function SelectLocationTask:OnLeaveWorld()
   	SelectLocationTask.schoolData = nil
   	SelectLocationTask.isShowInfo = nil
   	SelectLocationTask.playerInfo = {}
-  	SelectLocationTask:RefreshPage()
+  	SelectLocationTask.RefreshPage()
   	SelectLocationTask.menuWidth = nil
   	SelectLocationTask.isRuned = nil
 	SelectLocationTask.player_lon = nil;
