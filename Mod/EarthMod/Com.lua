@@ -15,7 +15,7 @@ ComVar = {
 	DrawAllMap = nil; -- 开启全部自动绘制
 	Draw3DBuilding = nil; -- 是否绘制地上建筑
 	-- gis
-	factor = 1; -- 地图缩放比例 .19
+	factor = 1.19; -- 地图缩放比例 .19
 	FloorLevel = 5; -- 绘制地图层层高：草地层
 	buildLevelMax = 30; -- 绘制地图层层高：草地层
 	-- map
