@@ -1116,7 +1116,7 @@ end
 
 -- 申请下载地图
 function gisToBlocks:downloadMap(i,j)
-	if NetManager.isConnecting then return end
+	if NetManager.connectState == "client" then return end
 	if ComVar.CorrectMode then return end
 	local po,tile,isUpdate = nil,nil,nil
 	if (not i) and (not j) then
@@ -1157,7 +1157,7 @@ function gisToBlocks:downloadMap(i,j)
 end
 
 function gisToBlocks:startDrawTiles()
-	if NetManager.isConnecting then return end
+	if NetManager.connectState == "client" then return end
 	local function onDraw(tile)
 		LOG.std(nil,"debug","gosToBlocks","绘制地图： " .. tile.x .. "," .. tile.y);
 		tile.isDrawed = true
@@ -1189,21 +1189,12 @@ function gisToBlocks:Run()
 			gisToBlocks.pleft   = boundary.pleft;
 			gisToBlocks.pright  = boundary.pright;
 		end end)
-		-- local boundary = EarthMod:GetWorldData("boundary");
-		-- gisToBlocks.ptop    = boundary.ptop;
-		-- gisToBlocks.pbottom = boundary.pbottom;
-		-- gisToBlocks.pleft   = boundary.pleft;
-		-- gisToBlocks.pright  = boundary.pright;
 
 	elseif(self.options == "coordinate") then
 		if(GameLogic.GameMode:CanAddToHistory()) then
 			self.add_to_history = false;
 		end
 		self:initWorld()
-		local po = TileManager.GetInstance():getParaPo()
-		-- self:BoundaryCheck(po.x, po.y, po.z) -- 绘制人物周围9块
-		-- 跳转到地图中间
-		CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
 	end
 end
 

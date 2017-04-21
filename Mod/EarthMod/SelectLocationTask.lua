@@ -335,16 +335,16 @@ function SelectLocationTask:setInfor(para)
 	SelectLocationTask.playerInfo = para
 end
 
-function SelectLocationTask:OnShowInfo()
+function SelectLocationTask.OnShowInfo()
 	SelectLocationTask.isShowInfo = not SelectLocationTask.isShowInfo
 end
 -- 初始化一次
 function SelectLocationTask:onInit()
 	GameLogic.SetStatus(L"小提示:左上角菜单中地理信息按钮可以隐藏信息面板 ^_^");
-	self:OnShowMap()
+	self.OnShowMap()
 end
 -- 显示地图
-function SelectLocationTask:OnShowMap()
+function SelectLocationTask.OnShowMap()
 	-- 切换地图显示
 	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
@@ -355,6 +355,7 @@ function SelectLocationTask:OnShowMap()
 		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_lt", 5, 70, 400, 400);
 	end
 end
+
 -- 页面菜单
 SelectLocationTask.menus = {
     {order=1,name="地图",icon="mapBtn",func=SelectLocationTask.OnShowMap};

@@ -68,9 +68,9 @@ end
 -- rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
 function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐标（左下点），瓦片大小
 	self.tileSize = para.tileSize or TILE_SIZE
-	self.oPo = {x = para.bx,y = para.by,z = para.bz}
 	self.col = para.rid - para.lid + 1
 	self.row = para.bid - para.tid + 1
+	self.oPo = {x = para.bx - (self.col - 1) * self.tileSize * 0.5,y = para.by,z = para.bz - (self.row - 1) * self.tileSize * 0.5}
 	self.idHL = {col=para.lid,row=para.bid} -- 记录左下角行列式
 	self.beginPo = {x = para.lid, y = para.bid}
 	self.endPo = {x = para.rid,y = para.tid}
@@ -82,6 +82,7 @@ function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐
 	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
 	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
 	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
+
 end
 
 -- 扩充校园；传入新的 firstPo,lastPo,lid,bid,rid,tid 调整瓦片数据
@@ -397,6 +398,9 @@ function TileManager:correctPositionSystem(x,y,z,lon,lat)
 	self.firstBlockPo = self:pAdd(self.firstBlockPo,mov)
 	self.oPo = self:pAdd(self.oPo,mov)
 	echo("toPo:");echo(self.firstBlockPo)
+	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
+	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
+	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 	self:Save()
 end
 -- 坐标系手动微调
@@ -405,6 +409,9 @@ function TileManager:correctPo(poDt)
 	self.firstBlockPo = self:pAdd(self.firstBlockPo,poDt)
 	self.oPo = self:pAdd(self.oPo,poDt)
 	echo("矫正位置 toPo:");echo(self.firstBlockPo)
+	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
+	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
+	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 	self:Save()
 end
 
