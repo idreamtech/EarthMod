@@ -79,7 +79,9 @@ function EarthMod:init()
 		return xmlRoot;
 	end)
 	-- add net Filter
-	NetManager.init(handler(self,self.onGameEvent),handler(self,self.onReceiveMessage))
+	if ComVar.openNetwork then
+		NetManager.init(handler(self,self.onGameEvent),handler(self,self.onReceiveMessage))
+	end
 	MapBlock:init()
 end
 
@@ -95,11 +97,100 @@ function EarthMod:OnWorldLoad()
 	-- 	-- CommandManager:RunCommand("/take 10513");
 	-- end
 	MapBlock:OnWorldLoad();
-
-	TileManager:new() -- 初始化并加载数据
-	-- 检测是否是读取存档
 	DBS = DBStore.GetInstance()
 	SysDB = DBS:SystemDB()
+	if not ComVar.openNetwork then
+		self:initMap()
+	end
+	-- if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
+	-- end
+end
+-- called when a world is unloaded. 
+
+function EarthMod:OnLeaveWorld()
+	echo("On Leave World")
+	if TileManager.GetInstance() then
+		MapBlock:OnLeaveWorld()
+		gisToBlocks:OnLeaveWorld()
+		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+		NplCefWindowManager:Destroy("my_window");
+		-- 离开当前世界时候初始化所有变量
+		echo("sltInstance set nil")
+		SelectLocationTask:OnLeaveWorld();
+  		ItemEarth:OnLeaveWorld();
+  		DBStore:OnLeaveWorld();
+  		if ComVar.openNetwork then
+			NetManager.OnLeaveWorld()
+		end
+		DBS = nil
+		SysDB = nil
+	end
+end
+
+function EarthMod:OnDestroy()
+end
+
+-- 游戏事件 local:本地登录，server:服务器连接成功，client:客户端连接成功
+function EarthMod:onGameEvent(event)
+	if event == "local" then
+	elseif event == "client" then
+		NetManager.sendMessage("admin","reqDb")
+	elseif event == "server" then
+		CommandManager:RunCommand("/take 10513");
+		SelectLocationTask:toRun()
+		self:initMap(function()
+			ItemEarth:boundaryCheck()
+			-- 设置到正中心位置
+			local po = TileManager.GetInstance():getParaPo()
+			GameLogic.GetPlayer():SetBlockPos(po.x,po.y,po.z)
+			GameLogic.SetHomePosition(po.x,po.y,po.z)
+		end)
+	end
+end
+
+-- 消息处理 {name,key,value,delay}
+function EarthMod:onReceiveMessage(data)
+	echo("do message");echo(data)
+	if NetManager.connectState == "server" then -- 服务端
+		if data.key == "reqDb" then
+			echo("NetManager:服务器接收客户端的配置请求，发送配置信息")
+			self:sendSysmDB(data,handler(self,self.sendConfigDB))
+		end
+	elseif NetManager.connectState == "client" then -- 客户端
+		if data.key == "sysData" then
+			DBS:unpackDatabase(data.value,SysDB)
+			echo("NetManager:客户端接收并拷贝服务器的系统数据库SysDB")
+		elseif data.key == "cfgData" then
+			DBS:unpackDatabase(data.value,DBS:ConfigDB())
+			echo("NetManager:客户端接收并拷贝服务器的配置数据库ConfigDB")
+			self:initMap()
+			table.remove(SelectLocationTask.menus,3)
+			SelectLocationTask:toRun()
+		end
+	end
+end
+
+-- 发送系统数据库给客户端
+function EarthMod:sendSysmDB(data,func)
+	local arr = {"alreadyBlock","schoolName","coordinate","boundary"}
+	DBS:packDatabase(SysDB,arr,function(str)
+		NetManager.sendMessage(data.name,"sysData",str)
+		if func then func(data) end
+	end)
+end
+
+-- 发送配置数据库给客户端
+function EarthMod:sendConfigDB(data)
+	local arr = {"alreadyBlock","schoolName","coordinate","boundary"}
+	DBS:packDatabase(DBS:ConfigDB(),nil,function(str)
+		NetManager.sendMessage(data.name,"cfgData",str)
+	end)
+end
+
+function EarthMod:initMap(func)
+	TileManager:new() -- 初始化并加载数据
+	-- 检测是否是读取存档
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
 		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
 			TileManager.GetInstance():Load() -- 加载配置
@@ -111,7 +202,7 @@ function EarthMod:OnWorldLoad()
 			DBS:getValue(SysDB,"schoolName",function(schoolName) if schoolName then
 				schoolName = string.gsub(schoolName, "\"", "");
 				-- 根据学校名称调用getSchoolByName接口,请求最新的经纬度范围信息,如果信息不一致,则更新文件中已有数据
-				System.os.GetUrl({url = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
+				System.os.GetUrl({url = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
 					if(res and res.error and res.data and res.data ~= {} and res.error.id == 0) then
 		                -- 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
 		                -- echo("getSchoolByName by name : ")
@@ -134,12 +225,15 @@ function EarthMod:OnWorldLoad()
 							-- EarthMod:SetWorldData("coordinate",{minlat=tostring(gisToBlocks.minlat),minlon=tostring(gisToBlocks.minlon),maxlat=tostring(gisToBlocks.maxlat),maxlon=tostring(gisToBlocks.maxlon)});
 							-- EarthMod:SaveWorldData();
 		                	gisToBlocks:reInitWorld()
+		                	if func then func() end
 		                else
 		                	echo("call initworld")
 		                	gisToBlocks:initWorld()
+		                	if func then func() end
 		                end
 		            else
 		            	gisToBlocks:initWorld()
+		                if func then func() end
 		            end
 				end);
 			end end)
@@ -148,80 +242,4 @@ function EarthMod:OnWorldLoad()
 			-- echo("school name is : "..schoolName)
 		end end)
 	end end)
-	-- if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
-	-- end
-end
--- called when a world is unloaded. 
-
-function EarthMod:OnLeaveWorld()
-	echo("On Leave World")
-	if TileManager.GetInstance() then
-		MapBlock:OnLeaveWorld()
-		gisToBlocks:OnLeaveWorld()
-		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		NplCefWindowManager:Destroy("my_window");
-		-- 离开当前世界时候初始化所有变量
-		echo("sltInstance set nil")
-		SelectLocationTask:OnLeaveWorld();
-  		ItemEarth:OnLeaveWorld();
-  		DBStore:OnLeaveWorld();
-		NetManager.OnLeaveWorld()
-		DBS = nil
-		SysDB = nil
-	end
-end
-
-function EarthMod:OnDestroy()
-end
-
--- 游戏事件 local:本地登录，server:服务器连接成功，client:客户端连接成功
-function EarthMod:onGameEvent(event)
-	if event == "local" then
-		if ComVar.openNetwork then
-			if ComVar.isServer then -- 启动服务器
-				NetManager.startServer()
-			else
-				NetManager.connectServer(ComVar.serverIP)
-			end
-		end
-	elseif event == "client" then
-		NetManager.sendMessage("admin","reqDb")
-	end
-end
-
--- 消息处理 {name,key,value,delay}
-function EarthMod:onReceiveMessage(data)
-	echo("do message");echo(data)
-	if NetManager.connectState == "server" then -- 服务端
-		if data.key == "reqDb" then
-			echo("NetManager:服务器接收客户端的配置请求，发送配置信息")
-			self:sendSysmDB(data,handler(self,self.sendConfigDB))
-		end
-	elseif NetManager.connectState == "client" then -- 客户端
-		if data.key == "sysData" then
-			DBS:unpackDatabase(data.value,SysDB)
-			echo("NetManager:客户端接收并拷贝服务器的系统数据库SysDB")
-		elseif data.key == "cfgData" then
-			DBS:unpackDatabase(data.value,DBS:ConfigDB())
-			echo("NetManager:客户端接收并拷贝服务器的配置数据库ConfigDB")
-		end
-	end
-end
-
--- 发送系统数据库给客户端
-function EarthMod:sendSysmDB(data,func)
-	local arr = {"alreadyBlock","schoolName","coordinate","boundary"}
-	DBS:packDatabase(SysDB,arr,function(str)
-		NetManager.sendMessage(data.name,"sysData",str)
-		if func then func(data) end
-	end)
-end
-
--- 发送配置数据库给客户端
-function EarthMod:sendConfigDB(data)
-	local arr = {"alreadyBlock","schoolName","coordinate","boundary"}
-	DBS:packDatabase(DBS:ConfigDB(),nil,function(str)
-		NetManager.sendMessage(data.name,"cfgData",str)
-	end)
 end

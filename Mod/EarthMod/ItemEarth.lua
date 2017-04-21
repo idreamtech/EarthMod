@@ -45,7 +45,9 @@ function ItemEarth:OnSelect(itemStack)
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
 		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
 			CommandManager:RunCommand("/gis -already " .. coordinate.minlat .. " " .. coordinate.minlon.. " " .. coordinate.maxlat.. " " .. coordinate.maxlon);
-			self:boundaryCheck();
+			if not ComVar.openNetwork then
+				self:boundaryCheck();
+			end
 		end end)
 	end end)
 end
