@@ -291,15 +291,7 @@ end
 
 function SelectLocationTask:getPlayerCoordinate()
 	if SelectLocationTask.allPlayerPo then
-		if NetManager.connectState == "client" then
-			for name,data in pairs(SelectLocationTask.allPlayerPo) do
-				if name == NetManager.name then
-					SelectLocationTask.allPlayerPo["me"] = data
-					SelectLocationTask.allPlayerPo[name] = nil
-					break
-				end
-			end
-		elseif NetManager.connectState == "server" then
+		if NetManager.connectState == "server" then
 			SelectLocationTask.allPlayerPo["me"] = SelectLocationTask.allPlayerPo["admin"]
 			SelectLocationTask.allPlayerPo["admin"] = nil
 		end
