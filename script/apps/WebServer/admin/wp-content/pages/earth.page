@@ -408,6 +408,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
         // $('.navbar').remove();
         // $('.footer').remove();
 
+        getAllSchool();
+
         getSchoolAreaInfo();
 
         // 每一秒更新一次人物坐标信息
@@ -423,6 +425,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
             $.ajax({
                 url:urlStr,
                 type:"get",
+                async:false,
                 dataType:"json",
                 success:function(res){
                     console.log(res);
@@ -469,7 +472,6 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                 }
             })
     }
-    getAllSchool();
     // 请求学校经纬度信息
     function getSchoolByName(schoolName){
         var urlStr = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName";
