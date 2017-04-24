@@ -32,11 +32,13 @@ if(is_ajax()) then
 
     add_action('wp_ajax_get_player_coordinate' , function()
         --获取人物坐标
-        local playerLon, playerLat, allPlayerPo = SelectLocationTask:getPlayerCoordinate();
+        local playerLon, playerLat, allPlayerPo, name = SelectLocationTask:getPlayerCoordinate();
         local ret = {};
         ret["lon"] = playerLon;
         ret["lat"] = playerLat;
         ret["allPlayerPo"] = allPlayerPo;
+        --玩家名称
+        ret["selfName"] = name;
         response:send_json(ret);
         return;
     end);
@@ -353,6 +355,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                 var lon = res.lon;
                 var lat = res.lat;
                 var allPlayerPo = res.allPlayerPo;
+                var selfName = res.selfName;
                 // 如果allPlayerPo为空,则为脱机模式
                 if (allPlayerPo == null || typeof(allPlayerPo) == "undefined") {
                     if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
@@ -386,7 +389,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                         if (index == null) {
                             // 将marker添加到地图中,如果playerName=me则图标为红色图标
                             var playerMarker = null;
-                            if (playerName == "me") {
+                            if (playerName == selfName) {
                                 playerMarker = L.marker([postionData.lat, postionData.lon],{icon:myIcon}).addTo(map).bindTooltip(playerName);
                             }else{
                                 playerMarker = L.marker([postionData.lat, postionData.lon],{icon:currentIcon}).addTo(map).bindTooltip(playerName);
