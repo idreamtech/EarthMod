@@ -10,9 +10,11 @@ local NetManager = commonlib.gettable("Mod.EarthMod.NetManager");
 ------------------------------------------------------------
 ]]
 NPL.load("(gl)script/ide/timer.lua");
+NPL.load("(gl)script/apps/Aries/Creator/Game/Network/ServerManager.lua");
 local NetManager = commonlib.inherit(nil,commonlib.gettable("Mod.EarthMod.NetManager"));
 local Commands = commonlib.gettable("MyCompany.Aries.Game.Commands");
 local CmdParser = commonlib.gettable("MyCompany.Aries.Game.CmdParser");
+local ServerManager = commonlib.gettable("MyCompany.Aries.Game.Network.ServerManager");
 
 NetManager.name = nil
 NetManager.msgTimer = nil -- 心跳
@@ -21,6 +23,9 @@ NetManager.gameEventFunc = nil -- 游戏事件监听
 NetManager.netMessageQueue = {}
 NetManager.connectState = nil -- local:本地，server:服务器，client:客户端
 NetManager.isConnecting = nil
+NetManager.ServerM = nil
+NetManager.playerNum = nil
+NetManager.players = nil
 local heartBeat = 1000
 
 -- 初始化网络管理器
@@ -30,6 +35,11 @@ function NetManager.init(eventFunc,receiveFunc)
 	NetManager.netMessageQueue = {}
 	NetManager.netReceiveFunc = receiveFunc -- 消息监听函数
 	NetManager.gameEventFunc = eventFunc -- 游戏事件监听
+	if NetManager.connectState == "server" then
+		NetManager.ServerM = ServerManager.GetSingleton()
+		NetManager.playerNum = NetManager.ServerM.playerEntityList:size()
+		NetManager.players = NetManager.ServerM.playerEntityList:clone()
+	end
     GameLogic.GetFilters():add_filter("PlayerHasLoginPosition", function()
 		NetManager.name = GameLogic.GetPlayer():GetName()
     	echo("NetManager connect user: " .. NetManager.name)
@@ -56,11 +66,39 @@ function NetManager.init(eventFunc,receiveFunc)
 				if data.delay > 0 then
 					timer:Change(data.delay,heartBeat)
 				end
+				NetManager.checkPlayerLeave()
 			end
 		end
 	end})
 	NetManager.msgTimer:Change(heartBeat,heartBeat) -- 一秒一个心跳
 	echo("onInit: NetManager")
+end
+
+function NetManager.checkPlayerLeave() -- a:原数目,b:新人数
+	if NetManager.connectState ~= "server" then return end
+	log("server check:");echo(NetManager.ServerM.playerEntityList)
+	if NetManager.playerNum ~= NetManager.ServerM.playerEntityList:size() then
+		local listPlayer = NetManager.ServerM.playerEntityList:clone()
+		local leavePlayers = {}
+		for i, entityPlayer in ipairs(NetManager.players) do
+			local name = entityPlayer:GetUserName()
+			local isFind = nil
+			for i, ePlayer in ipairs(listPlayer) do
+				if ePlayer:GetUserName() == name then
+					isFind = true
+					break
+				end
+			end
+			if not isFind then
+				leavePlayers[name] = true
+			end
+	    end
+	    for name,v in pairs(leavePlayers) do
+	    	if v then
+				NetManager.sendMessage("all","leave",name,-1)
+	    	end
+	    end
+	end
 end
 
 -- 启动服务器
@@ -95,7 +133,9 @@ end
 -- 世界离开的时候关闭网络通讯(同时向服务器发送NetDisConn指令)
 function NetManager.OnLeaveWorld()
 	if NetManager.isConnecting then return end
-	if NetManager.connectState == "client" then NetManager.sendMessage("admin","NetDisConn",nil,-1) end
+	NetManager.ServerM = nil
+	NetManager.playerNum = nil
+	NetManager.players = nil
 	if NetManager.msgTimer then NetManager.msgTimer:Change(); NetManager.msgTimer = nil end
 	NetManager.netReceiveFunc = nil
 	NetManager.netMessageQueue = {}

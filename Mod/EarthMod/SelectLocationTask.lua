@@ -290,14 +290,11 @@ function SelectLocationTask.setPlayerCoordinate(lon, lat)
 end
 
 function SelectLocationTask:getPlayerCoordinate()
-	if SelectLocationTask.allPlayerPo then
-		if NetManager.connectState == "server" then
-			SelectLocationTask.allPlayerPo["me"] = SelectLocationTask.allPlayerPo["admin"]
-			SelectLocationTask.allPlayerPo["admin"] = nil
-		end
+	local name = "admin"
+	if NetManager.connectState == "client" then
+		name = NetManager.name
 	end
-
-	return SelectLocationTask.player_lon, SelectLocationTask.player_lat, SelectLocationTask.allPlayerPo;
+	return SelectLocationTask.player_lon, SelectLocationTask.player_lat, SelectLocationTask.allPlayerPo, name;
 end
 
 -- 设置并跳转人物
