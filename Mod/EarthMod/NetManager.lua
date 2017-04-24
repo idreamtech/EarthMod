@@ -23,8 +23,8 @@ NetManager.gameEventFunc = nil -- 游戏事件监听
 NetManager.netMessageQueue = {}
 NetManager.connectState = nil -- local:本地，server:服务器，client:客户端
 NetManager.isConnecting = nil
-NetManager.clientNum = nil
 NetManager.clients = nil
+NetManager.clientOnline = nil
 local heartBeat = 1000
 local nolog = true -- 日志开关
 
@@ -81,9 +81,8 @@ function NetManager.checkPlayerLeave()
 	for pName, count in pairs(NetManager.clients) do
 		if count > 0 then
 			NetManager.clients[pName] = NetManager.clients[pName] - 1
-		else
-			NetManager.clients[pName] = nil
-			NetManager.clientNum = NetManager.clientNum - 1
+		elseif count == 0 and NetManager.clientOnline[pName] then
+			NetManager.clientOnline[pName] = nil
 			NetManager.onPlayerLeave(pName)
 		end
 	end
@@ -91,6 +90,7 @@ end
 
 function NetManager.onPlayerEnter(name)
 	echo("welcome " .. name)
+	NetManager.sendMessage("all","enter",name,-1)
 end
 
 -- 将离开的玩家作为value以管理员的身份告诉所有人leave消息
@@ -112,8 +112,8 @@ function NetManager.startServer(port)
 	GameLogic.RunCommand("/startserver 0 " .. port);
 	NetManager.name = "__MP__admin"
 	NetManager.connectState = "server"
-	NetManager.clientNum = 0
 	NetManager.clients = {}
+	NetManager.clientOnline = {}
 	echo("NetManager server 服务器登入")
 	if NetManager.gameEventFunc then NetManager.gameEventFunc(NetManager.connectState) end
 end
@@ -121,6 +121,7 @@ end
 -- 启动客户端
 function NetManager.connectServer(ip,port)
 	port = port or 8099
+	ip = ip or "127.0.0.1"
 	GameLogic.RunCommand("/connect " .. ip .. " " .. port);
 	NetManager.isConnecting = true
 end
@@ -140,8 +141,8 @@ end
 -- 世界离开的时候关闭网络通讯(同时向服务器发送NetDisConn指令)
 function NetManager.OnLeaveWorld()
 	if NetManager.isConnecting then return end
-	NetManager.clientNum = nil
 	NetManager.clients = nil
+	NetManager.clientOnline = nil
 	if NetManager.msgTimer then NetManager.msgTimer:Change(); NetManager.msgTimer = nil end
 	NetManager.netReceiveFunc = nil
 	NetManager.netMessageQueue = {}
@@ -179,10 +180,12 @@ function NetManager.addMessage(senderName,key,value,delay)
 			delay = -1;
 			if NetManager.clients[senderName] == nil then
 				NetManager.clients[senderName] = 1
-				NetManager.clientNum = NetManager.clientNum + 1
-				NetManager.onPlayerEnter(senderName)
 			else
 				NetManager.clients[senderName] = NetManager.clients[senderName] + 1
+			end
+			if NetManager.clients[senderName] == 1 and (not NetManager.clientOnline[senderName]) then
+				NetManager.clientOnline[senderName] = true
+				NetManager.onPlayerEnter(senderName)
 			end
 		end
 	end
@@ -257,23 +260,23 @@ Commands["net"] = {
 	name="net", 
 	quick_ref="/net -mode [ip] [port]",
 	desc=[[start earth mode with client and server
-@param mode: client,server
+@param mode: c/client,s/server
 @param ip: client connect ip
 @param port: client connect port default 8099
 Examples:
 /net -server
-/net -server 8099
+/net -s 8099
 /net -client 192.168.0.1 8099
-/net -client 192.168.0.1
+/net -c 192.168.0.1
 ]],
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
 		local mode, ip, port
 		mode, cmd_text = CmdParser.ParseOptions(cmd_text);
-		if mode.client then
+		if mode.client or mode.c then
 			ip, cmd_text = CmdParser.ParseString(cmd_text);
 			port, cmd_text = CmdParser.ParseString(cmd_text);
 			NetManager.connectServer(ip,port)
-		elseif mode.server then
+		elseif mode.server or mode.s then
 			port, cmd_text = CmdParser.ParseString(cmd_text);
 			NetManager.startServer(port)
 		end
