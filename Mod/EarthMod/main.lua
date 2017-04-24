@@ -150,6 +150,7 @@ function EarthMod:onReceiveMessage(data)
 		NetManager.showMsg(data)
 	elseif data.key == "leave" then
 		SelectLocationTask.allPlayerPo[data.name] = nil
+		echo("player leave: " .. data.name)
 		NetManager.showMsg("玩家 " .. data.name .. " 离开了游戏")
 	end
 	-- 

@@ -23,7 +23,6 @@ NetManager.gameEventFunc = nil -- 游戏事件监听
 NetManager.netMessageQueue = {}
 NetManager.connectState = nil -- local:本地，server:服务器，client:客户端
 NetManager.isConnecting = nil
-NetManager.ServerM = nil
 NetManager.playerNum = nil
 NetManager.players = nil
 local heartBeat = 1000
@@ -36,9 +35,8 @@ function NetManager.init(eventFunc,receiveFunc)
 	NetManager.netReceiveFunc = receiveFunc -- 消息监听函数
 	NetManager.gameEventFunc = eventFunc -- 游戏事件监听
 	if NetManager.connectState == "server" then
-		NetManager.ServerM = ServerManager.GetSingleton()
-		NetManager.playerNum = NetManager.ServerM.playerEntityList:size()
-		NetManager.players = NetManager.ServerM.playerEntityList:clone()
+		NetManager.playerNum = ServerManager.GetSingleton().playerEntityList:size()
+		NetManager.players = ServerManager.GetSingleton().playerEntityList:clone()
 	end
     GameLogic.GetFilters():add_filter("PlayerHasLoginPosition", function()
 		NetManager.name = GameLogic.GetPlayer():GetName()
@@ -75,13 +73,15 @@ function NetManager.init(eventFunc,receiveFunc)
 end
 
 function NetManager.checkPlayerLeave() -- a:原数目,b:新人数
-	if NetManager.connectState ~= "server" then return end
-	log("server check:");echo(NetManager.ServerM.playerEntityList)
-	if NetManager.playerNum ~= NetManager.ServerM.playerEntityList:size() then
-		local listPlayer = NetManager.ServerM.playerEntityList:clone()
+	if NetManager.connectState ~= "server" or NetManager.players == nil then return end
+	echo("server check:");
+	if NetManager.playerNum ~= ServerManager.GetSingleton().playerEntityList:size() then
+		local listPlayer = ServerManager.GetSingleton().playerEntityList:clone()
 		local leavePlayers = {}
 		for i, entityPlayer in ipairs(NetManager.players) do
 			local name = entityPlayer:GetUserName()
+			echo("check for " .. name)
+			echo(#listPlayer)
 			local isFind = nil
 			for i, ePlayer in ipairs(listPlayer) do
 				if ePlayer:GetUserName() == name then
@@ -94,6 +94,7 @@ function NetManager.checkPlayerLeave() -- a:原数目,b:新人数
 			end
 	    end
 	    for name,v in pairs(leavePlayers) do
+	    	echo("on leave:" .. name)
 	    	if v then
 				NetManager.sendMessage("all","leave",name,-1)
 	    	end
@@ -133,7 +134,6 @@ end
 -- 世界离开的时候关闭网络通讯(同时向服务器发送NetDisConn指令)
 function NetManager.OnLeaveWorld()
 	if NetManager.isConnecting then return end
-	NetManager.ServerM = nil
 	NetManager.playerNum = nil
 	NetManager.players = nil
 	if NetManager.msgTimer then NetManager.msgTimer:Change(); NetManager.msgTimer = nil end
