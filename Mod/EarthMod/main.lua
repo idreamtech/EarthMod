@@ -146,12 +146,10 @@ end
 -- 消息处理 {name,key,value,delay}
 function EarthMod:onReceiveMessage(data)
 	-- common info
-	if data.key == "msg" then
-		NetManager.showMsg(data)
-	elseif data.key == "leave" then
-		SelectLocationTask.allPlayerPo[data.name] = nil
-		echo("player leave: " .. data.name)
-		NetManager.showMsg("玩家 " .. data.name .. " 离开了游戏")
+	if data.key == "leave" then
+		SelectLocationTask.allPlayerPo[data.value] = nil
+		echo("player leave: " .. data.value)
+		NetManager.showMsg("玩家 " .. data.value .. " 离开了游戏")
 	end
 	-- 
 	if NetManager.connectState == "server" then -- 服务端

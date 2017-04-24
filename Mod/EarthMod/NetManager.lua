@@ -23,9 +23,10 @@ NetManager.gameEventFunc = nil -- 游戏事件监听
 NetManager.netMessageQueue = {}
 NetManager.connectState = nil -- local:本地，server:服务器，client:客户端
 NetManager.isConnecting = nil
-NetManager.playerNum = nil
-NetManager.players = nil
+NetManager.clientNum = nil
+NetManager.clients = nil
 local heartBeat = 1000
+local nolog = true -- 日志开关
 
 -- 初始化网络管理器
 function NetManager.init(eventFunc,receiveFunc)
@@ -34,23 +35,17 @@ function NetManager.init(eventFunc,receiveFunc)
 	NetManager.netMessageQueue = {}
 	NetManager.netReceiveFunc = receiveFunc -- 消息监听函数
 	NetManager.gameEventFunc = eventFunc -- 游戏事件监听
-	if NetManager.connectState == "server" then
-		NetManager.playerNum = ServerManager.GetSingleton().playerEntityList:size()
-		NetManager.players = ServerManager.GetSingleton().playerEntityList:clone()
-	end
     GameLogic.GetFilters():add_filter("PlayerHasLoginPosition", function()
 		NetManager.name = GameLogic.GetPlayer():GetName()
     	echo("NetManager connect user: " .. NetManager.name)
 		if NetManager.name == "default" then -- 刚刚启动
 			echo("NetManager local 登录游戏/断开连接")
 			NetManager.connectState = "local"
-		elseif NetManager.name == "__MP__admin" then -- 连上了服务器
-			echo("NetManager server 服务器登入")
-			NetManager.connectState = "server"
 		else -- 连上了客户端
 			echo("NetManager client 客户端登入")
 			NetManager.connectState = "client"
 			NetManager.isConnecting = nil
+
 		end
 		if NetManager.gameEventFunc then NetManager.gameEventFunc(NetManager.connectState) end
         return true;
@@ -64,7 +59,11 @@ function NetManager.init(eventFunc,receiveFunc)
 				if data.delay > 0 then
 					timer:Change(data.delay,heartBeat)
 				end
-				NetManager.checkPlayerLeave()
+			end
+			if NetManager.connectState == "client" then
+				NetManager.sendHeartbeat() -- 客户端发送心跳
+			elseif NetManager.connectState == "server" then
+				NetManager.checkPlayerLeave() -- 检查客户端心跳
 			end
 		end
 	end})
@@ -72,34 +71,39 @@ function NetManager.init(eventFunc,receiveFunc)
 	echo("onInit: NetManager")
 end
 
-function NetManager.checkPlayerLeave() -- a:原数目,b:新人数
-	if NetManager.connectState ~= "server" or NetManager.players == nil then return end
-	echo("server check:");
-	if NetManager.playerNum ~= ServerManager.GetSingleton().playerEntityList:size() then
-		local listPlayer = ServerManager.GetSingleton().playerEntityList:clone()
-		local leavePlayers = {}
-		for i, entityPlayer in ipairs(NetManager.players) do
-			local name = entityPlayer:GetUserName()
-			echo("check for " .. name)
-			echo(#listPlayer)
-			local isFind = nil
-			for i, ePlayer in ipairs(listPlayer) do
-				if ePlayer:GetUserName() == name then
-					isFind = true
-					break
-				end
-			end
-			if not isFind then
-				leavePlayers[name] = true
-			end
-	    end
-	    for name,v in pairs(leavePlayers) do
-	    	echo("on leave:" .. name)
-	    	if v then
-				NetManager.sendMessage("all","leave",name,-1)
-	    	end
-	    end
+-- 发送心跳
+function NetManager.sendHeartbeat()
+	NetManager.sendMessage("admin","alive")
+end
+
+-- 检查客户端心跳
+function NetManager.checkPlayerLeave()
+	for pName, count in pairs(NetManager.clients) do
+		if count > 0 then
+			NetManager.clients[pName] = NetManager.clients[pName] - 1
+		else
+			NetManager.clients[pName] = nil
+			NetManager.clientNum = NetManager.clientNum - 1
+			NetManager.onPlayerLeave(pName)
+		end
 	end
+end
+
+function NetManager.onPlayerEnter(name)
+	echo("welcome " .. name)
+end
+
+-- 将离开的玩家作为value以管理员的身份告诉所有人leave消息
+--[[处理参考：
+if data.key == "leave" then
+	echo("player leave: " .. data.value)
+	NetManager.showMsg("玩家 " .. data.value .. " 离开了游戏")
+	-- to do other code
+end
+]]
+function NetManager.onPlayerLeave(name)
+	echo("on leave:" .. name)
+	NetManager.sendMessage("all","leave",name,-1)
 end
 
 -- 启动服务器
@@ -108,6 +112,8 @@ function NetManager.startServer(port)
 	GameLogic.RunCommand("/startserver 0 " .. port);
 	NetManager.name = "__MP__admin"
 	NetManager.connectState = "server"
+	NetManager.clientNum = 0
+	NetManager.clients = {}
 	echo("NetManager server 服务器登入")
 	if NetManager.gameEventFunc then NetManager.gameEventFunc(NetManager.connectState) end
 end
@@ -134,8 +140,8 @@ end
 -- 世界离开的时候关闭网络通讯(同时向服务器发送NetDisConn指令)
 function NetManager.OnLeaveWorld()
 	if NetManager.isConnecting then return end
-	NetManager.playerNum = nil
-	NetManager.players = nil
+	NetManager.clientNum = nil
+	NetManager.clients = nil
 	if NetManager.msgTimer then NetManager.msgTimer:Change(); NetManager.msgTimer = nil end
 	NetManager.netReceiveFunc = nil
 	NetManager.netMessageQueue = {}
@@ -154,7 +160,7 @@ end
 function NetManager.sendMessage(toPlayerName,key,value,delay)
 	if (not NetManager.isOnline()) then echo("sendMessage need connection");return end
 	delay = delay or 0
-	echo("[" .. NetManager.connectState .. "] Message Send:{ " .. key .. " } to " .. toPlayerName);echo(value);echo("] end Message")
+	if not nolog and (data.key ~= "alive") then echo("[" .. NetManager.connectState .. "] Message Send:{ " .. key .. " } to " .. toPlayerName);echo(value);echo("] end Message") end
 	if value then
 		GameLogic.RunCommand("/runat @" .. toPlayerName .. " /donet @".. NetManager.name .. " " .. delay .. " -" .. key .. " " .. tostring(value));
 	else
@@ -164,8 +170,22 @@ end
 
 -- 接收消息
 function NetManager.addMessage(senderName,key,value,delay)
-	echo("[" .. NetManager.connectState .. "] Message Receive:{ " .. key .. " } from " .. senderName);echo(value);echo("] end Message")
+	if (not nolog) and (key ~= "alive") then echo("[" .. NetManager.connectState .. "] Message Receive:{ " .. key .. " } from " .. senderName);echo(value);echo("] end Message") end
 	local data = {name = senderName,key = key,value = value,delay = delay}
+	if key == "msg" then
+		delay = -1;NetManager.showMsg(data.value,data.delay)
+	elseif key == "alive" then
+		if NetManager.connectState == "server" then
+			delay = -1;
+			if NetManager.clients[senderName] == nil then
+				NetManager.clients[senderName] = 1
+				NetManager.clientNum = NetManager.clientNum + 1
+				NetManager.onPlayerEnter(senderName)
+			else
+				NetManager.clients[senderName] = NetManager.clients[senderName] + 1
+			end
+		end
+	end
 	if delay == -1 then
 		if NetManager.netReceiveFunc then NetManager.netReceiveFunc(data) end
 	else
@@ -188,15 +208,16 @@ function NetManager.pop()
 end
 
 -- 广播消息
-function NetManager.sendMsg(msg)
-	NetManager.sendMessage("all","msg",msg,-1)
+function NetManager.sendMsg(msg,toPlayer)
+	toPlayer = toPlayer or "all"
+	NetManager.sendMessage(toPlayer,"msg",msg)
 end
 
 -- 显示广播信息
-function NetManager.showMsg(data,delay,color)
-	data.time = data.time or 5000
-	data.color = data.color or "0 255 0"
-	GameLogic.AddBBS("statusBar",data.value, data.time, data.color)
+function NetManager.showMsg(str,delay,color)
+	delay = delay or 5000
+	color = color or "0 255 0"
+	GameLogic.AddBBS("statusBar", str, delay, color)
 end
 
 -- 定义指令donet用于处理消息回调 发送：runat @admin /donet @selfname 0 -reqDb
