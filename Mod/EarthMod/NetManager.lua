@@ -24,7 +24,6 @@ NetManager.netMessageQueue = {}
 NetManager.connectState = nil -- local:本地，server:服务器，client:客户端
 NetManager.isConnecting = nil
 NetManager.clients = nil
-NetManager.clientOnline = nil
 local heartBeat = 1000
 local nolog = true -- 日志开关
 
@@ -60,9 +59,7 @@ function NetManager.init(eventFunc,receiveFunc)
 					timer:Change(data.delay,heartBeat)
 				end
 			end
-			if NetManager.connectState == "client" then
-				NetManager.sendHeartbeat() -- 客户端发送心跳
-			elseif NetManager.connectState == "server" then
+			if NetManager.connectState == "server" then
 				NetManager.checkPlayerLeave() -- 检查客户端心跳
 			end
 		end
@@ -71,21 +68,28 @@ function NetManager.init(eventFunc,receiveFunc)
 	echo("onInit: NetManager")
 end
 
--- 发送心跳
-function NetManager.sendHeartbeat()
-	NetManager.sendMessage("admin","alive")
-end
-
--- 检查客户端心跳
+-- 检查客户端离线上线
 function NetManager.checkPlayerLeave()
-	for pName, count in pairs(NetManager.clients) do
-		if count > 0 then
-			NetManager.clients[pName] = NetManager.clients[pName] - 1
-		elseif count == 0 and NetManager.clientOnline[pName] then
-			NetManager.clientOnline[pName] = nil
-			NetManager.onPlayerLeave(pName)
+	for i=1, #(ServerManager.GetSingleton().playerEntityList) do
+		local entity = ServerManager.GetSingleton().playerEntityList[i];
+		local gname = "__MP__" .. entity:GetUserName()
+		if NetManager.clients[gname] == nil then
+			NetManager.clients[gname] = true
+			NetManager.onPlayerEnter(gname)
 		end
-	end
+    end
+    for uname,v in pairs(NetManager.clients) do
+    	local find = nil
+		for i=1, #(ServerManager.GetSingleton().playerEntityList) do
+			local entity = ServerManager.GetSingleton().playerEntityList[i];
+			if uname == "__MP__" .. entity:GetUserName() then find = true; break end
+	    end
+	    if not find then
+	    	-- leave
+	    	NetManager.onPlayerLeave(uname)
+	    	NetManager.clients[uname] = nil
+	    end
+    end
 end
 
 function NetManager.onPlayerEnter(name)
@@ -112,10 +116,15 @@ function NetManager.startServer(port)
 	GameLogic.RunCommand("/startserver 0 " .. port);
 	NetManager.name = "__MP__admin"
 	NetManager.connectState = "server"
-	NetManager.clients = {}
-	NetManager.clientOnline = {}
+	-- set
+    NetManager.clients = {}
+	for i=1, #(ServerManager.GetSingleton().playerEntityList) do
+		local entity = ServerManager.GetSingleton().playerEntityList[i];
+		NetManager.clients["__MP__" .. entity:GetUserName()] = true
+    end
 	echo("NetManager server 服务器登入")
 	if NetManager.gameEventFunc then NetManager.gameEventFunc(NetManager.connectState) end
+
 end
 
 -- 启动客户端
@@ -142,7 +151,6 @@ end
 function NetManager.OnLeaveWorld()
 	if NetManager.isConnecting then return end
 	NetManager.clients = nil
-	NetManager.clientOnline = nil
 	if NetManager.msgTimer then NetManager.msgTimer:Change(); NetManager.msgTimer = nil end
 	NetManager.netReceiveFunc = nil
 	NetManager.netMessageQueue = {}
@@ -161,7 +169,7 @@ end
 function NetManager.sendMessage(toPlayerName,key,value,delay)
 	if (not NetManager.isOnline()) then echo("sendMessage need connection");return end
 	delay = delay or 0
-	if not nolog and (data.key ~= "alive") then echo("[" .. NetManager.connectState .. "] Message Send:{ " .. key .. " } to " .. toPlayerName);echo(value);echo("] end Message") end
+	if not nolog then echo("[" .. NetManager.connectState .. "] Message Send:{ " .. key .. " } to " .. toPlayerName);echo(value);echo("] end Message") end
 	if value then
 		GameLogic.RunCommand("/runat @" .. toPlayerName .. " /donet @".. NetManager.name .. " " .. delay .. " -" .. key .. " " .. tostring(value));
 	else
@@ -171,23 +179,10 @@ end
 
 -- 接收消息
 function NetManager.addMessage(senderName,key,value,delay)
-	if (not nolog) and (key ~= "alive") then echo("[" .. NetManager.connectState .. "] Message Receive:{ " .. key .. " } from " .. senderName);echo(value);echo("] end Message") end
+	if (not nolog) then echo("[" .. NetManager.connectState .. "] Message Receive:{ " .. key .. " } from " .. senderName);echo(value);echo("] end Message") end
 	local data = {name = senderName,key = key,value = value,delay = delay}
 	if key == "msg" then
 		delay = -1;NetManager.showMsg(data.value,data.delay)
-	elseif key == "alive" then
-		if NetManager.connectState == "server" then
-			delay = -1;
-			if NetManager.clients[senderName] == nil then
-				NetManager.clients[senderName] = 5
-			else
-				NetManager.clients[senderName] = NetManager.clients[senderName] + 1
-			end
-			if NetManager.clients[senderName] == 5 and (not NetManager.clientOnline[senderName]) then
-				NetManager.clientOnline[senderName] = true
-				NetManager.onPlayerEnter(senderName)
-			end
-		end
 	end
 	if delay == -1 then
 		if NetManager.netReceiveFunc then NetManager.netReceiveFunc(data) end
