@@ -133,6 +133,7 @@ end
 
 -- 游戏事件 local:本地登录，server:服务器连接成功，client:客户端连接成功
 function EarthMod:onGameEvent(event)
+	echo("游戏事件:" .. event)
 	if event == "local" then
 	elseif event == "client" then
 		NetManager.sendMessage("admin","reqDb")
@@ -203,6 +204,7 @@ end
 -- 服务器和客户端启动游戏
 function EarthMod:startGame()
 	self:initMap(function()
+		echo("run start.")
 		SelectLocationTask:toRun()
 		ItemEarth:boundaryCheck()
 	end)
@@ -261,5 +263,7 @@ function EarthMod:initMap(func)
 			-- local schoolName = EarthMod:GetWorldData("schoolName");
 			-- echo("school name is : "..schoolName)
 		end end)
+	else
+		if func then func() end
 	end end)
 end
