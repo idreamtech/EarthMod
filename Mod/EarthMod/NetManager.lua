@@ -179,11 +179,11 @@ function NetManager.addMessage(senderName,key,value,delay)
 		if NetManager.connectState == "server" then
 			delay = -1;
 			if NetManager.clients[senderName] == nil then
-				NetManager.clients[senderName] = 1
+				NetManager.clients[senderName] = 5
 			else
 				NetManager.clients[senderName] = NetManager.clients[senderName] + 1
 			end
-			if NetManager.clients[senderName] == 1 and (not NetManager.clientOnline[senderName]) then
+			if NetManager.clients[senderName] == 5 and (not NetManager.clientOnline[senderName]) then
 				NetManager.clientOnline[senderName] = true
 				NetManager.onPlayerEnter(senderName)
 			end
