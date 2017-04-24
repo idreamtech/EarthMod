@@ -1290,7 +1290,7 @@ function gisToBlocks:refreshPlayerInfo()
 					TileManager.GetInstance():correctPositionSystem(x,y,z,curLon,curLat)
 				else -- 跳转模式
 					local po = TileManager.GetInstance():getParaPo(curLon,curLat) -- self:getRoleFloor()
-					GameLogic.GetPlayer():SetBlockPos(po.x,po.y,po.z)
+					GameLogic.GetPlayer():TeleportToBlockPos(po.x,po.y,po.z)
 					x,y,z = po.x,po.y,po.z
 				end
 				SelectLocationTask.player_curLon = nil
