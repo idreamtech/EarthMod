@@ -43,6 +43,7 @@ SelectLocationTask.isShowInfo = nil
 SelectLocationTask.playerInfo = {}
 SelectLocationTask.menuWidth = nil
 SelectLocationTask.isRuned = nil
+SelectLocationTask.isLocationClicked = nil -- 网页端点击跳转了一次
 
 -- 全玩家坐标信息
 SelectLocationTask.allPlayerPo = nil
@@ -305,6 +306,7 @@ function SelectLocationTask:setPlayerLocation(lon, lat)
 	SelectLocationTask.player_curLon = lon;
 	SelectLocationTask.player_curLat = lat;
 	LOG.std(nil,"RunFunction","SelectLocationTask",str)
+	SelectLocationTask.isLocationClicked = true
 end
 
 function SelectLocationTask:getSchoolAreaInfo()
@@ -414,6 +416,7 @@ function SelectLocationTask:OnLeaveWorld()
 	SelectLocationTask.player_lon = nil
 	SelectLocationTask.player_lat = nil
 	SelectLocationTask.allPlayerPo = nil
+	SelectLocationTask.isLocationClicked = nil
   	DBS = nil
   	SysDB = nil
   	curInstance = nil
