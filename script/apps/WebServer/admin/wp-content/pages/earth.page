@@ -477,7 +477,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     var markerArray = new Array();
     // 获取所有学校
     function getAllSchool(){
-        var urlStr = "http://119.23.36.48:8098/api/wiki/models/school/getAllSchool";
+        var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getAllSchool";
         var arr = [];
             $.ajax({
                 url:urlStr,
@@ -533,7 +533,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 
     // 请求学校经纬度信息
     function getSchoolByName(schoolName){
-        var urlStr = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName";
+        var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName";
         if (schoolName != null && typeof(schoolName) != "undefined" && $.trim(schoolName) != "") {
             urlStr = urlStr + "?name=" + $.trim(schoolName);
             $.ajax({
