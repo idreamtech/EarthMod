@@ -125,7 +125,7 @@ function SelectLocationTask.checkUpdateMap()
 		                	gisToBlocks:reInitWorld()
 							NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 							local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-							NplCefWindowManager:Reload("my_window","http://localhost:8099/earth")
+							NplCefWindowManager:Reload("my_window","http://localhost:" .. ComVar.prot .. "/earth")
 		                else
 		                	-- 更新一块瓦片
 		                	gisToBlocks:downloadMap();
@@ -363,7 +363,7 @@ function SelectLocationTask.OnShowMap()
 		NplCefWindowManager:Destroy("my_window")
 	else
 		-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
-		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_lt", 5, 70, 400, 400);
+		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:" .. ComVar.prot .. "/earth", "_lt", 5, 70, 400, 400);
 	end
 end
 

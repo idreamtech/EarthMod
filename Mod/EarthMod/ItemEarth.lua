@@ -36,12 +36,30 @@ function ItemEarth:ctor()
 	self:SetOwnerDrawIcon(true);
 end
 
+local fromPort = 8081
+function ItemEarth:checkPortRunWeb(port)
+	System.os.GetUrl(
+	{url = "http://localhost:" .. port .. "/ajax/console?action=getparams" },
+	function(err, msg, data)
+		if data and data.action == "getparams" then
+			echo("find the next port:" .. (port + 1))
+			self:checkPortRunWeb(port + 1)
+		else
+			echo("got the port and start web:" .. port)
+			ComVar.prot = port
+			WebServer:Start("script/apps/WebServer/admin", "0.0.0.0", ComVar.prot);
+		end
+	end);
+end
+
 function ItemEarth:OnSelect(itemStack)
 	ItemEarth._super._super.OnSelect(self,itemStack);
-	if(not WebServer:IsStarted()) then
-		WebServer:Start("script/apps/WebServer/admin", "0.0.0.0", 8099);
+	if not DBS then
+		DBS = DBStore.GetInstance();SysDB = DBS:SystemDB()
+		if(not WebServer:IsStarted()) then
+			self:checkPortRunWeb(fromPort)
+		end
 	end
-	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
 		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
 			CommandManager:RunCommand("/gis -already " .. coordinate.minlat .. " " .. coordinate.minlon.. " " .. coordinate.maxlat.. " " .. coordinate.maxlon);
