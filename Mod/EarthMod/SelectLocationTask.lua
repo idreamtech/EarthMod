@@ -119,7 +119,7 @@ function SelectLocationTask.checkUpdateMap()
 		                	gisToBlocks:reInitWorld()
 							NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 							local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-							NplCefWindowManager:Reload("my_window","http://localhost:8099/earth")
+							NplCefWindowManager:Reload("my_window","http://127.0.0.1:" .. ComVar.prot .. "/earth")
 		                else
 		                	-- 更新一块瓦片
 		                	gisToBlocks:downloadMap();
@@ -335,7 +335,6 @@ end
 -- 初始化一次
 function SelectLocationTask:onInit()
 	GameLogic.SetStatus(L"小提示:左上角菜单中地理信息按钮可以隐藏信息面板 ^_^");
-	self:OnShowMap()
 end
 -- 显示地图
 function SelectLocationTask:OnShowMap()
@@ -344,9 +343,11 @@ function SelectLocationTask:OnShowMap()
 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
 	if NplCefWindowManager:GetPageCtrl("my_window") then
 		NplCefWindowManager:Destroy("my_window")
+		echo("delete Cef web : my_window")
 	else
 		-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
-		NplCefWindowManager:Open("my_window", "Select Location Window", "http://localhost:8099/earth", "_lt", 5, 70, 400, 400);
+		echo("open Cef web : " .. "http://127.0.0.1:" .. ComVar.prot .. "/earth")
+		NplCefWindowManager:Open("my_window", "Select Location Window", "http://127.0.0.1:" .. ComVar.prot .. "/earth", "_lt", 5, 70, 400, 400);		
 	end
 end
 -- 页面菜单
