@@ -36,16 +36,49 @@ function ItemEarth:ctor()
 	self:SetOwnerDrawIcon(true);
 end
 
+local fromPort = 8081
+function ItemEarth.checkPortRunWeb(port,func)
+	System.os.GetUrl(
+	{url = "http://localhost:" .. port .. "/ajax/console?action=getparams" },
+	function(err, msg, data)
+		if data and data.action == "getparams" then
+			echo("find the next port:" .. (port + 1))
+			ItemEarth.checkPortRunWeb(port + 1,func)
+		else
+			echo("got the port and start web:" .. port)
+			ComVar.prot = port
+			WebServer:Start("script/apps/WebServer/admin", "0.0.0.0", ComVar.prot);
+			if func then func() end
+		end
+	end);
+end
+
+function ItemEarth.onInitWeb(func)
+	echo("ItemEarth.onInitWeb : " .. tostring(WebServer:IsStarted()))
+	if(not WebServer:IsStarted()) then
+		ItemEarth.checkPortRunWeb(fromPort,func)
+	end
+end
+
 function ItemEarth:OnSelect(itemStack)
 	ItemEarth._super._super.OnSelect(self,itemStack);
-	if(not WebServer:IsStarted()) then
-		WebServer:Start("script/apps/WebServer/admin", "0.0.0.0", 8099);
+	-- TipLog("startmap ItemEarth:protInited " .. tostring(ComVar.protInited))
+	if ComVar.protInited == nil then
+		ComVar.protInited = true
+		ItemEarth.onInitWeb(function()
+			echo("ItemEarth:OnSelect to SelectLocationTask:OnShowMap")
+			SelectLocationTask:OnShowMap()
+		end)
+		echo("startmap ItemEarth:OnSelect")
+		TipLog("startmap ItemEarth:OnSelect")
 	end
 	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
 		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
 			CommandManager:RunCommand("/gis -already " .. coordinate.minlat .. " " .. coordinate.minlon.. " " .. coordinate.maxlat.. " " .. coordinate.maxlon);
-			self:boundaryCheck();
+			if not ComVar.openNetwork then
+				self:boundaryCheck();
+			end
 		end end)
 	end end)
 end

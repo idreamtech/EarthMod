@@ -25,6 +25,8 @@ ComVar = {
 	openNetwork = nil; -- 是否打开网络通讯
 	isServer = nil; -- 是否是服务端
 	serverIP = "192.168.1.169"; -- 如果是客户端，连接服务端的ip填这里
+    prot = nil; -- 小地图端口号(会自动修改)
+    protInited = nil;
 }
 
 
@@ -79,5 +81,11 @@ function handler(obj, method)
     return function(...)
        return method(obj,...)
     end
+end
+-- 状态栏显示提示
+function TipLog(str,delay,color)
+    delay = delay or 5000
+    color = color or "0 255 0"
+    GameLogic.AddBBS("statusBar", str, delay, color)
 end
 -- 
