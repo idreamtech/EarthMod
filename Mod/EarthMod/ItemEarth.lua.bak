@@ -39,7 +39,7 @@ end
 local fromPort = 8081
 function ItemEarth:checkPortRunWeb(port)
 	System.os.GetUrl(
-	{url = "http://127.0.0.1:" .. port .. "/ajax/console?action=getparams" },
+	{url = "http://localhost:" .. port .. "/ajax/console?action=getparams" },
 	function(err, msg, data)
 		if data and data.action == "getparams" then
 			echo("find the next port:" .. (port + 1))
