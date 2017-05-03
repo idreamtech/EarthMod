@@ -65,15 +65,6 @@ gisToBlocks.crossPointLists = {};
 gisToBlocks.isMapping = nil -- 是否正在绘制地图
 gisToBlocks.isDrawedAllMap = nil
 
-
---RGB, block_id
-local block_colors = {
-	[51] = {14,189,203}, -- 沙子 Sand
-	[4] = {228,212,169}, -- 沙石 Sandstone
-	[76] = {221,234,240}, -- 静态水 Still_Water  75:动态水
-	[180] = {154,149,129}, -- 石砖台阶 StoneBrick_Slab
-}
-
 local function tile2deg(x, y, z)
     local n = 2 ^ z
     local lon_deg = x / n * 360.0 - 180.0
@@ -214,19 +205,9 @@ end
 
 function gisToBlocks:drawpixel(x, z, y, block_data)
 	if TileManager.GetInstance():checkMarkArea(x,y,z) then -- 不绘制未加载的
-		-- BlockEngine:SetBlock(x,y,z,blockId,0); -- y + 1
-		local pixel = block_colors[block_data]
-		local color = ItemColorBlock:ColorToData(Color.RGBA_TO_DWORD(pixel[3],pixel[2],pixel[1], 0))
-		MapBlock:addBlock(x, y, z, color, "fill") -- 只要是空气就可以填补
+		MapBlock:addBlock(x, y, z, block_data, "fill", true) -- 只要是空气就可以填补
 	end
 end
-
--- function gisToBlocks:addSkipData(tile,x,y,z)
--- 	x = math.ceil(x);y = math.ceil(y);z = math.ceil(z)
--- 	tile.skips[y] = tile.skips[y] or {}
--- 	tile.skips[y][x] = tile.skips[y][x] or {}
--- 	tile.skips[y][x][z] = 1
--- end
 
 function gisToBlocks:floodFillScanline()
 	
@@ -516,8 +497,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 							end
 
 							if(isDraw) then
-								draw2Point(self,crossBuildingList.points,51,"buildingMore");
-								draw2area(self,crossBuildingList.points,51,"buildingMore");
+								draw2Point(self,crossBuildingList.points,2335,"buildingMore");
+								draw2area(self,crossBuildingList.points,2335,"buildingMore");
 								crossBuildingList = false;
 							end
 						end
@@ -600,7 +581,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 							if (cur_tilex == tileX) and (cur_tiley == tileY) then
 								xpos, ypos = deg2pixel(item.lon, item.lat, self.zoom);
 
-								highWayPoint	   = {id = item.id, x = xpos, y = ypos , z = 5};
+								highWayPoint	   = {id = item.id, x = xpos, y = ypos , z = 6};
 								highWayPointCount  = highWayPointCount + 1;
 
 								highWayPointList[highWayPointCount] = highWayPoint;
@@ -654,8 +635,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 							end
 
 							if(isDraw) then
-								draw2Point(self,crossWaterList.points,4,"waterMore");
-								draw2area(self,crossWaterList.points,76,"waterMore");
+								draw2Point(self,crossWaterList.points,2337,"waterMore");
+								draw2area(self,crossWaterList.points,2334,"waterMore");
 								crossWaterList = false;
 							end
 						end
@@ -728,8 +709,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 	for k,v in pairs(osmBuildingList) do
 		buildingPointList = v.points;
 		
-		draw2Point(self,buildingPointList,51,"building");
-		draw2area(self,buildingPointList,51,"buildingMore");
+		draw2Point(self,buildingPointList,2335,"building");
+		draw2area(self,buildingPointList,2335,"buildingMore");
 	end
 
 	local waterPointList;
@@ -737,8 +718,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 		for k,v in pairs(osmWaterList) do
 			waterPointList = v.points;
 		
-			draw2Point(self,waterPointList,4,"water");
-			draw2area(self,waterPointList,76,"waterMore");
+			draw2Point(self,waterPointList,2337,"water");
+			draw2area(self,waterPointList,2334,"waterMore");
 		end
 	end
 
@@ -746,7 +727,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 	for k,v in pairs(osmHighWayList) do
 		highWayPointList = v.points;
 
-		draw2Point(self,highWayPointList,180,"highWay");
+		draw2Point(self,highWayPointList,2336,"highWay");
 
 		local makemore = commonlib.copy(highWayPointList);
 
@@ -756,7 +737,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].x = value.x - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay");
+		draw2Point(self,makemore,2336,"highWay");
 
 		for key,value in pairs(makemore) do
 			--LOG.std(nil,"debug","value",value.cx);
@@ -764,7 +745,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].x = value.x - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay");
+		draw2Point(self,makemore,2336,"highWay");
 
 		for key,value in pairs(makemore) do
 			--LOG.std(nil,"debug","value",value.cx);
@@ -772,7 +753,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].x = value.x - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay");
+		draw2Point(self,makemore,2336,"highWay");
 
 		-----
 
@@ -784,7 +765,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].y = value.y - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay");
+		draw2Point(self,makemore,2336,"highWay");
 
 		for key,value in pairs(makemore) do
 			--LOG.std(nil,"debug","value",value.cx);
@@ -792,7 +773,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].y = value.y - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay");
+		draw2Point(self,makemore,2336,"highWay");
 
 		for key,value in pairs(makemore) do
 			--LOG.std(nil,"debug","value",value.cx);
@@ -800,7 +781,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 				makemore[key].y = value.y - 1;
 			end
 		end
-		draw2Point(self,makemore,180,"highWay");
+		draw2Point(self,makemore,2336,"highWay");
 	end
 end
 
