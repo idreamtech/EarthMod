@@ -112,7 +112,7 @@ end
 
 -- 启动服务器
 function NetManager.startServer(port)
-	port = port or 8099
+	port = port or (ComVar and ComVar.prot) or 8081
 	GameLogic.RunCommand("/startserver 0 " .. port);
 	NetManager.name = "__MP__admin"
 	NetManager.connectState = "server"
@@ -129,7 +129,7 @@ end
 
 -- 启动客户端
 function NetManager.connectServer(ip,port)
-	port = port or 8099
+	port = port or 8081
 	ip = ip or "127.0.0.1"
 	GameLogic.RunCommand("/connect " .. ip .. " " .. port);
 	NetManager.isConnecting = true
