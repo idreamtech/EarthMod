@@ -98,6 +98,10 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
         border:1px solid #999;
         border-radius: 5px;
     }
+    .imgCls{
+        height: 30px;
+        width: 30px;
+    }
     .earth-main .spot-light {
         text-align:center;
         margin-top: 0;
@@ -168,6 +172,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 </div>
 
 <script>
+    // 玩家当前经纬度坐标
+    var player_lat,palyer_lng;
     var currentIcon = L.icon({
         iconUrl: '/wp-content/pages/earth/assets/css/images/marker-icon.png',
         iconSize: [15, 47],
@@ -241,6 +247,40 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     };
     //启用控件并添加到地图中
     L.control.search().addTo(map);
+
+    //自定义一个地图跳转返回用户位置按钮
+    L.Control.Return = L.Control.extend({
+        options:{
+            position:"bottomleft" // 初始化位置
+        },
+        // initialize:function(options){ //初始化
+        //     L.Util.extend(this.options, options);
+        // },
+        onAdd:function(map){ //添加控件
+            var container = L.DomUtil.create("img", "imgCls")
+            var options = this.options;
+            container.src = '/wp-content/pages/earth/assets/css/images/location2.png';
+            container.onclick = this._onclick;
+            container.ondblclick = this._ondblclick;
+            return container;
+        },
+        _onclick:function(e){
+            e.stopPropagation();
+            if (typeof(player_lat) != "undefined" && typeof(player_lng) != "undefined") {
+                map.setView([player_lat, player_lng]);
+            }
+        },
+        _ondblclick:function(e){
+            // 阻止事件冒泡,双击输入框放大地图事件
+            e.stopPropagation();
+        }
+    })
+    L.control.return = function (options) {
+        return new L.Control.Return(options);
+    };
+    //启用控件并添加到地图中
+    L.control.return().addTo(map);
+
      function renderUniversity(schoolName, uni){
         if(uni != null & uni != undefined){
             rec.remove();
@@ -281,52 +321,6 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 
         })
      }
-    // map.locate();
-    // console.log(coordtransform);
-        // console.log(map.locationfound)
-    // map.locationfound(e);
-    // function locationfound(e){
-    //     var gcj02tobd09 = coordtransform.gcj02tobd09(e.latlng.lat,e.latlng.lng);//转化成火星坐标系
-    //     var currentMarker = L.marker(gcj02tobd09,{icon:currentIcon}).addTo(map);
-    // }
-    // function locationerror(e){
-    //     alert('获取位置失败')
-    // }
-    // map.on('locationfound',locationfound)
-    // map.on('locationerror',locationerror)
-
-    // function onMapClick(e) {
-
-    // }
-
-    // map.on('click', onMapClick);
-
-    // function searchUniversity(data){
-    //     if(data != null && data != undefined){
-    //         if(data == "华中农业大学"){
-    //             renderUniversity(uniData.hz);
-    //         }else if(data == "天津城市建设管理职业技术学院"){
-    //             renderUniversity(uniData.tj);
-    //         }else if(data == "四川大学-望江校区"){
-    //             renderUniversity(uniData.scwj);
-    //         }else if(data == "四川大学-江安校区"){
-    //             renderUniversity(uniData.scja);
-    //         }else if(data == "武汉大学"){
-    //             renderUniversity(uniData.wh);
-    //         }else if(data == "华中科技大学"){
-    //             renderUniversity(uniData.hzkj);
-    //         }else{
-    //             alert('未查找到结果');
-    //         }
-    //     }
-    // }
-    //模糊搜索
-    // $('.search-inp').typeahead({
-    //     source: function(query, process) {
-    //         var data =['华中农业大学','天津城市建设管理职业技术学院','四川大学-望江校区','武汉大学','四川大学-江安校区','华中科技大学'];
-    //         process(data);
-    //     }
-    // });
     $('.search-inp').on('keydown',function(e){
         if(e.which == 13){
             // searchUniversity($('.search-inp').val());
@@ -359,6 +353,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                 // 如果allPlayerPo为空,则为脱机模式
                 if (allPlayerPo == null || typeof(allPlayerPo) == "undefined") {
                     if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
+                        player_lat = lat;
+                        player_lng = lon;
                         // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
                         if (marker == null) {
                             marker = L.marker([lat, lon],{icon:currentIcon}).addTo(map);
@@ -586,7 +582,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                     var currentSchool = res.data.schoolName;
                     document.getElementsByClassName('search-inp')[0].disabled = true;
                     document.getElementsByClassName('search-inp')[0].value = currentSchool;
-                    map.setMaxBounds(rec.getBounds());
+                    // map.setMaxBounds(rec.getBounds());
                     // var curPos = marker.getBounds();
                     // console.log(map);
                     // 将搜索框状态标记为不可用
