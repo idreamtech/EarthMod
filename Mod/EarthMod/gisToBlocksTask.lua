@@ -1271,7 +1271,17 @@ function gisToBlocks:refreshPlayerInfo()
 					TileManager.GetInstance():correctPositionSystem(x,y,z,curLon,curLat)
 				else -- 跳转模式
 					local po = TileManager.GetInstance():getParaPo(curLon,curLat) -- self:getRoleFloor()
-					GameLogic.GetPlayer():TeleportToBlockPos(po.x,po.y,po.z)
+					-- GameLogic.GetPlayer():TeleportToBlockPos(po.x,po.y,po.z)
+					-- GameLogic.GetPlayer():AddToSendQueue(
+					-- 	GameLogic.Packets.PacketClientCommand:new():Init(format("/goto %d %d %d"
+					-- 			, po.x
+					-- 			, po.y
+					-- 			, po.z)));
+					if NetManager.connectState == "client" then
+						CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z);
+					elseif NetManager.connectState == "server" then
+						GameLogic.GetPlayer():TeleportToBlockPos(po.x,po.y,po.z)
+					end
 					x,y,z = po.x,po.y,po.z
 				end
 				SelectLocationTask.player_curLon = nil
