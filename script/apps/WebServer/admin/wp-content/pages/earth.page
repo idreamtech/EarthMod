@@ -95,6 +95,10 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
         border:1px solid #999;
         border-radius: 5px;
     }
+    .imgCls{
+        height: 30px;
+        width: 30px;
+    }
     .earth-main .spot-light {
         text-align:center;
         margin-top: 0;
@@ -165,6 +169,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 </div>
 
 <script>
+    // 玩家当前经纬度坐标
+    var player_lat,palyer_lng;
     var currentIcon = L.icon({
         iconUrl: '/wp-content/pages/earth/assets/css/images/marker-icon.png',
         iconSize: [15, 47],
@@ -200,7 +206,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
             return false;
         }
     })
-    //leaflet自定义一个control
+    //leaflet自定义一个搜索框control
     L.Control.Search = L.Control.extend({
         options:{
             position:"topleft" // 初始化位置
@@ -238,6 +244,40 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     };
     //启用控件并添加到地图中
     L.control.search().addTo(map);
+
+    //自定义一个地图跳转返回用户位置按钮
+    L.Control.Return = L.Control.extend({
+        options:{
+            position:"bottomleft" // 初始化位置
+        },
+        // initialize:function(options){ //初始化
+        //     L.Util.extend(this.options, options);
+        // },
+        onAdd:function(map){ //添加控件
+            var container = L.DomUtil.create("img", "imgCls")
+            var options = this.options;
+            container.src = '/wp-content/pages/earth/assets/css/images/location2.png';
+            container.onclick = this._onclick;
+            container.ondblclick = this._ondblclick;
+            return container;
+        },
+        _onclick:function(e){
+            e.stopPropagation();
+            if (typeof(player_lat) != "undefined" && typeof(player_lng) != "undefined") {
+                map.setView([player_lat, player_lng]);
+            }
+        },
+        _ondblclick:function(e){
+            // 阻止事件冒泡,双击输入框放大地图事件
+            e.stopPropagation();
+        }
+    })
+    L.control.return = function (options) {
+        return new L.Control.Return(options);
+    };
+    //启用控件并添加到地图中
+    L.control.return().addTo(map);
+
      function renderUniversity(schoolName, uni){
         if(uni != null & uni != undefined){
             rec.remove();
@@ -350,6 +390,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                 var lon = res.lon;
                 var lat = res.lat;
                 if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
+                    player_lat = lat;
+                    player_lng = lon;
                     // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
                     if (marker == null) {
                         marker = L.marker([lat, lon],{icon:currentIcon}).addTo(map);
@@ -361,7 +403,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                         document.getElementsByClassName('search-inp')[0].disabled = true;
                     }
                 }
-                map.setView(marker._latlng);
+                // map.setView(marker._latlng);
             },
             error:function(){
                 console.log("获取人物当前坐标失败");
@@ -420,7 +462,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     var markerArray = new Array();
     // 获取所有学校
     function getAllSchool(){
-        var urlStr = "http://119.23.36.48:8098/api/wiki/models/school/getAllSchool";
+        var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getAllSchool";
         var arr = [];
             $.ajax({
                 url:urlStr,
@@ -474,7 +516,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     }
     // 请求学校经纬度信息
     function getSchoolByName(schoolName){
-        var urlStr = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName";
+        var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName";
         if (schoolName != null && typeof(schoolName) != "undefined" && $.trim(schoolName) != "") {
             urlStr = urlStr + "?name=" + $.trim(schoolName);
             $.ajax({
@@ -524,7 +566,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                     var currentSchool = res.data.schoolName;
                     document.getElementsByClassName('search-inp')[0].disabled = true;
                     document.getElementsByClassName('search-inp')[0].value = currentSchool;
-                    map.setMaxBounds(rec.getBounds());
+                    // map.setMaxBounds(rec.getBounds());
                     // var curPos = marker.getBounds();
                     console.log(map);
                     // 将搜索框状态标记为不可用
