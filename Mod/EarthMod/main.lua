@@ -21,6 +21,7 @@ NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 NPL.load("(gl)Mod/EarthMod/SelectLocationTask.lua");
 NPL.load("(gl)Mod/EarthMod/NetManager.lua");
 NPL.load("(gl)Mod/EarthMod/Com.lua"); -- 导入全局函数变量
+NPL.load("(gl)Mod/EarthMod/MapGeography.lua");
 require("Mod/EarthMod/Com.lua")
 
 local EarthMod       = commonlib.inherit(commonlib.gettable("Mod.ModBase"),commonlib.gettable("Mod.EarthMod"));
@@ -34,6 +35,7 @@ local gisToBlocks = commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks")
 local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 local ItemEarth = commonlib.gettable("MyCompany.Aries.Game.Items.ItemEarth");
 local NetManager = commonlib.gettable("Mod.EarthMod.NetManager");
+local MapGeography = commonlib.gettable("Mod.EarthMod.MapGeography");
 --LOG.SetLogLevel("DEBUG");
 EarthMod:Property({"Name", "EarthMod"});
 function EarthMod:ctor()
@@ -193,6 +195,7 @@ end
 
 function EarthMod:initMap(func)
 	TileManager:new() -- 初始化并加载数据
+	MapGeography.GetInstance() -- 初始化地理信息类
 	-- 检测是否是读取存档
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
 		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
@@ -262,6 +265,7 @@ function EarthMod:OnLeaveWorld()
 		SelectLocationTask:OnLeaveWorld();
   		ItemEarth:OnLeaveWorld();
   		DBStore:OnLeaveWorld();
+		MapGeography:OnLeaveWorld()
   		if ComVar.openNetwork then
 			NetManager.OnLeaveWorld()
 		end

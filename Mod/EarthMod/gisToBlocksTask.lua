@@ -24,7 +24,7 @@ NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 NPL.load("(gl)Mod/EarthMod/NetManager.lua");
-
+NPL.load("(gl)Mod/EarthMod/MapGeography.lua");
 local PngWidth = 256
 local Color           = commonlib.gettable("System.Core.Color");
 local ItemColorBlock  = commonlib.gettable("MyCompany.Aries.Game.Items.ItemColorBlock");
@@ -42,6 +42,7 @@ local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
 local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 local MapBlock = commonlib.gettable("Mod.EarthMod.MapBlock");
 local NetManager = commonlib.gettable("Mod.EarthMod.NetManager");
+local MapGeography = commonlib.gettable("Mod.EarthMod.MapGeography");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 local DBS,SysDB
 
@@ -64,40 +65,6 @@ gisToBlocks.zoom   = 17;
 gisToBlocks.crossPointLists = {};
 gisToBlocks.isMapping = nil -- 是否正在绘制地图
 gisToBlocks.isDrawedAllMap = nil
-
-local function tile2deg(x, y, z)
-    local n = 2 ^ z
-    local lon_deg = x / n * 360.0 - 180.0
-    local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * y / n)))
-    local lat_deg = lat_rad * 180.0 / math.pi
-    return lon_deg, lat_deg
-end
-
-local function deg2tile(lon, lat, zoom)
-    local n = 2 ^ zoom
-    local lon_deg = tonumber(lon)
-    local lat_rad = math.rad(lat)
-    local xtile = math.floor(n * ((lon_deg + 180) / 360))
-    local ytile = math.floor(n * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2)
-    return xtile, ytile
-end
-
-local function deg2pixel(lon, lat, zoom)
-    local n = 2 ^ zoom
-    local lon_deg = tonumber(lon)
-    local lat_rad = math.rad(lat)
-    local xtile = math.floor(n * ((lon_deg + 180) / 360) * PngWidth % PngWidth + 0.5)
-    local ytile = math.floor(n * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2 * PngWidth % PngWidth + 0.5)
-    return xtile, ytile
-end
-
-local function pixel2deg(tileX,tileY,pixelX,pixelY,zoom)
-	local n = 2 ^ zoom;
-	local lon_deg = (tileX + pixelX/PngWidth) / n * 360.0 - 180.0;
-	local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/PngWidth) / n)))
-	local lat_deg = lat_rad * 180.0 / math.pi
-	return tostring(lon_deg), tostring(lat_deg)
-end
 
 -- Calculates distance between two RGB colors
 local function GetColorDist(colorRGB, blockRGB)
@@ -477,9 +444,9 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 									for i=1, #osmNodeList do
 										local item = osmNodeList[i];
 										if (item.id == point.id) then
-											cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, self.zoom);
+											cur_tilex, cur_tiley = MapGeography.GetInstance():deg2tile(item.lon, item.lat);
 											if (cur_tilex == tileX) and (cur_tiley == tileY) then
-												xpos, ypos = deg2pixel(item.lon, item.lat, self.zoom);
+												xpos, ypos = MapGeography.GetInstance():deg2pixel(item.lon, item.lat);
 												point.cx = px + xpos - PngWidth/2;
 												point.cy = pz - ypos + PngWidth - PngWidth/2;
 												point.draw = "true";
@@ -517,9 +484,9 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 						for i=1, #osmNodeList do
 							local item = osmNodeList[i];
 							if (item.id == ndnode.attr.ref) then
-								cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, self.zoom);
+								cur_tilex, cur_tiley = MapGeography.GetInstance():deg2tile(item.lon, item.lat);
 								if (cur_tilex == tileX) and (cur_tiley == tileY) then
-									xpos, ypos = deg2pixel(item.lon, item.lat, self.zoom);
+									xpos, ypos = MapGeography.GetInstance():deg2pixel(item.lon, item.lat);
 
 									buildingPoint      = {id = item.id, x = xpos, y = ypos, z = 6, level = buildingLevel};
 									buildingPointCount = buildingPointCount + 1;
@@ -577,9 +544,9 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 					for i=1, #osmNodeList do
 						local item = osmNodeList[i];
 						if (item.id == ndnode.attr.ref) then
-							cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, self.zoom);
+							cur_tilex, cur_tiley = MapGeography.GetInstance():deg2tile(item.lon, item.lat);
 							if (cur_tilex == tileX) and (cur_tiley == tileY) then
-								xpos, ypos = deg2pixel(item.lon, item.lat, self.zoom);
+								xpos, ypos = MapGeography.GetInstance():deg2pixel(item.lon, item.lat);
 
 								highWayPoint	   = {id = item.id, x = xpos, y = ypos , z = 6};
 								highWayPointCount  = highWayPointCount + 1;
@@ -615,9 +582,9 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 									for i=1, #osmNodeList do
 										local item = osmNodeList[i];
 										if (item.id == point.id) then
-											cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, self.zoom);
+											cur_tilex, cur_tiley = MapGeography.GetInstance():deg2tile(item.lon, item.lat);
 											if (cur_tilex == tileX) and (cur_tiley == tileY) then
-												xpos, ypos = deg2pixel(item.lon, item.lat, self.zoom);
+												xpos, ypos = MapGeography.GetInstance():deg2pixel(item.lon, item.lat);
 												point.cx = px + xpos - PngWidth/2;
 												point.cy = pz - ypos + PngWidth - PngWidth/2;
 												point.draw = "true";
@@ -655,9 +622,9 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 						for i=1, #osmNodeList do
 							local item = osmNodeList[i];
 							if (item.id == ndnode.attr.ref) then
-								cur_tilex, cur_tiley = deg2tile(item.lon, item.lat, self.zoom);
+								cur_tilex, cur_tiley = MapGeography.GetInstance():deg2tile(item.lon, item.lat);
 								if (cur_tilex == tileX) and (cur_tiley == tileY) then
-									xpos, ypos = deg2pixel(item.lon, item.lat, self.zoom);
+									xpos, ypos = MapGeography.GetInstance():deg2pixel(item.lon, item.lat);
 
 									waterPoint	     = {id = item.id, x = xpos, y = ypos , z = 6};
 									waterPointCount  = waterPointCount + 1;
@@ -991,8 +958,8 @@ function gisToBlocks:GetData(x,y,i,j,_callback)
 	local raster;
 	local tileX,tileY = x,y
 	local dtop,dbottom,dleft,dright;
-	gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(tileX,tileY,0,0,self.zoom);
-	gisToBlocks.dright, gisToBlocks.dbottom = pixel2deg(tileX,tileY,255,255,self.zoom);
+	gisToBlocks.dleft , gisToBlocks.dtop    = MapGeography.GetInstance():pixel2deg(tileX,tileY,0,0);
+	gisToBlocks.dright, gisToBlocks.dbottom = MapGeography.GetInstance():pixel2deg(tileX,tileY,255,255);
 	dtop    = gisToBlocks.dtop;
 	dbottom = gisToBlocks.dbottom;
 	dleft   = gisToBlocks.dleft;
@@ -1011,8 +978,8 @@ function gisToBlocks:GetData(x,y,i,j,_callback)
 	-- if(self.options == "already") then
 	-- 	tileX = gisToBlocks.mTileX;
 	-- 	tileY = gisToBlocks.mTileY;
-	-- 	gisToBlocks.mdleft , gisToBlocks.mdtop    = pixel2deg(tileX,tileY,0,0,self.zoom);
-	-- 	gisToBlocks.mdright, gisToBlocks.mdbottom = pixel2deg(tileX,tileY,255,255,self.zoom);
+	-- 	gisToBlocks.mdleft , gisToBlocks.mdtop    = MapGeography.GetInstance():pixel2deg(tileX,tileY,0,0);
+	-- 	gisToBlocks.mdright, gisToBlocks.mdbottom = MapGeography.GetInstance():pixel2deg(tileX,tileY,255,255);
 	-- 	dtop    = gisToBlocks.mdtop;
 	-- 	dbottom = gisToBlocks.mdbottom;
 	-- 	dleft   = gisToBlocks.mdleft;
@@ -1184,18 +1151,18 @@ function gisToBlocks:reInitWorld()
 	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 	if self.minlon and self.minlat and self.maxlon and self.maxlat and (not SelectLocationTask.isDownLoaded) then
 		-- 初始化osm信息
-		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.minlon,self.minlat,self.zoom);
-		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
-		gisToBlocks.dright, gisToBlocks.dbottom = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
+		gisToBlocks.tileX , gisToBlocks.tileY   = MapGeography.GetInstance():deg2tile(self.minlon,self.minlat);
+		gisToBlocks.dleft , gisToBlocks.dtop    = MapGeography.GetInstance():pixel2deg(self.tileX,self.tileY,0,0);
+		gisToBlocks.dright, gisToBlocks.dbottom = MapGeography.GetInstance():pixel2deg(self.tileX,self.tileY,255,255);
 		getOsmService.dleft   = gisToBlocks.dleft;
 		getOsmService.dtop    = gisToBlocks.dtop;
 		getOsmService.dright  = gisToBlocks.dright;
 		getOsmService.dbottom = gisToBlocks.dbottom;
 		getOsmService.zoom = self.zoom;
 		-- 根据minlat和minlon计算出左下角的瓦片行列号坐标
-		gisToBlocks.tile_MIN_X , gisToBlocks.tile_MIN_Y   = deg2tile(self.minlon,self.minlat,self.zoom);
+		gisToBlocks.tile_MIN_X , gisToBlocks.tile_MIN_Y   = MapGeography.GetInstance():deg2tile(self.minlon,self.minlat);
 		-- 根据maxlat和maxlon计算出右上角的瓦片行列号坐标
-		gisToBlocks.tile_MAX_X , gisToBlocks.tile_MAX_Y   = deg2tile(self.maxlon,self.maxlat,self.zoom);
+		gisToBlocks.tile_MAX_X , gisToBlocks.tile_MAX_Y   = MapGeography.GetInstance():deg2tile(self.maxlon,self.maxlat);
 		LOG.std(nil,"debug","gisToBlocks","tile_MIN_X : "..gisToBlocks.tile_MIN_X.." tile_MIN_Y : "..gisToBlocks.tile_MIN_Y);
 		LOG.std(nil,"debug","gisToBlocks","tile_MAX_X : "..gisToBlocks.tile_MAX_X.." tile_MAX_Y : "..gisToBlocks.tile_MAX_Y);
 		-- 重新初始化地图数据
@@ -1208,7 +1175,7 @@ function gisToBlocks:reInitWorld()
 		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);
 		self:startDrawTiles()
 
-		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
+		local roleGPo = MapGeography.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
 		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
 		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
 		-- 更新SelectLocationTask.player_lon和SelectLocationTask.player_lat(人物当前所处经纬度)信息
@@ -1223,18 +1190,18 @@ function gisToBlocks:initWorld()
 	if not DBS then DBS = DBStore.GetInstance();SysDB = DBS:SystemDB() end
 	if self.minlon and self.minlat and self.maxlon and self.maxlat and (not SelectLocationTask.isDownLoaded) then
 		-- 初始化osm信息
-		gisToBlocks.tileX , gisToBlocks.tileY   = deg2tile(self.minlon,self.minlat,self.zoom);
-		gisToBlocks.dleft , gisToBlocks.dtop    = pixel2deg(self.tileX,self.tileY,0,0,self.zoom);
-		gisToBlocks.dright, gisToBlocks.dbottom = pixel2deg(self.tileX,self.tileY,255,255,self.zoom);
+		gisToBlocks.tileX , gisToBlocks.tileY   = MapGeography.GetInstance():deg2tile(self.minlon,self.minlat);
+		gisToBlocks.dleft , gisToBlocks.dtop    = MapGeography.GetInstance():pixel2deg(self.tileX,self.tileY,0,0);
+		gisToBlocks.dright, gisToBlocks.dbottom = MapGeography.GetInstance():pixel2deg(self.tileX,self.tileY,255,255);
 		getOsmService.dleft   = gisToBlocks.dleft;
 		getOsmService.dtop    = gisToBlocks.dtop;
 		getOsmService.dright  = gisToBlocks.dright;
 		getOsmService.dbottom = gisToBlocks.dbottom;
 		getOsmService.zoom = self.zoom;
 		-- 根据minlat和minlon计算出左下角的瓦片行列号坐标
-		gisToBlocks.tile_MIN_X , gisToBlocks.tile_MIN_Y   = deg2tile(self.minlon,self.minlat,self.zoom);
+		gisToBlocks.tile_MIN_X , gisToBlocks.tile_MIN_Y   = MapGeography.GetInstance():deg2tile(self.minlon,self.minlat);
 		-- 根据maxlat和maxlon计算出右上角的瓦片行列号坐标
-		gisToBlocks.tile_MAX_X , gisToBlocks.tile_MAX_Y   = deg2tile(self.maxlon,self.maxlat,self.zoom);
+		gisToBlocks.tile_MAX_X , gisToBlocks.tile_MAX_Y   = MapGeography.GetInstance():deg2tile(self.maxlon,self.maxlat);
 		LOG.std(nil,"debug","gisToBlocks","tile_MIN_X : "..gisToBlocks.tile_MIN_X.." tile_MIN_Y : "..gisToBlocks.tile_MIN_Y);
 		LOG.std(nil,"debug","gisToBlocks","tile_MAX_X : "..gisToBlocks.tile_MAX_X.." tile_MAX_Y : "..gisToBlocks.tile_MAX_Y);
 		-- 初始化地图数据
@@ -1249,7 +1216,7 @@ function gisToBlocks:initWorld()
 		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);
 		self:startDrawTiles()
 
-		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
+		local roleGPo = MapGeography.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
 		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
 		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
 		SelectLocationTask.setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
@@ -1270,7 +1237,7 @@ function gisToBlocks:refreshPlayerInfo()
 				if ComVar.CorrectMode then -- 矫正模式
 					TileManager.GetInstance():correctPositionSystem(x,y,z,curLon,curLat)
 				else -- 跳转模式
-					local po = TileManager.GetInstance():getParaPo(curLon,curLat) -- self:getRoleFloor()
+					local po = MapGeography.GetInstance():getParaPo(curLon,curLat) -- self:getRoleFloor()
 					-- GameLogic.GetPlayer():TeleportToBlockPos(po.x,po.y,po.z)
 					-- GameLogic.GetPlayer():AddToSendQueue(
 					-- 	GameLogic.Packets.PacketClientCommand:new():Init(format("/goto %d %d %d"
@@ -1287,7 +1254,7 @@ function gisToBlocks:refreshPlayerInfo()
 				SelectLocationTask.player_curLon = nil
 				SelectLocationTask.player_curLat = nil
 			end
-			local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
+			local player_latLon = MapGeography.GetInstance():getGPo(x, y, z);
 			local ro,str = TileManager.GetInstance():getForward(true)
 			local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
 			SelectLocationTask.setPlayerCoordinate(player_latLon.lon, player_latLon.lat);

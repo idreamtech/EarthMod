@@ -15,11 +15,13 @@ NPL.load("(gl)Mod/EarthMod/main.lua");
 NPL.load("(gl)Mod/EarthMod/gisToBlocksTask.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 NPL.load("(gl)Mod/EarthMod/NetManager.lua");
+NPL.load("(gl)Mod/EarthMod/MapGeography.lua");
 
 local SelectLocationTask = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask"));
 local EarthMod           = commonlib.gettable("Mod.EarthMod");
 local NetManager = commonlib.gettable("Mod.EarthMod.NetManager");
 local gisToBlocks = commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks");
+local MapGeography = commonlib.gettable("Mod.EarthMod.MapGeography");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 local DBS,SysDB
 
@@ -402,4 +404,11 @@ function SelectLocationTask:OnLeaveWorld()
   	DBS = nil
   	SysDB = nil
   	curInstance = nil
+end
+
+-- gps获取到定位后调用这个函数来同步人物位置
+function SelectLocationTask:onGpsLocation(gps_lon,gps_lat)
+	if not curInstance then return end
+	echo("gps info: lon = " .. gps_lon .. " , lat = " .. gps_lat)
+	self:setPlayerLocation(MapGeography.GetInstance():gpsToBaidu(gps_lon,gps_lat))
 end
