@@ -23,6 +23,7 @@ NPL.load("(gl)script/apps/Aries/Creator/Game/Items/ItemColorBlock.lua");
 NPL.load("(gl)script/apps/Aries/Creator/Game/Commands/CommandManager.lua");
 NPL.load("(gl)Mod/EarthMod/MapBlock.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
+NPL.load("(gl)Mod/EarthMod/NetManager.lua");
 
 local PngWidth = 256
 local Color           = commonlib.gettable("System.Core.Color");
@@ -40,6 +41,7 @@ local EarthMod        = commonlib.gettable("Mod.EarthMod");
 local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
 local SelectLocationTask = commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask");
 local MapBlock = commonlib.gettable("Mod.EarthMod.MapBlock");
+local NetManager = commonlib.gettable("Mod.EarthMod.NetManager");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 local DBS,SysDB
 
@@ -286,7 +288,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 
 					if(type == "building" or type == "buildingMore") then
 						--echo(pointA.level);
-						for i = 1, 3 * pointA.level do
+						for i = 1, ComVar.buildLevelHeight * pointA.level do
 							floor(self);
 							--echo(pointA.cz);
 							pointA.cz = pointA.cz + 1;
@@ -343,8 +345,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 			local endPoint   = {cx = point.right, cy = point.top};
 			
 			if(type == "building" or type == "buildingMore") then
-				startPoint.cz    = 5 + point.level * 3;
-				endPoint.cz      = 5 + point.level * 3;
+				startPoint.cz    = 5 + point.level * ComVar.buildLevelHeight;
+				endPoint.cz      = 5 + point.level * ComVar.buildLevelHeight;
 			else
 				startPoint.cz = 6;
 				endPoint.cz   = 6;
@@ -1063,6 +1065,7 @@ end
 
 -- 绘制玩家周围一圈地图
 function gisToBlocks:BoundaryCheck(px, py, pz)
+	if NetManager.connectState == "client" then return end
 	-- if self.isDrawing then return false end
 	if ComVar.DrawAllMap and (not self.isDrawedAllMap) then -- 自动全部绘制
 		self.isDrawedAllMap = true
@@ -1095,6 +1098,7 @@ end
 
 -- 申请下载地图
 function gisToBlocks:downloadMap(i,j)
+	if NetManager.connectState == "client" then return end
 	if ComVar.CorrectMode then return end
 	local po,tile,isUpdate = nil,nil,nil
 	if (not i) and (not j) then
@@ -1135,6 +1139,7 @@ function gisToBlocks:downloadMap(i,j)
 end
 
 function gisToBlocks:startDrawTiles()
+	if NetManager.connectState == "client" then return end
 	local function onDraw(tile)
 		LOG.std(nil,"debug","gosToBlocks","绘制地图： " .. tile.x .. "," .. tile.y);
 		tile.isDrawed = true
@@ -1166,21 +1171,12 @@ function gisToBlocks:Run()
 			gisToBlocks.pleft   = boundary.pleft;
 			gisToBlocks.pright  = boundary.pright;
 		end end)
-		-- local boundary = EarthMod:GetWorldData("boundary");
-		-- gisToBlocks.ptop    = boundary.ptop;
-		-- gisToBlocks.pbottom = boundary.pbottom;
-		-- gisToBlocks.pleft   = boundary.pleft;
-		-- gisToBlocks.pright  = boundary.pright;
 
 	elseif(self.options == "coordinate") then
 		if(GameLogic.GameMode:CanAddToHistory()) then
 			self.add_to_history = false;
 		end
 		self:initWorld()
-		local po = TileManager.GetInstance():getParaPo()
-		-- self:BoundaryCheck(po.x, po.y, po.z) -- 绘制人物周围9块
-		-- 跳转到地图中间
-		CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z)
 	end
 end
 
@@ -1216,8 +1212,7 @@ function gisToBlocks:reInitWorld()
 		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
 		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
 		-- 更新SelectLocationTask.player_lon和SelectLocationTask.player_lat(人物当前所处经纬度)信息
-		local sltInstance = SelectLocationTask.GetInstance();
-		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
+		SelectLocationTask.setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
 		-- timer定时更新人物坐标信息
 		self:refreshPlayerInfo()
 		SelectLocationTask.isDownLoaded = true
@@ -1257,8 +1252,7 @@ function gisToBlocks:initWorld()
 		local roleGPo = TileManager.GetInstance():getGPo(EntityManager.GetFocus():GetBlockPos()) --  这个获取的不能实时更新
 		LOG.std(nil,"RunFunction 获取到人物的地理坐标","经度：" .. roleGPo.lon,"纬度：" .. roleGPo.lat)
 		LOG.std(nil,EntityManager.GetFocus():GetBlockPos())
-		local sltInstance = SelectLocationTask.GetInstance();
-		sltInstance:setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
+		SelectLocationTask.setPlayerCoordinate(roleGPo.lon, roleGPo.lat);
 		self:refreshPlayerInfo()
 		SelectLocationTask.isDownLoaded = true
 	end
@@ -1266,7 +1260,6 @@ end
 
 -- 更新人物信息
 function gisToBlocks:refreshPlayerInfo()
-	local sltInstance = SelectLocationTask.GetInstance();
 	gisToBlocks.playerLocationTimer = gisToBlocks.playerLocationTimer or commonlib.Timer:new({callbackFunc = function(playerLocationTimer)
 			-- 获取人物坐标信息
 			local x,y,z = EntityManager.GetFocus():GetBlockPos()
@@ -1278,7 +1271,17 @@ function gisToBlocks:refreshPlayerInfo()
 					TileManager.GetInstance():correctPositionSystem(x,y,z,curLon,curLat)
 				else -- 跳转模式
 					local po = TileManager.GetInstance():getParaPo(curLon,curLat) -- self:getRoleFloor()
-					GameLogic.GetPlayer():SetBlockPos(po.x,po.y,po.z)
+					-- GameLogic.GetPlayer():TeleportToBlockPos(po.x,po.y,po.z)
+					-- GameLogic.GetPlayer():AddToSendQueue(
+					-- 	GameLogic.Packets.PacketClientCommand:new():Init(format("/goto %d %d %d"
+					-- 			, po.x
+					-- 			, po.y
+					-- 			, po.z)));
+					if NetManager.connectState == "server" then
+						GameLogic.GetPlayer():TeleportToBlockPos(po.x,po.y,po.z)
+					else
+						CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z);
+					end
 					x,y,z = po.x,po.y,po.z
 				end
 				SelectLocationTask.player_curLon = nil
@@ -1287,12 +1290,29 @@ function gisToBlocks:refreshPlayerInfo()
 			local player_latLon = TileManager.GetInstance():getGPo(x, y, z);
 			local ro,str = TileManager.GetInstance():getForward(true)
 			local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
-			sltInstance:setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
-			sltInstance:setInfor({-- lon = lon,lat = lat, 经纬度
-				pos = "(" .. x .. "," .. y .. "," .. z .. ")",
-				loading = TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count,
-				forward = str .. " " .. ron .. "°"
-			});
+			SelectLocationTask.setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
+			if NetManager.connectState == "client" then 
+				-- 如果当前运行的是客户端,则将人物位置信息发送给服务器
+				if player_latLon and player_latLon.lon and player_latLon.lat then
+					local po_tb = {lon = player_latLon.lon, lat = player_latLon.lat}
+					NetManager.sendMessage("admin","cl_po",table.toJson(po_tb),-1)
+				end
+			elseif NetManager.connectState == "server" then
+				if player_latLon and player_latLon.lon and player_latLon.lat then
+					local po_tb = {lon = player_latLon.lon, lat = player_latLon.lat}
+					SelectLocationTask:setPlayerPoTableData("admin", po_tb)
+					-- 广播全玩家坐标信息
+					NetManager.sendMessage("all","all_po",table.toJson(SelectLocationTask.allPlayerPo),-1)
+				end
+			end
+			local sltInstance = SelectLocationTask.GetInstance();
+			if sltInstance then
+				sltInstance:setInfor({-- lon = lon,lat = lat, 经纬度
+					pos = "(" .. x .. "," .. y .. "," .. z .. ")",
+					loading = TileManager.GetInstance().curTimes .. "/" .. TileManager.GetInstance().count,
+					forward = str .. " " .. ron .. "°"
+				});
+			end
 	end});
 	gisToBlocks.playerLocationTimer:Change(1000,1000);
 	if not SelectLocationTask.isShowInfo then SelectLocationTask.isShowInfo = true end

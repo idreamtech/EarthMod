@@ -32,10 +32,13 @@ if(is_ajax()) then
 
     add_action('wp_ajax_get_player_coordinate' , function()
         --获取人物坐标
-        local playerLon, playerLat = SelectLocationTask:getPlayerCoordinate();
+        local playerLon, playerLat, allPlayerPo, name = SelectLocationTask:getPlayerCoordinate();
         local ret = {};
         ret["lon"] = playerLon;
         ret["lat"] = playerLat;
+        ret["allPlayerPo"] = allPlayerPo;
+        --玩家名称
+        ret["selfName"] = name;
         response:send_json(ret);
         return;
     end);
@@ -177,7 +180,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     })
     var myIcon = L.icon({
         iconUrl: '/wp-content/pages/earth/assets/css/images/4.png',
-        iconSize: [14, 24],
+        iconSize: [15, 47],
     });
     var map  = L.map('map',{
         zoomControl:false,
@@ -201,12 +204,12 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     //     console.log(e.which);
     // }
     $('body').on('keydown',function(e){
-        console.log(e.which);
+        // console.log(e.which);
         if(e.which ==37||e.which ==38||e.which ==39||e.which ==40||e.which ==32){
             return false;
         }
     })
-    //leaflet自定义一个搜索框control
+    //leaflet自定义一个control
     L.Control.Search = L.Control.extend({
         options:{
             position:"topleft" // 初始化位置
@@ -318,52 +321,6 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
 
         })
      }
-    // map.locate();
-    // console.log(coordtransform);
-        // console.log(map.locationfound)
-    // map.locationfound(e);
-    // function locationfound(e){
-    //     var gcj02tobd09 = coordtransform.gcj02tobd09(e.latlng.lat,e.latlng.lng);//转化成火星坐标系
-    //     var currentMarker = L.marker(gcj02tobd09,{icon:currentIcon}).addTo(map);
-    // }
-    // function locationerror(e){
-    //     alert('获取位置失败')
-    // }
-    // map.on('locationfound',locationfound)
-    // map.on('locationerror',locationerror)
-
-    // function onMapClick(e) {
-
-    // }
-
-    // map.on('click', onMapClick);
-
-    // function searchUniversity(data){
-    //     if(data != null && data != undefined){
-    //         if(data == "华中农业大学"){
-    //             renderUniversity(uniData.hz);
-    //         }else if(data == "天津城市建设管理职业技术学院"){
-    //             renderUniversity(uniData.tj);
-    //         }else if(data == "四川大学-望江校区"){
-    //             renderUniversity(uniData.scwj);
-    //         }else if(data == "四川大学-江安校区"){
-    //             renderUniversity(uniData.scja);
-    //         }else if(data == "武汉大学"){
-    //             renderUniversity(uniData.wh);
-    //         }else if(data == "华中科技大学"){
-    //             renderUniversity(uniData.hzkj);
-    //         }else{
-    //             alert('未查找到结果');
-    //         }
-    //     }
-    // }
-    //模糊搜索
-    // $('.search-inp').typeahead({
-    //     source: function(query, process) {
-    //         var data =['华中农业大学','天津城市建设管理职业技术学院','四川大学-望江校区','武汉大学','四川大学-江安校区','华中科技大学'];
-    //         process(data);
-    //     }
-    // });
     $('.search-inp').on('keydown',function(e){
         if(e.which == 13){
             // searchUniversity($('.search-inp').val());
@@ -379,6 +336,8 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     var marker = null;
     // 搜索框状态
     var searchInpState = true;
+    // 所有玩家的marker集合
+    var allPlayerMarkers = new Array();
     // 获取当前玩家在paracraft中的位置及是否已经进行了贴图操作,如果已经贴图,则禁用搜索框
     function getCurrentPostionInParacraft(){
         $.ajax({
@@ -389,21 +348,73 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                 // console.log(res);
                 var lon = res.lon;
                 var lat = res.lat;
-                if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
-                    player_lat = lat;
-                    player_lng = lon;
-                    // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
-                    if (marker == null) {
-                        marker = L.marker([lat, lon],{icon:currentIcon}).addTo(map);
-                    } else {
-                        marker.setLatLng([lat, lon]);
+                var allPlayerPo = res.allPlayerPo;
+                var selfName = res.selfName;
+                // 如果allPlayerPo为空,则为脱机模式
+                if (allPlayerPo == null || typeof(allPlayerPo) == "undefined") {
+                    if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
+                        player_lat = lat;
+                        player_lng = lon;
+                        // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
+                        if (marker == null) {
+                            marker = L.marker([lat, lon],{icon:currentIcon}).addTo(map);
+                        } else {
+                            marker.setLatLng([lat, lon]);
+                        }
+                        if (searchInpState == true) {
+                            searchInpState = false;
+                            document.getElementsByClassName('search-inp')[0].disabled = true;
+                        }
                     }
-                    if (searchInpState == true) {
-                        searchInpState = false;
-                        document.getElementsByClassName('search-inp')[0].disabled = true;
+                    // map.setView(marker._latlng);
+                }else if (allPlayerPo != null && typeof(allPlayerPo) != "undefined") {
+                    if (marker != null) {
+                        marker.remove();
                     }
+                    // console.log(allPlayerPo)
+                    $.each(allPlayerPo, function(playerName, postionData){
+                        // falg为true时候add,反之则更新marker位置
+                        var index = null;
+                        for (var i = 0; i < allPlayerMarkers.length; i++) {
+                            var _playerName = allPlayerMarkers[i].getTooltip()._content;
+                            // console.log("each playerName is :" + playerName)
+                            // console.log("playerName is :" + _playerName)
+                            if (playerName == _playerName) {
+                                console.log("will modify " + playerName + " || " + i)
+                                index = i;
+                                break;
+                            }
+                        }
+                        if (index == null) {
+                            // 将marker添加到地图中,如果playerName=me则图标为红色图标
+                            var playerMarker = null;
+                            if (playerName == selfName) {
+                                playerMarker = L.marker([postionData.lat, postionData.lon],{icon:myIcon}).addTo(map).bindTooltip(playerName);
+                            }else{
+                                playerMarker = L.marker([postionData.lat, postionData.lon],{icon:currentIcon}).addTo(map).bindTooltip(playerName);
+                            }
+                            allPlayerMarkers.push(playerMarker)
+                        }else{
+                            console.log("modify player postion " + index)
+                            allPlayerMarkers[index].setLatLng([postionData.lat, postionData.lon]);
+                        }
+                    });
+
+                    allPlayerMarkers.forEach(function (item, index, array) {
+                        var markerContent = item.getTooltip()._content;
+                        // 默认不存在
+                        var flag = false;
+                        $.each(allPlayerPo, function(playerName, postionData){
+                            // 如果姓名与content的值相等,则视为玩家仍然保持连接,反之删除玩家marker标记
+                            if (playerName == markerContent) {
+                                flag = true;
+                            }
+                        });
+                        if (flag == false) {
+                            item.remove();
+                        }
+                    });
                 }
-                // map.setView(marker._latlng);
             },
             error:function(){
                 console.log("获取人物当前坐标失败");
@@ -462,15 +473,16 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
     var markerArray = new Array();
     // 获取所有学校
     function getAllSchool(){
-        var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getAllSchool";
+        var urlStr = "http://119.23.36.48:8098/api/wiki/models/school/getAllSchool";
+        //var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getAllSchool";
         var arr = [];
             $.ajax({
                 url:urlStr,
                 type:"get",
-                async:false,
                 dataType:"json",
+                async: false,
                 success:function(res){
-                    console.log(res);
+                    // console.log(res);
                     if(res && res.error && res.data && res.error.id == 0){
                         // 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
                         // res.data是数组
@@ -496,6 +508,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                                     var schoolLng = school.southWestLng;
                                     // 将marker添加到地图中
                                     var schoolMarker = L.marker([schoolLat, schoolLng],{icon:currentIcon}).addTo(map).bindTooltip(schoolName);
+                                    // console.log("push marker " + school.schoolName)
                                     markerArray.push(schoolMarker);
 									for(var j=0;j<markerArray.length;j++){
                                         markerArray[j].on('click',function(e){
@@ -514,9 +527,11 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                 }
             })
     }
+
     // 请求学校经纬度信息
     function getSchoolByName(schoolName){
-        var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName";
+        var urlStr = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName";
+        //var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName";
         if (schoolName != null && typeof(schoolName) != "undefined" && $.trim(schoolName) != "") {
             urlStr = urlStr + "?name=" + $.trim(schoolName);
             $.ajax({
@@ -549,10 +564,13 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
             type:"post",
             dataType:"json",
             success:function(res){
+                // console.log("get school area")
                 // console.log(res);
                 if (res != null && typeof(res) != "undefined" && res.status == 100) {
                     // 清除所有多余的marker
+                    // console.log(markerArray)
                     markerArray.forEach(function (item, index, array) {
+                        // console.log("remove marker " + index)
                         item.remove();
                     });
                     // 学校已经划定区域情况下,显示学校区域信息
@@ -568,7 +586,7 @@ wp_enqueue_script("typeahead",            "/wp-content/pages/earth/js/bootstrap3
                     document.getElementsByClassName('search-inp')[0].value = currentSchool;
                     // map.setMaxBounds(rec.getBounds());
                     // var curPos = marker.getBounds();
-                    console.log(map);
+                    // console.log(map);
                     // 将搜索框状态标记为不可用
                     searchInpState = false;
                     // var number = map.getZoom()

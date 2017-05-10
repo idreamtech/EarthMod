@@ -15,18 +15,16 @@ ComVar = {
 	DrawAllMap = nil; -- 开启全部自动绘制
 	Draw3DBuilding = nil; -- 是否绘制地上建筑
 	-- gis
-	factor = 1.19; -- 地图缩放比例 .19
+	factor = 1.19; -- 地图缩放比例
 	FloorLevel = 5; -- 绘制地图层层高：草地层
 	buildLevelMax = 30; -- 绘制地图层层高：草地层
+    buildLevelHeight = 4; -- 每层建筑高度
 	-- map
 	fillAirMode = nil; -- 填充所有空气
 	fillAll = nil; -- 填充所有方块
 	-- net
 	openNetwork = nil; -- 是否打开网络通讯
-	isServer = nil; -- 是否是服务端
-	serverIP = "192.168.1.169"; -- 如果是客户端，连接服务端的ip填这里
-    prot = nil; -- 小地图端口号(会自动修改)
-    protInited = nil;
+    prot = 8099; -- 小地图默认端口号
 }
 
 
