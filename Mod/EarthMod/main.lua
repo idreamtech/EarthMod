@@ -168,6 +168,8 @@ function EarthMod:onReceiveMessage(data)
 		elseif data.key == "all_po" then
 			-- 接收到所有玩家的位置信息
 			SelectLocationTask.allPlayerPo = table.fromJson(data.value)
+		elseif data.key == "tileNum" then
+			TileManager.GetInstance().curTimes = tonumber(data.value)
 		end
 	end
 end
