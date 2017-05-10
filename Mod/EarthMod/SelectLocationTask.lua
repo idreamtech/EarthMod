@@ -14,9 +14,11 @@ task:Run();
 NPL.load("(gl)Mod/EarthMod/main.lua");
 NPL.load("(gl)Mod/EarthMod/gisToBlocksTask.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
+NPL.load("(gl)Mod/EarthMod/NetManager.lua");
 
 local SelectLocationTask = commonlib.inherit(commonlib.gettable("MyCompany.Aries.Game.Task"), commonlib.gettable("MyCompany.Aries.Game.Tasks.SelectLocationTask"));
 local EarthMod           = commonlib.gettable("Mod.EarthMod");
+local NetManager = commonlib.gettable("Mod.EarthMod.NetManager");
 local gisToBlocks = commonlib.gettable("MyCompany.Aries.Game.Tasks.gisToBlocks");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 local DBS,SysDB
@@ -41,6 +43,10 @@ SelectLocationTask.isShowInfo = nil
 SelectLocationTask.playerInfo = {}
 SelectLocationTask.menuWidth = nil
 SelectLocationTask.isRuned = nil
+SelectLocationTask.isLocationClicked = nil -- 网页端点击跳转了一次
+
+-- 全玩家坐标信息
+SelectLocationTask.allPlayerPo = nil
 
 function SelectLocationTask:ctor()
 end
@@ -61,7 +67,7 @@ function SelectLocationTask.InitPageInfo(Page)
 	pageInfo = Page
 end
 
-function SelectLocationTask:RefreshPage()
+function SelectLocationTask.RefreshPage()
 	if(pageInfo) then
 		pageInfo:Refresh(0.01);
 	end
@@ -99,6 +105,7 @@ function SelectLocationTask.checkUpdateMap()
 				schoolName = string.gsub(schoolName, "\"", "");
 				-- 根据学校名称调用getSchoolByName接口,请求最新的经纬度范围信息,如果信息不一致,则更新文件中已有数据
 				System.os.GetUrl({url = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
+				--System.os.GetUrl({url = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
 					if(res and res.error and res.data and res.data ~= {} and res.error.id == 0) then
 		                -- 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
 		                local areaInfo = res.data[1];
@@ -132,19 +139,6 @@ function SelectLocationTask.checkUpdateMap()
 			end end)
 		end end)
 	end end)
-end
-
-function SelectLocationTask.OnClickGetMoreTiles()
-	--[[_guihelper.MessageBox(L"是否确定生成此区域？", function(res)
-		if(res and res == _guihelper.DialogResult.Yes) then
-			local self = SelectLocationTask.GetInstance();
-			local item = self:GetItem();
-		
-			if(item) then
-				item:MoreScence();
-			end
-		end
-	end, _guihelper.MessageBoxButtons.YesNo);]]
 end
 
 function SelectLocationTask.OnClickConfirm()
@@ -269,17 +263,23 @@ function SelectLocationTask:Run()
 		-- if(coordinate) then
 		-- end
 		self:ShowPage();
-		self:onInit();
+		GameLogic.SetStatus(L"小提示:左上角菜单中地理信息按钮可以隐藏信息面板 ^_^");
 	end
 end
 
-function SelectLocationTask:setPlayerCoordinate(lon, lat)
+function SelectLocationTask.setPlayerCoordinate(lon, lat)
 	SelectLocationTask.player_lon = lon;
 	SelectLocationTask.player_lat = lat;
 end
 
 function SelectLocationTask:getPlayerCoordinate()
-	return SelectLocationTask.player_lon, SelectLocationTask.player_lat;
+	local name = "me"
+	if NetManager.connectState == "client" then
+		name = NetManager.name
+	elseif NetManager.connectState == "server" then
+		name = "admin"
+	end
+	return SelectLocationTask.player_lon, SelectLocationTask.player_lat, SelectLocationTask.allPlayerPo, name;
 end
 
 -- 设置并跳转人物
@@ -290,6 +290,7 @@ function SelectLocationTask:setPlayerLocation(lon, lat)
 	SelectLocationTask.player_curLon = lon;
 	SelectLocationTask.player_curLat = lat;
 	LOG.std(nil,"RunFunction","SelectLocationTask",str)
+	SelectLocationTask.isLocationClicked = true
 end
 
 function SelectLocationTask:getSchoolAreaInfo()
@@ -329,15 +330,12 @@ function SelectLocationTask:setInfor(para)
 	SelectLocationTask.playerInfo = para
 end
 
-function SelectLocationTask:OnShowInfo()
+function SelectLocationTask.OnShowInfo()
 	SelectLocationTask.isShowInfo = not SelectLocationTask.isShowInfo
 end
--- 初始化一次
-function SelectLocationTask:onInit()
-	GameLogic.SetStatus(L"小提示:左上角菜单中地理信息按钮可以隐藏信息面板 ^_^");
-end
+
 -- 显示地图
-function SelectLocationTask:OnShowMap()
+function SelectLocationTask.OnShowMap()
 	-- 切换地图显示
 	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
@@ -350,6 +348,26 @@ function SelectLocationTask:OnShowMap()
 		NplCefWindowManager:Open("my_window", "Select Location Window", "http://127.0.0.1:" .. ComVar.prot .. "/earth", "_lt", 5, 70, 400, 400);		
 	end
 end
+
+-- 添加玩家坐标信息
+function  SelectLocationTask:setPlayerPoTableData(name, playerPo)
+	if name and playerPo then
+		SelectLocationTask.allPlayerPo = SelectLocationTask.allPlayerPo or {}
+		for n,p in pairs(SelectLocationTask.allPlayerPo) do
+			if n == name then
+				SelectLocationTask.allPlayerPo[n] = playerPo
+				return
+			end
+		end
+		SelectLocationTask.allPlayerPo[name] = playerPo
+	end
+end
+
+-- 返回全玩家位置信息到网页端
+function  SelectLocationTask:getPlayerPoTableData()
+	return SelectLocationTask.allPlayerPo;
+end
+
 -- 页面菜单
 SelectLocationTask.menus = {
     {order=1,name="地图",icon="mapBtn",func=SelectLocationTask.OnShowMap};
@@ -361,24 +379,26 @@ SelectLocationTask.menus = {
 
 function SelectLocationTask:OnLeaveWorld()
     -- 离开当前世界时候重新初始化变量
-  	SelectLocationTask.isFirstSelect = true;
+  	SelectLocationTask.isFirstSelect = true
   	-- this is always a top level task. 
-  	SelectLocationTask.is_top_level  = true;
-  	SelectLocationTask.getMoreTiles  = false;
+  	SelectLocationTask.is_top_level  = true
+  	SelectLocationTask.getMoreTiles  = false
   	-- 人物坐标对应经纬度
-  	SelectLocationTask.playerLon  = nil;
-  	SelectLocationTask.playerLat  = nil;
-  	SelectLocationTask.player_curLon = nil;
-  	SelectLocationTask.player_curLat = nil;
+  	SelectLocationTask.playerLon  = nil
+  	SelectLocationTask.playerLat  = nil
+  	SelectLocationTask.player_curLon = nil
+  	SelectLocationTask.player_curLat = nil
   	SelectLocationTask.isDownLoaded = nil
   	SelectLocationTask.schoolData = nil
   	SelectLocationTask.isShowInfo = nil
   	SelectLocationTask.playerInfo = {}
-  	SelectLocationTask:RefreshPage()
+  	SelectLocationTask.RefreshPage()
   	SelectLocationTask.menuWidth = nil
   	SelectLocationTask.isRuned = nil
-	SelectLocationTask.player_lon = nil;
-	SelectLocationTask.player_lat = nil;
+	SelectLocationTask.player_lon = nil
+	SelectLocationTask.player_lat = nil
+	SelectLocationTask.allPlayerPo = nil
+	SelectLocationTask.isLocationClicked = nil
   	DBS = nil
   	SysDB = nil
   	curInstance = nil
