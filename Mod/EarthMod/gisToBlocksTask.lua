@@ -1144,6 +1144,9 @@ function gisToBlocks:Run()
 			self.add_to_history = false;
 		end
 		self:initWorld()
+		if ComVar.openNetwork and NetManager.connectState == "server" then
+			NetManager.sendMessage("all","nowFly",nil,-1)
+		end
 	end
 end
 

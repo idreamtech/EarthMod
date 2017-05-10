@@ -94,9 +94,6 @@ end
 function EarthMod:OnWorldLoad()
 	LOG.std(nil, "info", "EarthMod", "OnNewWorld");
 	CommandManager:RunCommand("/take 10513");
-	-- if(EarthMod:GetWorldData("alreadyBlock")) then
-	-- 	-- CommandManager:RunCommand("/take 10513");
-	-- end
 	MapBlock:OnWorldLoad();
 	DBS = DBStore.GetInstance()
 	SysDB = DBS:SystemDB()
@@ -131,6 +128,7 @@ function EarthMod:onGameEvent(event)
 		NetManager.sendMessage("admin","reqDb")
 	elseif event == "server" then
 		TipLog("开启了服务器")
+		CommandManager:RunCommand("/take 10513");
 	end
 end
 
@@ -172,6 +170,11 @@ function EarthMod:onReceiveMessage(data)
 			SelectLocationTask.allPlayerPo = table.fromJson(data.value)
 		elseif data.key == "tileNum" then
 			TileManager.GetInstance().curTimes = tonumber(data.value)
+			if not SelectLocationTask.isDownLoaded then
+				NetManager.sendMessage("admin","reqDb")
+			end
+		elseif data.key == "nowFly" then
+			gisToBlocks:fly()
 		end
 	end
 end
