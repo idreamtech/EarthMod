@@ -67,7 +67,7 @@ function ItemEarth:OnSelect(itemStack)
 		ComVar.protInited = true
 		ItemEarth.onInitWeb(function()
 			echo("ItemEarth:OnSelect to SelectLocationTask:OnShowMap")
-			SelectLocationTask:OnShowMap()
+			SelectLocationTask.OnShowMap()
 		end)
 		echo("startmap ItemEarth:OnSelect")
 		-- TipLog("startmap ItemEarth:OnSelect")
@@ -131,7 +131,7 @@ function ItemEarth:boundaryCheck()
 			CommandManager:RunCommand("/gis -boundary");
 			--echo(gisCommand.getMoreTiles);
 			SelectLocationTask.getMoreTiles = gisCommand.getMoreTiles;
-			SelectLocationTask:RefreshPage();
+			SelectLocationTask.RefreshPage();
 		end});
 
 	ItemEarth.BoundaryTimer:Change(300, 300);
@@ -189,7 +189,7 @@ function ItemEarth:RefreshTask(itemStack)
 	local task = self:GetTask();
 	if(task) then
 		task:SetItemStack(itemStack);
-		task:RefreshPage();
+		task.RefreshPage();
 	end
 end
 

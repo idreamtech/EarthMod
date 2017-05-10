@@ -13,7 +13,7 @@ NPL.load("(gl)Mod/EarthMod/Com.lua");
 ComVar = {
 	CorrectMode = nil; -- 开启矫正模式  矫正地图定位偏差
 	DrawAllMap = nil; -- 开启全部自动绘制
-	Draw3DBuilding = true; -- 是否绘制地上建筑
+	Draw3DBuilding = nil; -- 是否绘制地上建筑
 	-- gis
 	factor = 1.19; -- 地图缩放比例
 	FloorLevel = 5; -- 绘制地图层层高：草地层
@@ -24,7 +24,7 @@ ComVar = {
 	fillAll = nil; -- 填充所有方块
 	-- net
 	openNetwork = nil; -- 是否打开网络通讯
-    prot = 8099; -- 小地图端口号
+    prot = 8099; -- 小地图默认端口号
 }
 
 

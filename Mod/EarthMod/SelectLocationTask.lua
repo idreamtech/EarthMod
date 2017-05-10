@@ -104,7 +104,8 @@ function SelectLocationTask.checkUpdateMap()
 			DBS:getValue(SysDB,"schoolName",function(schoolName) if schoolName then
 				schoolName = string.gsub(schoolName, "\"", "");
 				-- 根据学校名称调用getSchoolByName接口,请求最新的经纬度范围信息,如果信息不一致,则更新文件中已有数据
-				System.os.GetUrl({url = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
+				System.os.GetUrl({url = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
+				--System.os.GetUrl({url = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
 					if(res and res.error and res.data and res.data ~= {} and res.error.id == 0) then
 		                -- 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
 		                local areaInfo = res.data[1];
@@ -138,19 +139,6 @@ function SelectLocationTask.checkUpdateMap()
 			end end)
 		end end)
 	end end)
-end
-
-function SelectLocationTask.OnClickGetMoreTiles()
-	--[[_guihelper.MessageBox(L"是否确定生成此区域？", function(res)
-		if(res and res == _guihelper.DialogResult.Yes) then
-			local self = SelectLocationTask.GetInstance();
-			local item = self:GetItem();
-		
-			if(item) then
-				item:MoreScence();
-			end
-		end
-	end, _guihelper.MessageBoxButtons.YesNo);]]
 end
 
 function SelectLocationTask.OnClickConfirm()
@@ -275,7 +263,7 @@ function SelectLocationTask:Run()
 		-- if(coordinate) then
 		-- end
 		self:ShowPage();
-		self:onInit();
+		GameLogic.SetStatus(L"小提示:左上角菜单中地理信息按钮可以隐藏信息面板 ^_^");
 	end
 end
 
@@ -285,9 +273,11 @@ function SelectLocationTask.setPlayerCoordinate(lon, lat)
 end
 
 function SelectLocationTask:getPlayerCoordinate()
-	local name = "admin"
+	local name = "me"
 	if NetManager.connectState == "client" then
 		name = NetManager.name
+	elseif NetManager.connectState == "server" then
+		name = "admin"
 	end
 	return SelectLocationTask.player_lon, SelectLocationTask.player_lat, SelectLocationTask.allPlayerPo, name;
 end
@@ -343,10 +333,7 @@ end
 function SelectLocationTask.OnShowInfo()
 	SelectLocationTask.isShowInfo = not SelectLocationTask.isShowInfo
 end
--- 初始化一次
-function SelectLocationTask:onInit()
-	GameLogic.SetStatus(L"小提示:左上角菜单中地理信息按钮可以隐藏信息面板 ^_^");
-end
+
 -- 显示地图
 function SelectLocationTask.OnShowMap()
 	-- 切换地图显示

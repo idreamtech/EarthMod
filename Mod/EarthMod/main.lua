@@ -98,13 +98,8 @@ function EarthMod:OnWorldLoad()
 	MapBlock:OnWorldLoad();
 	DBS = DBStore.GetInstance()
 	SysDB = DBS:SystemDB()
-	-- if not ComVar.openNetwork then
-	-- 	self:initMap()
-	-- end
-	-- if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
-	-- end
 	if not NetManager.isConnecting then -- 如果客户端连接则等待数据后启动页面
-		self:startGame()
+		self:initMap()
 	end
 end
 -- called when a world is unloaded. 
@@ -123,25 +118,6 @@ function EarthMod.showWebPage(isShow)
 	end
 end
 
-function EarthMod:OnLeaveWorld()
-	echo("On Leave World")
-	if TileManager.GetInstance() then
-		MapBlock:OnLeaveWorld()
-		gisToBlocks:OnLeaveWorld()
-		EarthMod.showWebPage()
-		-- 离开当前世界时候初始化所有变量
-		echo("sltInstance set nil")
-		SelectLocationTask:OnLeaveWorld();
-  		ItemEarth:OnLeaveWorld();
-  		DBStore:OnLeaveWorld();
-  		if ComVar.openNetwork then
-			NetManager.OnLeaveWorld()
-		end
-		DBS = nil
-		SysDB = nil
-	end
-end
-
 function EarthMod:OnDestroy()
 end
 
@@ -152,8 +128,7 @@ function EarthMod:onGameEvent(event)
 	elseif event == "client" then
 		NetManager.sendMessage("admin","reqDb")
 	elseif event == "server" then
-		-- CommandManager:RunCommand("/take 10513");
-		-- self:startGame()
+		TipLog("开启了服务器")
 	end
 end
 
@@ -184,9 +159,12 @@ function EarthMod:onReceiveMessage(data)
 		elseif data.key == "cfgData" then
 			DBS:unpackDatabase(data.value,DBS:ConfigDB())
 			echo("NetManager:客户端接收并拷贝服务器的配置数据库ConfigDB")
+			self:initMap()
+			SelectLocationTask.OnClickConfirm()
 			table.remove(SelectLocationTask.menus,3)
-			self:startGame()
+			SelectLocationTask:ShowPage()
 			EarthMod.showWebPage(true)
+			ItemEarth:boundaryCheck()
 		elseif data.key == "all_po" then
 			-- 接收到所有玩家的位置信息
 			SelectLocationTask.allPlayerPo = table.fromJson(data.value)
@@ -211,11 +189,6 @@ function EarthMod:sendConfigDB(data)
 	end)
 end
 
--- 服务器和客户端启动游戏
-function EarthMod:startGame()
-	self:initMap()
-end
-
 function EarthMod:initMap(func)
 	TileManager:new() -- 初始化并加载数据
 	-- 检测是否是读取存档
@@ -230,7 +203,8 @@ function EarthMod:initMap(func)
 			DBS:getValue(SysDB,"schoolName",function(schoolName) if schoolName then
 				schoolName = string.gsub(schoolName, "\"", "");
 				-- 根据学校名称调用getSchoolByName接口,请求最新的经纬度范围信息,如果信息不一致,则更新文件中已有数据
-				System.os.GetUrl({url = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
+				System.os.GetUrl({url = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
+				--System.os.GetUrl({url = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
 					if(res and res.error and res.data and res.data ~= {} and res.error.id == 0) then
 		                -- 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
 		                -- echo("getSchoolByName by name : ")
@@ -272,4 +246,24 @@ function EarthMod:initMap(func)
 	else
 		if func then func() end
 	end end)
+end
+
+
+function EarthMod:OnLeaveWorld()
+	echo("On Leave World")
+	if TileManager.GetInstance() then
+		MapBlock:OnLeaveWorld()
+		gisToBlocks:OnLeaveWorld()
+		EarthMod.showWebPage()
+		-- 离开当前世界时候初始化所有变量
+		echo("sltInstance set nil")
+		SelectLocationTask:OnLeaveWorld();
+  		ItemEarth:OnLeaveWorld();
+  		DBStore:OnLeaveWorld();
+  		if ComVar.openNetwork then
+			NetManager.OnLeaveWorld()
+		end
+		DBS = nil
+		SysDB = nil
+	end
 end

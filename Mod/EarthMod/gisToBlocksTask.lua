@@ -1277,10 +1277,10 @@ function gisToBlocks:refreshPlayerInfo()
 					-- 			, po.x
 					-- 			, po.y
 					-- 			, po.z)));
-					if NetManager.connectState == "client" then
-						CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z);
-					elseif NetManager.connectState == "server" then
+					if NetManager.connectState == "server" then
 						GameLogic.GetPlayer():TeleportToBlockPos(po.x,po.y,po.z)
+					else
+						CommandManager:RunCommand("/goto " .. po.x .. " " .. po.y .. " " .. po.z);
 					end
 					x,y,z = po.x,po.y,po.z
 				end
