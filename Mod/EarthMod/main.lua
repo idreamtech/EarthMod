@@ -89,7 +89,6 @@ function EarthMod:OnLogin()
 end
 
 -- called when a new world is loaded. 
-
 function EarthMod:OnWorldLoad()
 	LOG.std(nil, "info", "EarthMod", "OnNewWorld");
 	CommandManager:RunCommand("/take 10513");
@@ -99,22 +98,37 @@ function EarthMod:OnWorldLoad()
 	MapBlock:OnWorldLoad();
 	DBS = DBStore.GetInstance()
 	SysDB = DBS:SystemDB()
-	if not ComVar.openNetwork then
-		self:initMap()
-	end
+	-- if not ComVar.openNetwork then
+	-- 	self:initMap()
+	-- end
 	-- if EarthMod:GetWorldData("alreadyBlock") and EarthMod:GetWorldData("coordinate") then
 	-- end
+	if not NetManager.isConnecting then -- 如果客户端连接则等待数据后启动页面
+		self:startGame()
+	end
 end
 -- called when a world is unloaded. 
+
+-- 小地图网页窗口显示和销毁
+function EarthMod.showWebPage(isShow)
+	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
+	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+	if not isShow then
+		NplCefWindowManager:Destroy("my_window")
+		echo("delete Cef web : my_window")
+	else
+		-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+		echo("open Cef web : " .. "http://127.0.0.1:" .. ComVar.prot .. "/earth")
+		NplCefWindowManager:Open("my_window", "Select Location Window", "http://127.0.0.1:" .. ComVar.prot .. "/earth", "_lt", 5, 70, 400, 400);		
+	end
+end
 
 function EarthMod:OnLeaveWorld()
 	echo("On Leave World")
 	if TileManager.GetInstance() then
 		MapBlock:OnLeaveWorld()
 		gisToBlocks:OnLeaveWorld()
-		NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
-		local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
-		NplCefWindowManager:Destroy("my_window");
+		EarthMod.showWebPage()
 		-- 离开当前世界时候初始化所有变量
 		echo("sltInstance set nil")
 		SelectLocationTask:OnLeaveWorld();
@@ -138,8 +152,8 @@ function EarthMod:onGameEvent(event)
 	elseif event == "client" then
 		NetManager.sendMessage("admin","reqDb")
 	elseif event == "server" then
-		CommandManager:RunCommand("/take 10513");
-		self:startGame()
+		-- CommandManager:RunCommand("/take 10513");
+		-- self:startGame()
 	end
 end
 
@@ -172,6 +186,7 @@ function EarthMod:onReceiveMessage(data)
 			echo("NetManager:客户端接收并拷贝服务器的配置数据库ConfigDB")
 			table.remove(SelectLocationTask.menus,3)
 			self:startGame()
+			EarthMod.showWebPage(true)
 		elseif data.key == "all_po" then
 			-- 接收到所有玩家的位置信息
 			SelectLocationTask.allPlayerPo = table.fromJson(data.value)
@@ -198,11 +213,7 @@ end
 
 -- 服务器和客户端启动游戏
 function EarthMod:startGame()
-	self:initMap(function()
-		echo("run start.")
-		SelectLocationTask:toRun()
-		ItemEarth:boundaryCheck()
-	end)
+	self:initMap()
 end
 
 function EarthMod:initMap(func)

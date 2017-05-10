@@ -44,7 +44,6 @@ function NetManager.init(eventFunc,receiveFunc)
 			echo("NetManager client 客户端登入")
 			NetManager.connectState = "client"
 			NetManager.isConnecting = nil
-
 		end
 		if NetManager.gameEventFunc then NetManager.gameEventFunc(NetManager.connectState) end
         return true;
@@ -231,6 +230,7 @@ Examples:
 /donet @default -k del -v block1
 ]],
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
+		if not ComVar.openNetwork then NetManager.showMsg("该版本不支持联网协作(openNetwork=nil)");return end
 		local senderName, key, value, delay
 		senderName, cmd_text = CmdParser.ParseFormated(cmd_text, "@%S+");
 		if (not NetManager.isOnline()) then echo("donet need network");return end
@@ -265,6 +265,7 @@ Examples:
 /net -c 192.168.0.1
 ]],
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
+		if not ComVar.openNetwork then NetManager.showMsg("该版本不支持联网协作(openNetwork=nil)");return end
 		local mode, ip, port
 		mode, cmd_text = CmdParser.ParseOptions(cmd_text);
 		if mode.client or mode.c then

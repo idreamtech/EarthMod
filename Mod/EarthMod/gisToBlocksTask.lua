@@ -288,7 +288,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 
 					if(type == "building" or type == "buildingMore") then
 						--echo(pointA.level);
-						for i = 1, 3 * pointA.level do
+						for i = 1, ComVar.buildLevelHeight * pointA.level do
 							floor(self);
 							--echo(pointA.cz);
 							pointA.cz = pointA.cz + 1;
@@ -345,8 +345,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 			local endPoint   = {cx = point.right, cy = point.top};
 			
 			if(type == "building" or type == "buildingMore") then
-				startPoint.cz    = 5 + point.level * 3;
-				endPoint.cz      = 5 + point.level * 3;
+				startPoint.cz    = 5 + point.level * ComVar.buildLevelHeight;
+				endPoint.cz      = 5 + point.level * ComVar.buildLevelHeight;
 			else
 				startPoint.cz = 6;
 				endPoint.cz   = 6;

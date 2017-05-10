@@ -18,11 +18,12 @@ ComVar = {
 	factor = 1.19; -- 地图缩放比例
 	FloorLevel = 5; -- 绘制地图层层高：草地层
 	buildLevelMax = 30; -- 绘制地图层层高：草地层
+    buildLevelHeight = 4; -- 每层建筑高度
 	-- map
 	fillAirMode = nil; -- 填充所有空气
 	fillAll = nil; -- 填充所有方块
 	-- net
-	openNetwork = true; -- 是否打开网络通讯
+	openNetwork = nil; -- 是否打开网络通讯
     prot = 8099; -- 小地图端口号
 }
 
@@ -78,5 +79,11 @@ function handler(obj, method)
     return function(...)
        return method(obj,...)
     end
+end
+-- 状态栏显示提示
+function TipLog(str,delay,color)
+    delay = delay or 5000
+    color = color or "0 255 0"
+    GameLogic.AddBBS("statusBar", str, delay, color)
 end
 -- 

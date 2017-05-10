@@ -255,12 +255,6 @@ function SelectLocationTask:ShowPage()
 end
 
 function SelectLocationTask:Run()
-	if not ComVar.openNetwork then
-		self:toRun()
-	end
-end
-
-function SelectLocationTask:toRun()
 	if not SelectLocationTask.isRuned then
 		SelectLocationTask.isRuned = true
 		echo("slt run")
@@ -352,7 +346,6 @@ end
 -- 初始化一次
 function SelectLocationTask:onInit()
 	GameLogic.SetStatus(L"小提示:左上角菜单中地理信息按钮可以隐藏信息面板 ^_^");
-	self.OnShowMap()
 end
 -- 显示地图
 function SelectLocationTask.OnShowMap()
@@ -361,9 +354,11 @@ function SelectLocationTask.OnShowMap()
 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
 	if NplCefWindowManager:GetPageCtrl("my_window") then
 		NplCefWindowManager:Destroy("my_window")
+		echo("delete Cef web : my_window")
 	else
 		-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
-		NplCefWindowManager:Open("my_window", "Select Location Window", "http://127.0.0.1:" .. ComVar.prot .. "/earth", "_lt", 5, 70, 400, 400);
+		echo("open Cef web : " .. "http://127.0.0.1:" .. ComVar.prot .. "/earth")
+		NplCefWindowManager:Open("my_window", "Select Location Window", "http://127.0.0.1:" .. ComVar.prot .. "/earth", "_lt", 5, 70, 400, 400);		
 	end
 end
 
