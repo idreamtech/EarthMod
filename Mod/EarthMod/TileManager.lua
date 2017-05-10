@@ -10,13 +10,13 @@ local TileManager 	  = commonlib.gettable("Mod.EarthMod.TileManager");
 ]]
 NPL.load("(gl)Mod/EarthMod/main.lua");
 NPL.load("(gl)Mod/EarthMod/DBStore.lua");
+NPL.load("(gl)Mod/EarthMod/MapGeography.lua");
 local EarthMod = commonlib.gettable("Mod.EarthMod");
 local TileManager = commonlib.inherit(nil,commonlib.gettable("Mod.EarthMod.TileManager"));
+local MapGeography = commonlib.gettable("Mod.EarthMod.MapGeography");
 local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
 local curInstance;
 local TILE_SIZE = 256 -- 默认瓦片大小
-local zoomN = 2 ^ 17 -- OSM级数
-local locDt = {x = 0,z = 0} -- {x = 0.08,z = -0.08} -- OSM与实际显示位置偏移
 TileManager.tileSize = nil -- 瓦片大小
 TileManager.beginPo = nil
 TileManager.endPo = nil
@@ -79,8 +79,8 @@ function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐
 	self.count = self.col * self.row
 	self.firstGPo = para.firstPo -- 传入地理位置信息
 	self.lastGPo = para.lastPo
-	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
-	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
+	self.firstPo = MapGeography.GetInstance():getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
+	self.lastPo = MapGeography.GetInstance():getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
 	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 
 end
@@ -108,8 +108,8 @@ function TileManager:reInit(para)
 	self.firstBlockPo = fbPo
 	-- echo("坐标扩大:")
 	-- echo(self.firstPo);-- echo(self.lastPo)
-	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat)
-	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat)
+	self.firstPo = MapGeography.GetInstance():getParaPo(self.firstGPo.lon,self.firstGPo.lat)
+	self.lastPo = MapGeography.GetInstance():getParaPo(self.lastGPo.lon,self.lastGPo.lat)
 	-- echo(self.firstPo);-- echo(self.lastPo)
 	--
 	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
@@ -176,31 +176,6 @@ end
 -- 获取总需绘制行列数（返回列数，行数）
 function TileManager:getIterSize()
 	return self.col,self.row
-end
-
--- 计算瓦片位置(返回行列号和像素点坐标)
-function TileManager:getTilePo(tx,ty)
-	local Xt,Yt = math.floor(tx), math.floor(ty)
-    local Xp,Yp = math.floor((tx - Xt) * self.tileSize), math.floor((ty - Yt) * self.tileSize)
-    return Xt, Yt, Xp, Yp
-end
-
--- 经纬度转瓦片行列式
-function TileManager:deg2pixel(lon, lat)
-    local lon_deg = tonumber(lon)
-    local lat_rad = math.rad(lat)
-    local xtile = zoomN * ((lon_deg + 180) / 360)
-    local ytile = zoomN * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2
-	-- LOG.std(nil,"RunFunction","瓦片行列号",xtile .. "," .. ytile)
-    return self:getTilePo(xtile, ytile)
-end
-
--- 瓦片行列式转经纬度(参数：瓦片ID，瓦片中所在像素位置，缩放级数)
-function TileManager:pixel2deg(tileX, tileY, pixelX, pixelY)
-	local lon_deg = (tileX + pixelX / self.tileSize) / zoomN * 360.0 - 180.0;
-	local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/self.tileSize) / zoomN)))
-	local lat_deg = lat_rad * 180.0 / math.pi
-	return {lon = lon_deg, lat = lat_deg}
 end
 
 -- 遍历绘制瓦片，函数func参数为瓦片中心点位置和瓦片对象，返回结果成功则表示绘制成功瓦片，如果该瓦片之前被绘制过则不执行func
@@ -367,39 +342,17 @@ function TileManager:pop()
 	return endData
 end
 
--- parancraft坐标系转gps经纬度
-function TileManager:getGPo(x,y,z)
-	if y == nil and z == nil and x and type(x) == "table" then
-		z = x.z;y = x.y; x = x.x
-	end
-	local dx = (x - self.firstBlockPo.x) / self.tileSize + self.beginPo.x
-	local dz = self.beginPo.y - (z - self.firstBlockPo.z) / self.tileSize + 1
-	return self:pixel2deg(self:getTilePo(dx - locDt.x,dz - locDt.z))
-end
-
--- gps经纬度转parancraft坐标系 -32907218 5 15222780
-function TileManager:getParaPo(lon,lat)
-	if (not lat) and (not lon) then return self.cenPo end
-	if lat == nil and lon and type(lon) == "table" then
-		lat = lon.lat;lon = lon.lon
-	end
-	local tileX,tileZ,x,z = self:deg2pixel(lon,lat)
-	local dx = (tileX - self.beginPo.x + locDt.x) * self.tileSize + x + self.firstBlockPo.x
-	local dz = (self.beginPo.y - tileZ - locDt.z + 1) * self.tileSize - z + self.firstBlockPo.z
-	return {x = math.round(dx),y = self.firstBlockPo.y,z = math.round(dz)}
-end
-
 -- 坐标系矫正函数
 function TileManager:correctPositionSystem(x,y,z,lon,lat)
-	local pSys = self:getParaPo(lon,lat) -- 系统中的位置
+	local pSys = MapGeography.GetInstance():getParaPo(lon,lat) -- 系统中的位置
 	local pCur = {x=x,y=self.firstBlockPo.y,z=z} -- 当前实际位置
 	local mov = self:pSub(pCur,pSys)
 	echo("矫正 oraPo:");echo(self.firstBlockPo)
 	self.firstBlockPo = self:pAdd(self.firstBlockPo,mov)
 	self.oPo = self:pAdd(self.oPo,mov)
 	echo("toPo:");echo(self.firstBlockPo)
-	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
-	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
+	self.firstPo = MapGeography.GetInstance():getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
+	self.lastPo = MapGeography.GetInstance():getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
 	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 	self:Save()
 end
@@ -409,8 +362,8 @@ function TileManager:correctPo(poDt)
 	self.firstBlockPo = self:pAdd(self.firstBlockPo,poDt)
 	self.oPo = self:pAdd(self.oPo,poDt)
 	echo("矫正位置 toPo:");echo(self.firstBlockPo)
-	self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
-	self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
+	self.firstPo = MapGeography.GetInstance():getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
+	self.lastPo = MapGeography.GetInstance():getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
 	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 	self:Save()
 end
@@ -484,8 +437,8 @@ function TileManager:Load()
 		self.firstGPo = tileData.firstGPo -- 传入地理位置信息
 		self.lastGPo = tileData.lastGPo
 		self.idHL = tileData.idHL
-		self.firstPo = self:getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
-		self.lastPo = self:getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
+		self.firstPo = MapGeography.GetInstance():getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
+		self.lastPo = MapGeography.GetInstance():getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
 		self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 		self.isLoaded = true
 	end)
