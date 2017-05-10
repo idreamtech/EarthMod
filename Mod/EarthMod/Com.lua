@@ -17,13 +17,13 @@ ComVar = {
 	-- gis
 	factor = 1.19; -- 地图缩放比例
 	FloorLevel = 5; -- 绘制地图层层高：草地层
-	buildLevelMax = 30; -- 绘制地图层层高：草地层
+	buildLevelMax = 60; -- 绘制地图层层高：草地层
     buildLevelHeight = 4; -- 每层建筑高度
 	-- map
 	fillAirMode = nil; -- 填充所有空气
 	fillAll = nil; -- 填充所有方块
 	-- net
-	openNetwork = nil; -- 是否打开网络通讯
+	openNetwork = true; -- 是否打开网络通讯
     prot = 8099; -- 小地图默认端口号
 }
 

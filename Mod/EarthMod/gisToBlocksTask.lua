@@ -1356,4 +1356,7 @@ end
 function gisToBlocks:onMappingEnd()
 	echo("onMappingEnd 绘制结束")
 	GameLogic.AddBBS("statusBar","地图绘制完成。", 5000, "223 81 145")
+	if NetManager.connectState == "server" then
+		NetManager.sendMessage("all","tileNum",TileManager.GetInstance().curTimes,-1)
+	end
 end
