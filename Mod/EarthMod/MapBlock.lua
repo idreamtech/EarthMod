@@ -152,7 +152,7 @@ function MapBlock:addBlock(spx,spy,spz,color,isUpdate,isMaterial)
 			BlockEngine:SetBlock(spx, spy, spz, color)
 		else
 			if curid > MapBlock.ID and curid <= MapBlock.IDM then return true end
-			if ComVar.Draw3DBuilding and color == 3037 then -- 水的颜色
+			if ComVar.Draw3DBuilding and ComVar.usingMap == "OSM" and color == 3037 then -- 水的颜色
 				BlockEngine:SetBlock(spx, spy, spz, 2334)
 				return true
 			end

@@ -76,7 +76,7 @@ function getOsmService:getOsmXMLData(x,y,i,j,dleft,dbottom,dright,dtop,_callback
 	osmXMLUrl = osmXMLUrl:gsub("{right}",dright);
 	osmXMLUrl = osmXMLUrl:gsub("{top}",dtop);
 
-	if ComVar.Draw3DBuilding then
+	if ComVar.Draw3DBuilding and ComVar.usingMap == "OSM" then
 		echo("downloadOSMurl:" .. osmXMLUrl)
 		-- 使用定时器,错开多次请求OSM节点数据的接口调用,避免出现短时间内请求达到100次峰值之后无法获取到OSM节点数据的情况
 		local path = "xml_"..x.."_"..y..".osm"
