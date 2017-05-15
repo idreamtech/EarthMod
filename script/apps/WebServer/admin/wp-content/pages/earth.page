@@ -522,7 +522,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                                     // 将marker添加到地图中
                                     var schoolMarker = new BMap.Marker(new BMap.Point(schoolBounds.getCenter().lng, schoolBounds.getCenter().lat), {icon:blueIcon});
                                     var label = new BMap.Label(schoolName, {offset:new BMap.Size(20, -10)});
-                                    label.setStyle({ maxWidth:"none" });
+                                    label.setStyle({ maxWidth:"none", display:"none" });
                                     map.addOverlay(schoolMarker);
                                     schoolMarker.setLabel(label);
                                     // console.log("push marker " + school.schoolName)
@@ -533,6 +533,13 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                                 markerArray[j].addEventListener('click',function(e){
                                     console.log(e)
                                     getSchoolByName(e.target.getLabel().content);
+                                })
+                                // 添加moouseOver mouserOut事件监听
+                                markerArray[j].addEventListener('mouseover', function(e){
+                                    e.target.getLabel().setStyle({ maxWidth:"none", display:"inline" });
+                                })
+                                markerArray[j].addEventListener('mouseout', function(e){
+                                    e.target.getLabel().setStyle({ maxWidth:"none", display:"none" });
                                 })
                             }
                         }
