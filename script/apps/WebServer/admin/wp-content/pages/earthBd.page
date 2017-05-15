@@ -514,12 +514,12 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
                                     var schoolMarker = L.marker([schoolLat, schoolLng],{icon:currentIcon}).addTo(map).bindTooltip(schoolName);
                                     // console.log("push marker " + school.schoolName)
                                     markerArray.push(schoolMarker);
-									for(var j=0;j<markerArray.length;j++){
-                                        markerArray[j].on('click',function(e){
-                                            getSchoolByName(e.target._tooltip._content);
-                                        })
-                                    }
                                 }
+                            }
+                            for(var j=0;j<markerArray.length;j++){
+                                markerArray[j].on('click',function(e){
+                                    getSchoolByName(e.target._tooltip._content);
+                                })
                             }
                         }
                     }else{

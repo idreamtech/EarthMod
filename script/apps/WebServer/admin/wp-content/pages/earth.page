@@ -396,11 +396,13 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                             if (playerName == selfName) {
                                 var playerMarker = new BMap.Marker(new BMap.Point(postionData.lon, postionData.lat), {icon:redIcon});
                                 var label = new BMap.Label(playerName, {offset:new BMap.Size(20, -10)});
+                                label.setStyle({ maxWidth:"none" });
                                 marker.setLabel(label);
                                 map.addOverlay(playerMarker);
                             }else{
                                 var playerMarker = new BMap.Marker(new BMap.Point(postionData.lon, postionData.lat), {icon:blueIcon});
                                 var label = new BMap.Label(playerName, {offset:new BMap.Size(20, -10)});
+                                label.setStyle({ maxWidth:"none" });
                                 marker.setLabel(label);
                                 map.addOverlay(playerMarker);
                             }
@@ -514,11 +516,13 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                                 var school = res.data[i];
                                 if (school.schoolName && typeof(school.northEastLat) != "undefined" && typeof(school.southWestLat) != "undefined" && typeof(school.southWestLng) != "undefined" && typeof(school.northEastLng) != "undefined") {
                                     var schoolName = school.schoolName;
-                                    var schoolLat = school.southWestLat;
-                                    var schoolLng = school.southWestLng;
+                                    var schoolSW =  new BMap.Point(school.southWestLng, school.southWestLat);
+                                    var schoolNE =  new BMap.Point(school.northEastLng, school.northEastLat);
+                                    var schoolBounds = new BMap.Bounds(schoolSW, schoolNE);
                                     // 将marker添加到地图中
-                                    var schoolMarker = new BMap.Marker(new BMap.Point(schoolLng, schoolLat), {icon:blueIcon});
+                                    var schoolMarker = new BMap.Marker(new BMap.Point(schoolBounds.getCenter().lng, schoolBounds.getCenter().lat), {icon:blueIcon});
                                     var label = new BMap.Label(schoolName, {offset:new BMap.Size(20, -10)});
+                                    label.setStyle({ maxWidth:"none" });
                                     map.addOverlay(schoolMarker);
                                     schoolMarker.setLabel(label);
                                     // console.log("push marker " + school.schoolName)
