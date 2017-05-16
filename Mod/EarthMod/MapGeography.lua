@@ -24,7 +24,6 @@ function MapGeography:ctor(zoom)
   local ZOOM_LV -- OSM级数17 百度为18
   if ComVar.usingMap == "OSM" then ZOOM_LV = 17 elseif ComVar.usingMap == "BAIDU" then
     ZOOM_LV = 18
-    ComVar.factor = 1 -- 百度地图18级已经是1:1比例了
   end
   self.tileSize = math.ceil(TILE_SIZE * ComVar.factor)
 	self.zoomLv = zoom or ZOOM_LV
