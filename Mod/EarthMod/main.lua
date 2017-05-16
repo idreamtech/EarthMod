@@ -84,6 +84,9 @@ function EarthMod:init()
 	if ComVar.openNetwork then
 		NetManager.init(handler(self,self.onGameEvent),handler(self,self.onReceiveMessage))
 	end
+	if ComVar.usingMap == "BAIDU" then
+    	ComVar.factor = 1 -- 百度地图18级已经是1:1比例了
+	end
 	MapBlock:init()
 end
 
