@@ -21,9 +21,12 @@ MapGeography.zoomN = nil
 
 -- 初始化MapGeography，可以传入指定的图片尺寸和缩放比例，否则自动判断
 function MapGeography:ctor(zoom)
-	self.tileSize = math.ceil(TILE_SIZE * ComVar.factor)
-    local ZOOM_LV -- OSM级数17 百度为18
-    if ComVar.usingMap == "OSM" then ZOOM_LV = 17 elseif ComVar.usingMap == "BAIDU" then ZOOM_LV = 18 end
+  local ZOOM_LV -- OSM级数17 百度为18
+  if ComVar.usingMap == "OSM" then ZOOM_LV = 17 elseif ComVar.usingMap == "BAIDU" then
+    ZOOM_LV = 18
+    ComVar.factor = 1 -- 百度地图18级已经是1:1比例了
+  end
+  self.tileSize = math.ceil(TILE_SIZE * ComVar.factor)
 	self.zoomLv = zoom or ZOOM_LV
 	self.zoomN = 2 ^ self.zoomLv
     curInstance = self
@@ -32,7 +35,10 @@ end
 -- 计算瓦片位置(返回行列号和像素点坐标)
 function MapGeography:getTilePo(tx,ty)
     local Xt,Yt = math.floor(tx), math.floor(ty)
-    local Xp,Yp = math.floor((tx - Xt) * self.tileSize), math.floor((ty - Yt) * self.tileSize)
+    local Xp,Yp = nil,nil
+    if ComVar.usingMap == "OSM" then
+      Xp,Yp = math.floor((tx - Xt) * self.tileSize), math.floor((ty - Yt) * self.tileSize)
+    else Xp,Yp = math.floor((tx - Xt) * TILE_SIZE), math.floor((ty - Yt) * TILE_SIZE) end
     return Xt, Yt, Xp, Yp
 end
 
@@ -43,7 +49,7 @@ function MapGeography:deg2pixelOsm(lon, lat, isGis)
     local xtile = self.zoomN * ((lon_deg + 180) / 360)
     local ytile = self.zoomN * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2
     if isGis then
-        return math.floor(xtile * TILE_SIZE % TILE_SIZE + 0.5),math.floor(ytile * TILE_SIZE % TILE_SIZE + 0.5)
+        return math.floor(xtile * self.tileSize % self.tileSize + 0.5),math.floor(ytile * self.tileSize % self.tileSize + 0.5)
     end
     return self:getTilePo(xtile, ytile)
 end
@@ -58,8 +64,8 @@ end
 
 -- 瓦片行列式转经纬度(参数：瓦片ID，瓦片中所在像素位置，缩放级数)
 function MapGeography:pixel2degOsm(tileX, tileY, pixelX, pixelY, isGis)
-    local lon_deg = (tileX + pixelX / TILE_SIZE) / self.zoomN * 360.0 - 180.0;
-    local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/TILE_SIZE) / self.zoomN)))
+    local lon_deg = (tileX + pixelX / self.tileSize) / self.zoomN * 360.0 - 180.0;
+    local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/self.tileSize) / self.zoomN)))
     local lat_deg = lat_rad * 180.0 / math.pi
     if isGis then return tostring(lon_deg), tostring(lat_deg) end
     return {lon = lon_deg, lat = lat_deg}
@@ -154,8 +160,8 @@ function MapGeography:bddeg2tile(lon, lat)
     local x,y=LatLng2Mercator(lon,lat)
     local xtile=math.floor((x*2^(self.zoomLv-18))/TILE_SIZE)
     local ytile=math.floor((y*2^(self.zoomLv-18))/TILE_SIZE)
-    echo("convert:");echo({x, y, lon, lat, xtile, ytile})
-    echo({self.zoomLv,TILE_SIZE})
+    -- echo("convert:");echo({x, y, lon, lat, xtile, ytile})
+    -- echo({self.zoomLv,TILE_SIZE})
     return xtile,ytile
 end
 
@@ -179,7 +185,7 @@ end
 function MapGeography:bdtilepiexl2coord(tile_x, tile_y, piexl_x, piexl_y, isGis)
     local x=(tile_x*TILE_SIZE+piexl_x)/(2^(self.zoomLv-18))
     local y=(tile_y*TILE_SIZE+piexl_y)/(2^(self.zoomLv-18))
-    local lat_deg,lon_deg = Mercator2LatLng(x,y)
+    local lon_deg,lat_deg = Mercator2LatLng(x,y)
     if isGis then return tostring(lon_deg), tostring(lat_deg) end
     return {lon = lon_deg, lat = lat_deg}
 end
@@ -317,10 +323,15 @@ function MapGeography:getGPo(x,y,z)
     end
     local tpack = TileManager.GetInstance()
     local dx = (x - tpack.firstBlockPo.x) / self.tileSize + tpack.beginPo.x
-    local dz = tpack.beginPo.y - (z - tpack.firstBlockPo.z) / self.tileSize + 1
+    local dz = nil
+    if ComVar.usingMap == "BAIDU" then dz = (z - tpack.firstBlockPo.z) / self.tileSize + tpack.beginPo.y
+    else dz = tpack.beginPo.y - (z - tpack.firstBlockPo.z) / self.tileSize + 1 end
     local a,b,c,d = self:getTilePo(dx,dz)
+    -- echo("getGPo:");echo({self:pixel2deg(a,b,c,d,true)})
+    echo({x=x,y=y,z=z})
     return self:pixel2deg(a,b,c,d,true)
 end
+
 
 -- gps经纬度转parancraft坐标系 -32907218 5 15222780
 function MapGeography:getParaPo(lon,lat)
@@ -330,16 +341,21 @@ function MapGeography:getParaPo(lon,lat)
         lat = lon.lat;lon = lon.lon
     end
     local tileX,tileZ,x,z = self:deg2pixel(lon,lat,true)
-    -- echo(lon);echo(lat);echo("transPara:");echo(tileX);echo(tileZ);echo(x);echo(z)
     local dx = (tileX - tpack.beginPo.x) * self.tileSize + x + tpack.firstBlockPo.x
-    local dz = (tpack.beginPo.y - tileZ + 1) * self.tileSize - z + tpack.firstBlockPo.z
+    local dz = nil
+    if ComVar.usingMap == "BAIDU" then dz = (tileZ - tpack.beginPo.y) * self.tileSize + z + tpack.firstBlockPo.z
+    else dz = (tpack.beginPo.y - tileZ + 1) * self.tileSize - z + tpack.firstBlockPo.z end
+    -- echo("getParaPo:");echo({lon,lat,tileX,tileZ,x,z})
+    echo({x = math.round(dx),y = tpack.firstBlockPo.y,z = math.round(dz)})
     return {x = math.round(dx),y = tpack.firstBlockPo.y,z = math.round(dz)}
 end
+
 -- GPS偏移纠正到百度
 function MapGeography:gpsToBaidu(gps_lon,gps_lat)
     local lon,lat = MapGeography.gcj02tobd09(MapGeography.wgs84togcj02(gps_lon,gps_lat))
     return lon,lat
 end
+
 -- 百度经纬度转GPS经纬度（一般用不上）
 function MapGeography:baiduToGps(gps_lon,gps_lat)
     local lon,lat = MapGeography.gcj02towgs84(MapGeography.bd09togcj02(gps_lon,gps_lat))

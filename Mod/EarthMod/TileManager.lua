@@ -69,7 +69,8 @@ end
 function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐标（左下点），瓦片大小
 	self.tileSize = para.tileSize or TILE_SIZE
 	self.col = para.rid - para.lid + 1
-	self.row = para.bid - para.tid + 1
+	if ComVar.usingMap == "BAIDU" then self.row = para.tid - para.bid + 1
+	else self.row = para.bid - para.tid + 1 end
 	self.oPo = {x = para.bx - (self.col - 1) * self.tileSize * 0.5,y = para.by,z = para.bz - (self.row - 1) * self.tileSize * 0.5}
 	self.idHL = {col=para.lid,row=para.bid} -- 记录左下角行列式
 	self.beginPo = {x = para.lid, y = para.bid}
@@ -88,7 +89,9 @@ end
 -- 扩充校园；传入新的 firstPo,lastPo,lid,bid,rid,tid 调整瓦片数据
 function TileManager:reInit(para)
 	self.col = para.rid - para.lid + 1
-	self.row = para.bid - para.tid + 1
+	-- self.row = para.bid - para.tid + 1
+	if ComVar.usingMap == "BAIDU" then self.row = para.tid - para.bid + 1
+	else self.row = para.bid - para.tid + 1 end
 	self.count = self.col * self.row
 	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
 	self.firstGPo = para.firstPo -- 传入地理位置信息
@@ -98,7 +101,8 @@ function TileManager:reInit(para)
 	-- echo("reInit:convert")
 	-- echo(para)
 	-- echo(self.idHL)
-	self.deltaHL = {col=para.lid - self.idHL.col,row=self.idHL.row - para.bid} -- 行列差 col:x row:y
+	if ComVar.usingMap == "BAIDU" then self.deltaHL = {col=para.lid - self.idHL.col,row=para.bid - self.idHL.row}
+	else self.deltaHL = {col=para.lid - self.idHL.col,row=self.idHL.row - para.bid} end
 	-- echo(self.deltaHL)
 	self.idHL = {col=para.lid,row=para.bid}
 	local fbPo = {x = self.firstBlockPo.x + self.deltaHL.col * self.tileSize,y = self.firstBlockPo.y,z = self.firstBlockPo.z + self.deltaHL.row * self.tileSize}
@@ -195,7 +199,9 @@ function TileManager:getDrawPosition(idx,idy)
 	if idx < 1 or idx > self.col or idy < 1 or idy > self.row then return nil end
 	local po = {x = self.oPo.x + (idx - 1) * self.tileSize,y = self.oPo.y,z = self.oPo.z + (idy - 1) * self.tileSize}
 	local curID = idx + (idy - 1) * self.col
-	local ranksID = {x = self.beginPo.x + idx - 1,y = self.beginPo.y - idy + 1} -- 行列号
+	local ranksID = nil -- 行列号
+	if ComVar.usingMap == "BAIDU" then ranksID = {x = self.beginPo.x + idx - 1,y = self.beginPo.y + idy - 1}
+	else ranksID = {x = self.beginPo.x + idx - 1,y = self.beginPo.y - idy + 1} end
 	if self.tiles[curID] then
 		return self.tiles[curID].po,self.tiles[curID]
 	else
