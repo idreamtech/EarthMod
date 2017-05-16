@@ -1202,6 +1202,7 @@ function gisToBlocks:initWorld()
 		getOsmService.dbottom = gisToBlocks.dbottom;
 		getOsmService.zoom = self.zoom;
 		-- 根据minlat和minlon计算出左下角的瓦片行列号坐标
+		echo("initWorld: ")
 		gisToBlocks.tile_MIN_X , gisToBlocks.tile_MIN_Y   = MapGeography.GetInstance():deg2tile(self.minlon,self.minlat);
 		-- 根据maxlat和maxlon计算出右上角的瓦片行列号坐标
 		gisToBlocks.tile_MAX_X , gisToBlocks.tile_MAX_Y   = MapGeography.GetInstance():deg2tile(self.maxlon,self.maxlat);
