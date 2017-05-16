@@ -43,7 +43,7 @@ function MapGeography:deg2pixelOsm(lon, lat, isGis)
     local xtile = self.zoomN * ((lon_deg + 180) / 360)
     local ytile = self.zoomN * (1 - (math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi)) / 2
     if isGis then
-        return math.floor(xtile * self.tileSize % self.tileSize + 0.5),math.floor(ytile * self.tileSize % self.tileSize + 0.5)
+        return math.floor(xtile * TILE_SIZE % TILE_SIZE + 0.5),math.floor(ytile * TILE_SIZE % TILE_SIZE + 0.5)
     end
     return self:getTilePo(xtile, ytile)
 end
@@ -58,8 +58,8 @@ end
 
 -- 瓦片行列式转经纬度(参数：瓦片ID，瓦片中所在像素位置，缩放级数)
 function MapGeography:pixel2degOsm(tileX, tileY, pixelX, pixelY, isGis)
-    local lon_deg = (tileX + pixelX / self.tileSize) / self.zoomN * 360.0 - 180.0;
-    local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/self.tileSize) / self.zoomN)))
+    local lon_deg = (tileX + pixelX / TILE_SIZE) / self.zoomN * 360.0 - 180.0;
+    local lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (tileY + pixelY/TILE_SIZE) / self.zoomN)))
     local lat_deg = lat_rad * 180.0 / math.pi
     if isGis then return tostring(lon_deg), tostring(lat_deg) end
     return {lon = lon_deg, lat = lat_deg}
@@ -68,13 +68,16 @@ end
 -- baidu
  --百度坐标参数
 local array1 ={ 75, 60, 45, 30, 15, 0 };
+
 local array3 ={ 12890594.86, 8362377.87, 5591021, 3481989.83, 1678043.12, 0 };
+
 local array2= {{-0.0015702102444, 111320.7020616939, 1704480524535203, -10338987376042340, 26112667856603880, -35149669176653700, 26595700718403920, -10725012454188240, 1800819912950474, 82.5}
                 ,{0.0008277824516172526, 111320.7020463578, 647795574.6671607, -4082003173.641316, 10774905663.51142, -15171875531.51559, 12053065338.62167, -5124939663.577472, 913311935.9512032, 67.5}
                 ,{0.00337398766765, 111320.7020202162, 4481351.045890365, -23393751.19931662, 79682215.47186455, -115964993.2797253, 97236711.15602145, -43661946.33752821, 8477230.501135234, 52.5}
                 ,{0.00220636496208, 111320.7020209128, 51751.86112841131, 3796837.749470245, 992013.7397791013, -1221952.21711287, 1340652.697009075, -620943.6990984312, 144416.9293806241, 37.5}
                 ,{-0.0003441963504368392, 111320.7020576856, 278.2353980772752, 2485758.690035394, 6070.750963243378, 54821.18345352118, 9540.606633304236, -2710.55326746645, 1405.483844121726, 22.5}
                 ,{-0.0003218135878613132, 111320.7020701615, 0.00369383431289, 823725.6402795718, 0.46104986909093, 2351.343141331292, 1.58060784298199, 8.77738589078284, 0.37238884252424, 7.45}};
+
 local array4 ={{1.410526172116255e-8, 0.00000898305509648872, -1.9939833816331, 200.9824383106796, -187.2403703815547, 91.6087516669843, -23.38765649603339, 2.57121317296198, -0.03801003308653, 17337981.2}
                 ,{-7.435856389565537e-9, 0.000008983055097726239, -0.78625201886289, 96.32687599759846, -1.85204757529826, -59.36935905485877, 47.40033549296737, -16.50741931063887, 2.28786674699375, 10260144.86}
                 ,{-3.030883460898826e-8, 0.00000898305509983578, 0.30071316287616, 59.74293618442277, 7.357984074871, -25.38371002664745, 13.45380521110908, -3.29883767235584, 0.32710905363475, 6856817.37}
@@ -82,11 +85,11 @@ local array4 ={{1.410526172116255e-8, 0.00000898305509648872, -1.9939833816331, 
                 ,{3.09191371068437e-9, 0.000008983055096812155, 0.00006995724062, 23.10934304144901, -0.00023663490511, -0.6321817810242, -0.00663494467273, 0.03430082397953, -0.00466043876332, 2555164.4}
                 ,{2.890871144776878e-9, 0.000008983055095805407, -3.068298e-8, 7.47137025468032, -0.00000353937994, -0.02145144861037, -0.00001234426596, 0.00010322952773, -0.00000323890364, 826088.5}};
 
---百度坐标转换
-function MapGeography:Convertor(lng,lat,param)
-    local T = param[1] + param[2] * math.abs(lng);
-    local cC =math.abs(lat) / param[10];
-    local cF = param[3] + param[4] * cC + param[5] * cC * cC + param[6] * cC * cC * cC + param[7] * cC * cC * cC * cC + param[8] * cC * cC * cC * cC * cC + param[9] * cC * cC * cC * cC * cC * cC;
+--坐标转换
+function Convertor(lng,lat,param)
+      local T = param[1] + param[2] * math.abs(lng);
+      local cC =math.abs(lat) / param[10];
+      local cF = param[3] + param[4] * cC + param[5] * cC * cC + param[6] * cC * cC * cC + param[7] * cC * cC * cC * cC + param[8] * cC * cC * cC * cC * cC + param[9] * cC * cC * cC * cC * cC * cC;
     if(lng<0) then
     T=T*-1
     else
@@ -102,8 +105,9 @@ end
 
 --百度坐标转墨卡托
 --即经纬度转直角坐标
-function MapGeography:LatLng2Mercator(lon,lat)
-  local n_lat=lat
+function LatLng2Mercator(lon,lat)
+   --if((lon or lon==0  or lon>180 or lon<-180) and ( lat or lat ==0 or lat>90 or lat<-90 )) then return 0,0 end
+    local n_lat=lat
   local arr
   if(lat>74) then n_lat=74 end
   if(lat<-74) then n_lat=-74 end
@@ -115,35 +119,43 @@ function MapGeography:LatLng2Mercator(lon,lat)
     end
   if(not arr) then
      for i = table.getn(array1) - 1, 1, -1 do
-        if (n_lat <= -array1[i]) then
-            arr = array2[i];
-            break;
-        end
+
+            if (n_lat <= -array1[i]) then
+
+                arr = array2[i];
+                break;
+            end
+
     end
+
   end
-  return self:Convertor(lon, n_lat, arr)
+
+   return Convertor(lon, n_lat, arr)
 end
 
 --墨卡托坐标转百度经纬度坐标
 --即平面坐标转经纬度坐标
-function MapGeography:Mercator2LatLng(x,y)
+function Mercator2LatLng(x,y)
   local arr
   local t_x,t_y=math.abs(x),math.abs(y)
   for  i = 1, table.getn(array3) do
+
         if (t_y >= array3[i]) then
             arr = array4[i];
             break;
         end
    end
-   return self:Convertor(t_x,t_y,arr)
+   return Convertor(t_x,t_y,arr)
 end
 
 --百度经纬度转瓦片行列号
 --lon:经度,lat:纬度，zoom:缩放级别
 function MapGeography:bddeg2tile(lon, lat)
-    local x,y=self:LatLng2Mercator(lon,lat)
-    local xtile=math.floor((x*2^(self.zoomLv-18))/self.tileSize)
-    local ytile=math.floor((y*2^(self.zoomLv-18))/self.tileSize)
+    local x,y=LatLng2Mercator(lon,lat)
+    local xtile=math.floor((x*2^(self.zoomLv-18))/TILE_SIZE)
+    local ytile=math.floor((y*2^(self.zoomLv-18))/TILE_SIZE)
+    echo("convert:");echo({x, y, lon, lat, xtile, ytile})
+    echo({self.zoomLv,TILE_SIZE})
     return xtile,ytile
 end
 
@@ -152,11 +164,11 @@ end
 function MapGeography:bdcoord2piexl(lon, lat, isGis)
     lon = tonumber(lon)
     lat = tonumber(lat)
-    local x,y =self:LatLng2Mercator(lon,lat)
+    local x,y =LatLng2Mercator(lon,lat)
     local tile_X,tile_y=self:bddeg2tile(lon,lat)
     local piexl_x,piexl_y=0,0
-    piexl_x=math.floor(x*2^(self.zoomLv-18)-tile_X*self.tileSize+0.5)
-    piexl_y=math.floor(y*2^(self.zoomLv-18)-tile_y*self.tileSize+0.5)
+    piexl_x=math.floor(x*2^(self.zoomLv-18)-tile_X*TILE_SIZE+0.5)
+    piexl_y=math.floor(y*2^(self.zoomLv-18)-tile_y*TILE_SIZE+0.5)
     if isGis then return piexl_x,piexl_y end
     return tile_X, tile_y, piexl_x, piexl_y
 end
@@ -165,9 +177,9 @@ end
 --tile_x:瓦片X，tile_y:瓦片Y，piexl_x:像素X，piexl_y:像素Y，self.zoomLv: 缩放级别
 --百度地图中，像素坐标（pixelX, pixelY）的起点为左下角
 function MapGeography:bdtilepiexl2coord(tile_x, tile_y, piexl_x, piexl_y, isGis)
-    local x=(tile_x*self.tileSize+piexl_x)/(2^(self.zoomLv-18))
-    local y=(tile_y*self.tileSize+piexl_y)/(2^(self.zoomLv-18))
-    local lat_deg,lon_deg = self:Mercator2LatLng(x,y)
+    local x=(tile_x*TILE_SIZE+piexl_x)/(2^(self.zoomLv-18))
+    local y=(tile_y*TILE_SIZE+piexl_y)/(2^(self.zoomLv-18))
+    local lat_deg,lon_deg = Mercator2LatLng(x,y)
     if isGis then return tostring(lon_deg), tostring(lat_deg) end
     return {lon = lon_deg, lat = lat_deg}
 end

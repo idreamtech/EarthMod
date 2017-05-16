@@ -67,7 +67,8 @@ Commands["gis"] = {
 				cache = 'false';
 			end
 
-			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon,cache=cache});
+			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,minlat=maxlat,minlon=minlon,maxlat=minlat,maxlon=maxlon,cache=cache});
+			-- echo("got cordi:");echo({minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon})
 			gisCommand.gis:Run();
 			return;
 		end

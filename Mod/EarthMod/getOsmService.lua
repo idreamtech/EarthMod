@@ -34,7 +34,12 @@ function getOsmService.osmXMLUrl()
 end
 
 function getOsmService.osmPNGUrl()
-	return "http://tile." .. getOsmService.osmHost .. "/" .. getOsmService.zoom .. "/{x}/{y}.png";
+	if ComVar.usingMap == "BAIDU" then
+		-- return "http://online2.map.bdimg.com/onlinelabel/?qt=tile&x={x}&y={y}&z={18}&styles=pl&scaler=1&p=0";
+		return "http://online2.map.bdimg.com/tile/?qt=tile&x={x}&y={y}&z=18&styles=pl&scaler=1";
+	elseif ComVar.usingMap == "OSM" then
+		return "http://tile." .. getOsmService.osmHost .. "/" .. getOsmService.zoom .. "/{x}/{y}.png";
+	end
 end
 
 function getOsmService:GetUrl(_params,_callback)
@@ -69,6 +74,10 @@ function getOsmService:retry(_err, _msg, _data, _params, _callback)
 end
 
 function getOsmService:getOsmXMLData(x,y,i,j,dleft,dbottom,dright,dtop,_callback)
+	if ComVar.usingMap == "BAIDU" then
+		_callback();
+		return;
+	end
 	local osmXMLUrl = getOsmService.osmXMLUrl();
 
 	osmXMLUrl = osmXMLUrl:gsub("{left}",dleft);
@@ -76,7 +85,7 @@ function getOsmService:getOsmXMLData(x,y,i,j,dleft,dbottom,dright,dtop,_callback
 	osmXMLUrl = osmXMLUrl:gsub("{right}",dright);
 	osmXMLUrl = osmXMLUrl:gsub("{top}",dtop);
 
-	if ComVar.Draw3DBuilding then
+	if ComVar.Draw3DBuilding and ComVar.usingMap == "OSM" then
 		echo("downloadOSMurl:" .. osmXMLUrl)
 		-- 使用定时器,错开多次请求OSM节点数据的接口调用,避免出现短时间内请求达到100次峰值之后无法获取到OSM节点数据的情况
 		local path = "xml_"..x.."_"..y..".osm"
@@ -128,6 +137,7 @@ function getOsmService:getOsmPNGData(x,y,i,j,_callback)
 			return
 		end
 	end
+	echo("download url: " .. osmPNGUrl)
 	-- 使用定时器,错开多次请求PNG图片的接口调用,避免出现短时间内请求达到100次峰值之后无法获取到PNG图片的情况
 	-- local downLoadPngTimer = commonlib.Timer:new({callbackFunc = function(downLoadPngTimer)
 	self:GetUrl(osmPNGUrl,function(data,err)
