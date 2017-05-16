@@ -102,8 +102,8 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
     }
     .imgCls{
         cursor: pointer;
-        height: 20px;
-        width: 20px;
+        height: 19px;
+        width: 19px;
         box-shadow: 1px 1px 2px #888888;
     }
     .earth-main .spot-light {
@@ -267,7 +267,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
       // 创建一个DOM元素
       var img = document.createElement("img");
       img.setAttribute("class","imgCls");
-      img.src = '/wp-content/pages/earth/assets/css/images/location3.png';
+      img.src = '/wp-content/pages/earth/assets/css/images/return.svg';
       img.onclick = this._onclick;
       // 按钮绑定点击事件
       img.onclick = function(e){
@@ -417,14 +417,15 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                             allPlayerMarkers.push(playerMarker)
                         }else{
                             // console.log("modify player postion " + index)
-                            allPlayerMarkers[index].setLatLng([postionData.lat, postionData.lon]);
-                            // 如果玩家位置改变，默认让玩家显示位置在地图中心
-                            if (player_lat != lat || player_lng != lon) {
-                                map.centerAndZoom(new BMap.Point(postionData.lon, postionData.lat), map.getZoom());
-                            }
+                            allPlayerMarkers[index].setPosition(new BMap.Point(postionData.lon, postionData.lat));
+                            
                         }
-                        player_lat = lat;
-                        player_lng = lon;
+                        // 如果玩家位置改变，默认让玩家显示位置在地图中心
+                        if (player_lat != lat || player_lng != lon) {
+                            map.centerAndZoom(new BMap.Point(postionData.lon, postionData.lat), map.getZoom());
+                        }
+                        player_lat = postionData.lat;
+                        player_lng = postionData.lon;
                     });
 
                     allPlayerMarkers.forEach(function (item, index, array) {
