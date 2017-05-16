@@ -346,6 +346,21 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
     var searchInpState = true;
     // 所有玩家的marker集合
     var allPlayerMarkers = new Array();
+
+    function getMapLabel() {
+        var reLable = null;
+        var allOverlay = map.getOverlays();
+        for (var i = 0; i < allOverlay.length - 1; i++) {
+            if (allOverlay[i].toString() == "[object Marker]") {
+                if (allOverlay[i].getTitle() == "admin") {
+                    reLable = allOverlay[i].getLabel();
+                    break;
+                }
+            }
+        }
+        return reLable;
+    }
+
     // 获取当前玩家在paracraft中的位置及是否已经进行了贴图操作,如果已经贴图,则禁用搜索框
     function getCurrentPostionInParacraft(){
         $.ajax({
@@ -389,13 +404,15 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                         // falg为true时候add,反之则更新marker位置
                         var index = null;
                         for (var i = 0; i < allPlayerMarkers.length; i++) {
-                            var _playerName = allPlayerMarkers[i].getLabel().content;
-                            // console.log("each playerName is :" + playerName)
-                            // console.log("playerName is :" + _playerName)
-                            if (playerName == _playerName) {
-                                // console.log("will modify " + playerName + " || " + i)
-                                index = i;
-                                break;
+                            if (allPlayerMarkers[i].getLabel() != null) {
+                                var _playerName = allPlayerMarkers[i].getLabel().content;
+                                // console.log("each playerName is :" + playerName)
+                                // console.log("playerName is :" + _playerName)
+                                if (playerName == _playerName) {
+                                    // console.log("will modify " + playerName + " || " + i)
+                                    index = i;
+                                    break;
+                                }
                             }
                         }
                         if (index == null) {
@@ -420,26 +437,29 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                             allPlayerMarkers[index].setPosition(new BMap.Point(postionData.lon, postionData.lat));
                             
                         }
-                        // 如果玩家位置改变，默认让玩家显示位置在地图中心
-                        if (player_lat != postionData.lat || player_lng != postionData.lon) {
-                            map.centerAndZoom(new BMap.Point(postionData.lon, postionData.lat), map.getZoom());
-                        }
-                        player_lat = postionData.lat;
-                        player_lng = postionData.lon;
                     });
 
+                    // 如果玩家位置改变，默认让玩家显示位置在地图中心
+                    if (player_lat != lat || player_lng != lon) {
+                        map.centerAndZoom(new BMap.Point(lon, lat), map.getZoom());
+                    }
+                    player_lat = lat;
+                    player_lng = lon;
+
                     allPlayerMarkers.forEach(function (item, index, array) {
-                        var markerContent = item.getLabel().content;
-                        // 默认不存在
-                        var flag = false;
-                        $.each(allPlayerPo, function(playerName, postionData){
-                            // 如果姓名与content的值相等,则视为玩家仍然保持连接,反之删除玩家marker标记
-                            if (playerName == markerContent) {
-                                flag = true;
+                        if (item.getLabel() != null) {
+                            var markerContent = item.getLabel().content;
+                            // 默认不存在
+                            var flag = false;
+                            $.each(allPlayerPo, function(playerName, postionData){
+                                // 如果姓名与content的值相等,则视为玩家仍然保持连接,反之删除玩家marker标记
+                                if (playerName == markerContent) {
+                                    flag = true;
+                                }
+                            });
+                            if (flag == false) {
+                                map.removeOverlay(item);
                             }
-                        });
-                        if (flag == false) {
-                            map.removeOverlay(item);
                         }
                     });
                 }
