@@ -421,7 +421,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                             
                         }
                         // 如果玩家位置改变，默认让玩家显示位置在地图中心
-                        if (player_lat != lat || player_lng != lon) {
+                        if (player_lat != postionData.lat || player_lng != postionData.lon) {
                             map.centerAndZoom(new BMap.Point(postionData.lon, postionData.lat), map.getZoom());
                         }
                         player_lat = postionData.lat;
