@@ -397,13 +397,13 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                                 var playerMarker = new BMap.Marker(new BMap.Point(postionData.lon, postionData.lat), {icon:redIcon});
                                 var label = new BMap.Label(playerName, {offset:new BMap.Size(20, -10)});
                                 label.setStyle({ maxWidth:"none" });
-                                marker.setLabel(label);
+                                playerMarker.setLabel(label);
                                 map.addOverlay(playerMarker);
                             }else{
                                 var playerMarker = new BMap.Marker(new BMap.Point(postionData.lon, postionData.lat), {icon:blueIcon});
                                 var label = new BMap.Label(playerName, {offset:new BMap.Size(20, -10)});
                                 label.setStyle({ maxWidth:"none" });
-                                marker.setLabel(label);
+                                playerMarker.setLabel(label);
                                 map.addOverlay(playerMarker);
                             }
                             allPlayerMarkers.push(playerMarker)
