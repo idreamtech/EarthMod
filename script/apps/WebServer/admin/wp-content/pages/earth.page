@@ -101,8 +101,10 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
         border-radius: 5px;
     }
     .imgCls{
-        height: 30px;
-        width: 30px;
+        cursor: pointer;
+        height: 20px;
+        width: 20px;
+        box-shadow: 1px 1px 2px #888888;
     }
     .earth-main .spot-light {
         text-align:center;
@@ -156,6 +158,9 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
         overflow:hidden;/* 内容超出宽度时隐藏超出部分的内容 */
         text-overflow:ellipsis;/* 当对象内文本溢出时显示省略标记(...) ；需与overflow:hidden;一起使用。*/
     }
+    .anchorBL{  
+       display:none;  
+    } 
 </style>
 
 <div class="earth-main">
@@ -194,7 +199,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
     var chinaLng = 102.83203125;
     var map = new BMap.Map("map");  // 创建地图实例  
     var point = new BMap.Point(chinaLng, chinaLat); // 创建点坐标  
-    map.centerAndZoom(point, 5);   // 初始化地图，设置中心点坐标和地图级别
+    map.centerAndZoom(point, 4);   // 初始化地图，设置中心点坐标和地图级别
     map.enableScrollWheelZoom(true);    //开启鼠标滚轮缩放
     var bottom_right_navigation = new BMap.NavigationControl({anchor: BMAP_ANCHOR_BOTTOM_RIGHT, type: BMAP_NAVIGATION_CONTROL_ZOOM});   //右下角，仅包含缩放按钮
     // 添加缩放按钮控件
@@ -249,8 +254,8 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
     // 定义一个搜索控件类,即function
     function ReturnControl(){
         // 默认停靠位置和偏移量
-        this.defaultAnchor = BMAP_ANCHOR_BOTTOM_LEFT;
-        this.defaultOffset = new BMap.Size(10, 30);
+        this.defaultAnchor = BMAP_ANCHOR_BOTTOM_RIGHT;
+        this.defaultOffset = new BMap.Size(12, 55);
     }
 
     // 通过JavaScript的prototype属性继承于BMap.Control
@@ -262,13 +267,13 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
       // 创建一个DOM元素
       var img = document.createElement("img");
       img.setAttribute("class","imgCls");
-      img.src = '/wp-content/pages/earth/assets/css/images/location2.png';
+      img.src = '/wp-content/pages/earth/assets/css/images/location3.png';
       img.onclick = this._onclick;
       // 按钮绑定点击事件
       img.onclick = function(e){
         if (typeof(player_lat) != "undefined" && typeof(player_lng) != "undefined") {
             var player_point = new BMap.Point(player_lng, player_lat); // 创建点坐标  
-            map.centerAndZoom(player_point, 15);   // 初始化地图，设置中心点坐标和地图级别
+            map.centerAndZoom(player_point, 18);   // 初始化地图，设置中心点坐标和地图级别
         }
       }
       // 添加DOM元素到地图中
@@ -290,7 +295,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                 new BMap.Point(uni.northEastLng, uni.northEastLat),
                 new BMap.Point(uni.northEastLng, uni.southWestLat),
                 new BMap.Point(uni.southWestLng, uni.southWestLat)
-            ], {strokeColor:"black", fillColor:"orange", strokeWeight:3, strokeOpacity:0.8, fillOpacity:0.6, strokeStyle:"solid"});
+            ], {strokeColor:"black", fillColor:"orange", strokeWeight:1, strokeOpacity:0.5, fillOpacity:0.3, strokeStyle:"solid"});
             map.addOverlay(rec);
 
             map.centerAndZoom(rec.getBounds().getCenter(), 15);
@@ -306,6 +311,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
             "maxlon": d.getNorthEast().lng,
             "schoolName": schoolName
         };
+        console.log(data)
         $.ajax({
             url:"/ajax/earth?action=send_coordinate",
             type:"post",
@@ -355,8 +361,6 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                 // 如果allPlayerPo为空,则为脱机模式
                 if (allPlayerPo == null || typeof(allPlayerPo) == "undefined") {
                     if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
-                        player_lat = lat;
-                        player_lng = lon;
                         // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
                         if (marker == null) {
                             marker = new BMap.Marker(new BMap.Point(lon, lat));
@@ -368,14 +372,18 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                             searchInpState = false;
                             document.getElementsByClassName('search-inp')[0].disabled = true;
                         }
+                        // 如果玩家位置改变，默认让玩家显示位置在地图中心
+                        if (player_lat != lat || player_lng != lon) {
+                            map.centerAndZoom(new BMap.Point(lon, lat), map.getZoom());
+                        }
+                        player_lat = lat;
+                        player_lng = lon;
                     }
                     // map.setView(marker._latlng);
                 }else if (allPlayerPo != null && typeof(allPlayerPo) != "undefined") {
                     if (marker != null) {
                         map.removeOverlay(marker);
                     }
-                    player_lat = lat;
-                    player_lng = lon;
                     // console.log(allPlayerPo)
                     $.each(allPlayerPo, function(playerName, postionData){
                         // falg为true时候add,反之则更新marker位置
@@ -385,7 +393,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                             // console.log("each playerName is :" + playerName)
                             // console.log("playerName is :" + _playerName)
                             if (playerName == _playerName) {
-                                console.log("will modify " + playerName + " || " + i)
+                                // console.log("will modify " + playerName + " || " + i)
                                 index = i;
                                 break;
                             }
@@ -408,9 +416,15 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                             }
                             allPlayerMarkers.push(playerMarker)
                         }else{
-                            console.log("modify player postion " + index)
+                            // console.log("modify player postion " + index)
                             allPlayerMarkers[index].setLatLng([postionData.lat, postionData.lon]);
+                            // 如果玩家位置改变，默认让玩家显示位置在地图中心
+                            if (player_lat != lat || player_lng != lon) {
+                                map.centerAndZoom(new BMap.Point(postionData.lon, postionData.lat), map.getZoom());
+                            }
                         }
+                        player_lat = lat;
+                        player_lng = lon;
                     });
 
                     allPlayerMarkers.forEach(function (item, index, array) {
@@ -466,8 +480,12 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
             })
         }
     }
+    // 添加拖拽开始事件监听，避免拖拽时候触发click事件导致人物跳转
+    function onMapClick2(e) {
+    }
 
     map.addEventListener("click", onMapClick);
+    map.addEventListener("dragstart", onMapClick2);
 
     $(function(){
         // $('.navbar').remove();
@@ -604,7 +622,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                         new BMap.Point(res.data.maxlon, res.data.maxlat),
                         new BMap.Point(res.data.maxlon, res.data.minlat),
                         new BMap.Point(res.data.minlon, res.data.minlat)
-                    ], {strokeColor:"black", fillColor:"orange", strokeWeight:3, strokeOpacity:0.8, fillOpacity:0.6, strokeStyle:"solid"});
+                    ], {strokeColor:"black", fillColor:"orange", strokeWeight:1, strokeOpacity:0.5, fillOpacity:0.3, strokeStyle:"solid"});
                     map.addOverlay(rec);
                     map.centerAndZoom(rec.getBounds().getCenter(), 15);
 
@@ -618,6 +636,8 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                     searchInpState = false;
                     // var number = map.getZoom()
                     // map.scrollWheelZoom.disable();
+
+                    map.setZoom(18);
                     
                 }else if(res != null && typeof(res) != "undefined" && res.status == 400){
                     // 400情况下,继续请求
