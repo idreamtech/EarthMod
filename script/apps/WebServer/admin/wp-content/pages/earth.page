@@ -267,7 +267,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
       // 创建一个DOM元素
       var img = document.createElement("img");
       img.setAttribute("class","imgCls");
-      img.src = '/wp-content/pages/earth/assets/css/images/return.svg';
+      img.src = '/wp-content/pages/earth/assets/css/images/location3.png';
       img.onclick = this._onclick;
       // 按钮绑定点击事件
       img.onclick = function(e){
