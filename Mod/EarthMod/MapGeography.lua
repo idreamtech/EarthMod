@@ -154,8 +154,8 @@ function MapGeography:bddeg2tile(lon, lat)
     local x,y=LatLng2Mercator(lon,lat)
     local xtile=math.floor((x*2^(self.zoomLv-18))/TILE_SIZE)
     local ytile=math.floor((y*2^(self.zoomLv-18))/TILE_SIZE)
-    echo("convert:");echo({x, y, lon, lat, xtile, ytile})
-    echo({self.zoomLv,TILE_SIZE})
+    -- echo("convert:");echo({x, y, lon, lat, xtile, ytile})
+    -- echo({self.zoomLv,TILE_SIZE})
     return xtile,ytile
 end
 
@@ -179,7 +179,7 @@ end
 function MapGeography:bdtilepiexl2coord(tile_x, tile_y, piexl_x, piexl_y, isGis)
     local x=(tile_x*TILE_SIZE+piexl_x)/(2^(self.zoomLv-18))
     local y=(tile_y*TILE_SIZE+piexl_y)/(2^(self.zoomLv-18))
-    local lat_deg,lon_deg = Mercator2LatLng(x,y)
+    local lon_deg,lat_deg = Mercator2LatLng(x,y)
     if isGis then return tostring(lon_deg), tostring(lat_deg) end
     return {lon = lon_deg, lat = lat_deg}
 end
@@ -319,6 +319,7 @@ function MapGeography:getGPo(x,y,z)
     local dx = (x - tpack.firstBlockPo.x) / self.tileSize + tpack.beginPo.x
     local dz = tpack.beginPo.y - (z - tpack.firstBlockPo.z) / self.tileSize + 1
     local a,b,c,d = self:getTilePo(dx,dz)
+    echo("getGPo:");echo({self:pixel2deg(a,b,c,d,true)})
     return self:pixel2deg(a,b,c,d,true)
 end
 
@@ -330,9 +331,9 @@ function MapGeography:getParaPo(lon,lat)
         lat = lon.lat;lon = lon.lon
     end
     local tileX,tileZ,x,z = self:deg2pixel(lon,lat,true)
-    -- echo(lon);echo(lat);echo("transPara:");echo(tileX);echo(tileZ);echo(x);echo(z)
     local dx = (tileX - tpack.beginPo.x) * self.tileSize + x + tpack.firstBlockPo.x
     local dz = (tpack.beginPo.y - tileZ + 1) * self.tileSize - z + tpack.firstBlockPo.z
+    echo("getParaPo:");echo({lon,lat,tileX,tileZ,x,z,dx,dz})
     return {x = math.round(dx),y = tpack.firstBlockPo.y,z = math.round(dz)}
 end
 -- GPS偏移纠正到百度

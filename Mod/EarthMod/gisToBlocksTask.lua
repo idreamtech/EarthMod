@@ -1260,6 +1260,7 @@ function gisToBlocks:refreshPlayerInfo()
 			local player_latLon = MapGeography.GetInstance():getGPo(x, y, z);
 			local ro,str = TileManager.GetInstance():getForward(true)
 			local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
+			-- echo("set map loc: ");echo(player_latLon)
 			SelectLocationTask.setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
 			if NetManager.connectState == "client" then 
 				-- 如果当前运行的是客户端,则将人物位置信息发送给服务器
