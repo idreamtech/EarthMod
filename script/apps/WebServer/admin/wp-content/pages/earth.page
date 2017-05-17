@@ -197,7 +197,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
 
     var chinaLat = 37.899050079360935;
     var chinaLng = 102.83203125;
-    var map = new BMap.Map("map");  // 创建地图实例  
+    var map = new BMap.Map("map",{mapType:BMAP_NORMAL_MAP});  // 创建地图实例  
     var point = new BMap.Point(chinaLng, chinaLat); // 创建点坐标  
     map.centerAndZoom(point, 4);   // 初始化地图，设置中心点坐标和地图级别
     map.enableScrollWheelZoom(true);    //开启鼠标滚轮缩放
@@ -525,7 +525,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
     // 获取所有学校
     function getAllSchool(){
         var urlStr = "http://119.23.36.48:8098/api/wiki/models/school/getAllSchool";
-        //var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getAllSchool";
+        // var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getAllSchool";
         var arr = [];
             $.ajax({
                 url:urlStr,
@@ -595,7 +595,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
     // 请求学校经纬度信息
     function getSchoolByName(schoolName){
         var urlStr = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName";
-        //var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName";
+        // var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName";
         if (schoolName != null && typeof(schoolName) != "undefined" && $.trim(schoolName) != "") {
             urlStr = urlStr + "?name=" + $.trim(schoolName);
             $.ajax({

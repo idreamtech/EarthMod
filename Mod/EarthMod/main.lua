@@ -86,6 +86,7 @@ function EarthMod:init()
 	end
 	if ComVar.usingMap == "BAIDU" then
     	ComVar.factor = 1 -- 百度地图18级已经是1:1比例了
+    	ComVar.tileFormat = ".jpg"
 	end
 	MapBlock:init()
 end
@@ -215,7 +216,7 @@ function EarthMod:initMap(func)
 				schoolName = string.gsub(schoolName, "\"", "");
 				-- 根据学校名称调用getSchoolByName接口,请求最新的经纬度范围信息,如果信息不一致,则更新文件中已有数据
 				System.os.GetUrl({url = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
-				--System.os.GetUrl({url = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
+				-- System.os.GetUrl({url = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
 					if(res and res.error and res.data and res.data ~= {} and res.error.id == 0) then
 		                -- 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
 		                -- echo("getSchoolByName by name : ")
