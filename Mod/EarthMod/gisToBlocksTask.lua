@@ -968,7 +968,7 @@ function gisToBlocks:GetData(x,y,i,j,_callback)
 	GameLogic.AddBBS("statusBar","下载数据中", 2000, "0 0 0")
 	getOsmService:getOsmPNGData(x,y,i,j,function(raster)
 		getOsmService:getOsmXMLData(x,y,i,j,dleft,dbottom,dright,dtop,function(vector)
-			raster = ParaIO.open("tile_"..x.."_"..y..".png", "image");
+			raster = ParaIO.open("tile_"..x.."_"..y..ComVar.tileFormat, "image");
 			LOG.std(nil,"debug","gisToBlocks","下载成功");
 			GameLogic.AddBBS("statusBar","下载成功", 3000, "0 0 0")
 			_callback(raster,vector);

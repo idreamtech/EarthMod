@@ -36,7 +36,8 @@ end
 function getOsmService.osmPNGUrl()
 	if ComVar.usingMap == "BAIDU" then
 		-- return "http://online2.map.bdimg.com/onlinelabel/?qt=tile&x={x}&y={y}&z={18}&styles=pl&scaler=1&p=0";
-		return "http://online2.map.bdimg.com/tile/?qt=tile&x={x}&y={y}&z=18&styles=pl&scaler=1";
+		-- return "http://online2.map.bdimg.com/tile/?qt=tile&x={x}&y={y}&z=18&styles=pl&scaler=1";
+		return "http://api2.map.bdimg.com/customimage/tile?&x={x}&y={y}&z=18";
 	elseif ComVar.usingMap == "OSM" then
 		return "http://tile." .. getOsmService.osmHost .. "/" .. getOsmService.zoom .. "/{x}/{y}.png";
 	end
@@ -127,7 +128,7 @@ function getOsmService:getOsmPNGData(x,y,i,j,_callback)
 	local osmPNGUrl = getOsmService.osmPNGUrl();
 	osmPNGUrl = osmPNGUrl:gsub("{x}",tostring(x)); -- + 1 测试更新
 	osmPNGUrl = osmPNGUrl:gsub("{y}",tostring(y));
-	local path = "tile_"..x.."_"..y..".png"
+	local path = "tile_"..x.."_"..y..ComVar.tileFormat
 	if getOsmService.isUpdateMode then
 		getOsmService.isUpdateMode = nil
 	else
