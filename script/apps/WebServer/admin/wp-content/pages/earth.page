@@ -184,21 +184,26 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
     var player_lat,palyer_lng;
 
     var blueIcon = new BMap.Symbol(BMap_Symbol_SHAPE_POINT, {
-        scale: 1,//图标缩放大小
-        fillColor: "blue",//填充颜色
-        fillOpacity: 0.8//填充透明度
+        scale: 1, //图标缩放大小
+        fillColor: "#327ef8", //填充颜色
+        fillOpacity: 0.8, //填充透明度
+        strokeColor: "#327ef8", //描边颜色
+        strokeOpacity: 0 //描边颜色
     });
 
     var redIcon = new BMap.Symbol(BMap_Symbol_SHAPE_POINT, {
-        scale: 1,//图标缩放大小
-        fillColor: "red",//填充颜色
-        fillOpacity: 0.8//填充透明度
+        scale: 1, //图标缩放大小
+        fillColor: "#f04227", //填充颜色
+        fillOpacity: 0.8, //填充透明度
+        strokeColor: "#f04227", //填充透明度
+        strokeOpacity: 0 //描边颜色
     });
 
     var chinaLat = 37.899050079360935;
     var chinaLng = 102.83203125;
-    var map = new BMap.Map("map",{mapType:BMAP_NORMAL_MAP});  // 创建地图实例  
-    var point = new BMap.Point(chinaLng, chinaLat); // 创建点坐标  
+    var map = new BMap.Map("map");  // 创建地图实例
+    var point = new BMap.Point(chinaLng, chinaLat); // 创建点坐标
+    map.setMapStyle({style:'normal'});
     map.centerAndZoom(point, 4);   // 初始化地图，设置中心点坐标和地图级别
     map.enableScrollWheelZoom(true);    //开启鼠标滚轮缩放
     var bottom_right_navigation = new BMap.NavigationControl({anchor: BMAP_ANCHOR_BOTTOM_RIGHT, type: BMAP_NAVIGATION_CONTROL_ZOOM});   //右下角，仅包含缩放按钮
@@ -378,7 +383,7 @@ wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManag
                     if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
                         // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
                         if (marker == null) {
-                            marker = new BMap.Marker(new BMap.Point(lon, lat));
+                            marker = new BMap.Marker(new BMap.Point(lon, lat), {icon:redIcon});
                             map.addOverlay(marker);
                         } else {
                             marker.setPosition(new BMap.Point(lon, lat));
