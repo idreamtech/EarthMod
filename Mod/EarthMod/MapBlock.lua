@@ -152,9 +152,13 @@ function MapBlock:addBlock(spx,spy,spz,color,isUpdate,isMaterial)
 			BlockEngine:SetBlock(spx, spy, spz, color)
 		else
 			if curid > MapBlock.ID and curid <= MapBlock.IDM then return true end
-			if ComVar.Draw3DBuilding and ComVar.usingMap == "OSM" and color == 3037 then -- 水的颜色
-				BlockEngine:SetBlock(spx, spy, spz, 2334)
-				return true
+			-- baidu color:167,192,223 [2749/2750/2765/2766] ctrl + T 取方块位置并到剪贴板
+			if ComVar.drawWater then
+				if (ComVar.usingMap == "BAIDU" and (color == 2749 or color == 2750 or color == 2765 or color == 2766 or color == 2494 or color == 2510 color == 2509))
+				or (ComVar.usingMap == "OSM" and color == 3037) then -- 水的颜色
+					BlockEngine:SetBlock(spx, spy, spz, 2334)
+					return true
+				end
 			end
 			BlockEngine:SetBlock(spx,spy,spz, MapBlock.ID, color) -- , nil, data
 		end
