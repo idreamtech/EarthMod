@@ -15,7 +15,7 @@ ComVar = {
 	DrawAllMap = nil; -- 开启全部自动绘制
 	Draw3DBuilding = nil; -- 是否绘制地上建筑
 	-- gis
-	factor = 1.19; -- 地图缩放比例（百度地图自动设置为1）
+	factor = 1; -- 地图缩放比例（百度地图自动设置为1）
 	FloorLevel = 5; -- 绘制地图层层高：草地层
 	buildLevelMax = 60; -- 绘制地图层层高：草地层
     buildLevelHeight = 4; -- 每层建筑高度
