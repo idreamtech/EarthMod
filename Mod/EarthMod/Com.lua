@@ -24,6 +24,7 @@ ComVar = {
 	fillAll = nil; -- 填充所有方块
     usingMap = "BAIDU"; -- 使用的地图类型 OSM/BAIDU
     tileFormat = ".png";
+    drawWater = true; -- 将地图上水的颜色替换为液体水
 	-- net
 	openNetwork = true; -- 是否打开网络通讯
     prot = 8099; -- 小地图默认端口号
