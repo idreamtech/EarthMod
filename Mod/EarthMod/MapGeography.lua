@@ -159,8 +159,6 @@ function MapGeography:bddeg2tile(lon, lat)
     local x,y=LatLng2Mercator(lon,lat)
     local xtile=math.floor((x*2^(self.zoomLv-18))/TILE_SIZE)
     local ytile=math.floor((y*2^(self.zoomLv-18))/TILE_SIZE)
-    -- echo("convert:");echo({x, y, lon, lat, xtile, ytile})
-    -- echo({self.zoomLv,TILE_SIZE})
     return xtile,ytile
 end
 
@@ -326,7 +324,6 @@ function MapGeography:getGPo(x,y,z)
     if ComVar.usingMap == "BAIDU" then dz = (z - tpack.firstBlockPo.z) / self.tileSize + tpack.beginPo.y
     else dz = tpack.beginPo.y - (z - tpack.firstBlockPo.z) / self.tileSize + 1 end
     local a,b,c,d = self:getTilePo(dx,dz)
-    -- echo("getGPo:");echo({self:pixel2deg(a,b,c,d,true)})
     echo({x=x,y=y,z=z})
     return self:pixel2deg(a,b,c,d,true)
 end
@@ -344,7 +341,6 @@ function MapGeography:getParaPo(lon,lat)
     local dz = nil
     if ComVar.usingMap == "BAIDU" then dz = (tileZ - tpack.beginPo.y) * self.tileSize + z + tpack.firstBlockPo.z
     else dz = (tpack.beginPo.y - tileZ + 1) * self.tileSize - z + tpack.firstBlockPo.z end
-    -- echo("getParaPo:");echo({lon,lat,tileX,tileZ,x,z})
     echo({x = math.round(dx),y = tpack.firstBlockPo.y,z = math.round(dz)})
     return {x = math.round(dx),y = tpack.firstBlockPo.y,z = math.round(dz)}
 end

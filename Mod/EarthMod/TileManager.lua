@@ -98,28 +98,18 @@ function TileManager:reInit(para)
 	self.lastGPo = para.lastPo
 	self.beginPo,self.endPo = {x = para.lid, y = para.bid},{x = para.rid,y = para.tid}
 	-- 计算偏移
-	-- echo("reInit:convert")
-	-- echo(para)
-	-- echo(self.idHL)
 	if ComVar.usingMap == "BAIDU" then self.deltaHL = {col=para.lid - self.idHL.col,row=para.bid - self.idHL.row}
 	else self.deltaHL = {col=para.lid - self.idHL.col,row=self.idHL.row - para.bid} end
-	-- echo(self.deltaHL)
 	self.idHL = {col=para.lid,row=para.bid}
 	local fbPo = {x = self.firstBlockPo.x + self.deltaHL.col * self.tileSize,y = self.firstBlockPo.y,z = self.firstBlockPo.z + self.deltaHL.row * self.tileSize}
 	self.deltaPo = self:pSub(fbPo,self.firstBlockPo) -- 点差
-	-- echo("点差deltaPo:")
-	-- echo(self.deltaPo)
 	self.firstBlockPo = fbPo
-	-- echo("坐标扩大:")
-	-- echo(self.firstPo);-- echo(self.lastPo)
 	self.firstPo = MapGeography.GetInstance():getParaPo(self.firstGPo.lon,self.firstGPo.lat)
 	self.lastPo = MapGeography.GetInstance():getParaPo(self.lastGPo.lon,self.lastGPo.lat)
-	-- echo(self.firstPo);-- echo(self.lastPo)
 	--
 	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
 	self.oPo = self:pAdd(self.oPo,self.deltaPo)
 	-- TileManager.tiles = {} -- 瓦片合集 以1,1为起点的瓦片合集
-	-- echo("__________ora____________");-- echo(self.tiles)
 	if self.tiles and self.tiles ~= {} then
 		local tileNew = {}
 		for id,tile in pairs(self.tiles) do
@@ -137,13 +127,8 @@ function TileManager:reInit(para)
 		end
 		self.tiles = tileNew
 	end
-	-- echo(self.tiles)
-	-- echo("__________ora____________");-- echo(self.blocks)
 	self.blocks = self:tMov(self.blocks,-self.deltaPo.z,-self.deltaPo.x)
-	-- echo(self.blocks)
-	-- echo("__________ora____________");-- echo(self.pushMapFlag)
 	self.pushMapFlag = self:tMov(self.pushMapFlag,-self.deltaHL.col,-self.deltaHL.row,1)
-	-- echo(self.pushMapFlag)
 	self.curTimes = 0
 end
 
@@ -232,12 +217,12 @@ function TileManager:pushBlocksData(tile,data)
 end
 
 -- 检查未绘制的方块并绘制
-function TileManager:fillNullBlock(func)
-	if not self.blocks then return end
-	for y=1,self.size.height do
-		for x=1,self.size.width do
+function TileManager:fillNullBlock(tile,func)
+	if not self.blocks or not tile then return end
+	for y=1,self.tileSize do
+		for x=1,self.tileSize do
 			if self.blocks[y] and self.blocks[y][x] then
-				local px,py,pz = x + self.firstBlockPo.x,self.firstBlockPo.y,y + self.firstBlockPo.z
+				local px,py,pz = x + tile.rect.l,self.firstBlockPo.y,y + tile.rect.b
 				func(self.blocks[y][x],x,y,px,py,pz)
 			end
 		end
@@ -252,7 +237,6 @@ function TileManager:getInTile(x,y,z)
 	for i,one in pairs(self.tiles) do
 		if one and type(one) == "table" then
 			if (not one.rect) then
-				-- echo(one)
 				assert(1)
 			end
 			if x >= one.rect.l and x <= one.rect.r and z <= one.rect.t and z >= one.rect.b then

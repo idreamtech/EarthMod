@@ -254,10 +254,8 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 					end
 
 					if(type == "building" or type == "buildingMore") then
-						--echo(pointA.level);
 						for i = 1, ComVar.buildLevelHeight * pointA.level do
 							floor(self);
-							--echo(pointA.cz);
 							pointA.cz = pointA.cz + 1;
 							pointB.cz = pointB.cz + 1;
 						end
@@ -303,8 +301,6 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 					if(currentPoint.cy < point.bottom) then
 						point.bottom = currentPoint.cy;
 					end
-
-					--echo({k,v});
 				end
 			end
 
@@ -511,8 +507,6 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 						osmBuilding = {id = waynode.attr.id, points = buildingPointList};
 						osmBuildingCount = osmBuildingCount + 1;
 						osmBuildingList[osmBuildingCount] = osmBuilding;
-
-						--echo(osmBuildingList);
 					else
 						for key,point in pairs(curNd) do
 							if(point.x) then
@@ -804,15 +798,13 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 		local width         = raster:ReadInt();
 		local height        = raster:ReadInt();
 		local bytesPerPixel = raster:ReadInt();-- how many bytes per pixel, usually 1, 3 or 4
-		LOG.std(nil, "info", "PNGToBlockScale", {ver, width, height, bytesPerPixel});
+		LOG.std(nil, "info", "PNGToBlockScale draw:", {ver, width, height, bytesPerPixel, px, py, pz});
 		local block_world = GameLogic.GetBlockWorld();
 		local function CreateBlock_(ix, iy, block_id, block_data)
 			local spx, spy, spz = px+ix-(PngWidth/2 * ComVar.factor), py, pz+iy-(PngWidth/2 * ComVar.factor);
 			if TileManager.GetInstance():checkMarkArea(spx,spy,spz) then
 				ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
 				self:AddBlock(spx, spy, spz, block_id, block_data, tile);
-			-- else
-			-- 	echo("跳过绘制 " .. spx .. "," .. spz)
 			end
 		end
 
@@ -859,7 +851,6 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 						if blocksHistory[y][x] then
 							local block_id, block_data = GetBlockIdFromPixel(blocksHistory[y][x], colors);
 							if(block_id) then
-								-- if x == 1 and y == 1 then LOG.std(nil,"info","draw",x .. "," .. y);echo(block_data) end
 								CreateBlock_(x, y, block_id, block_data);
 								count = count + 1;
 								if((count%block_per_tick) == 0) then
@@ -880,7 +871,7 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 					raster:close();
 					if not tile.isUpdated then
 						tile.isUpdated = true
-						self:fillingGap()
+						self:fillingGap(tile)
 					end
 					TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes + 1
 					-- if TileManager.GetInstance().curTimes > TileManager.GetInstance().count then TileManager.GetInstance().curTimes = TileManager.GetInstance().count end
@@ -902,9 +893,9 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 end
 
 -- 填充所有块
-function gisToBlocks:fillingGap()
+function gisToBlocks:fillingGap(tile)
 	local ct = 0
-	TileManager.GetInstance():fillNullBlock(function(block,x,y,px,py,pz)
+	TileManager.GetInstance():fillNullBlock(tile,function(block,x,y,px,py,pz)
 		local data = BlockEngine:GetBlockData(px,py,pz)
 		if data == 0 and TileManager.GetInstance():checkMarkArea(px, py, pz) then
 			-- LOG.std(nil, "info", "PNGToBlockScale", "filling gap %d,%d .. (%d,%d,%d)",x,y,px,py,pz);
@@ -1033,7 +1024,6 @@ end
 -- 绘制玩家周围一圈地图
 function gisToBlocks:BoundaryCheck(px, py, pz)
 	if NetManager.connectState == "client" then return end
-	-- if self.isDrawing then return false end
 	if ComVar.DrawAllMap and (not self.isDrawedAllMap) then -- 自动全部绘制
 		self.isDrawedAllMap = true
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
@@ -1051,7 +1041,7 @@ function gisToBlocks:BoundaryCheck(px, py, pz)
 	if type(cx) == "table" then cy = cx.y;cx = cx.x end
 	local function checkAddMap(x,y)
 		local tile = TileManager.GetInstance():getTile(x,y)
-		if (not tile) or (not tile.isDrawed) then
+		if not tile then
 			self:downloadMap(x,y)
 		end
 	end
@@ -1261,7 +1251,6 @@ function gisToBlocks:refreshPlayerInfo()
 			local player_latLon = MapGeography.GetInstance():getGPo(x, y, z);
 			local ro,str = TileManager.GetInstance():getForward(true)
 			local lon,lat,ron = math.floor(player_latLon.lon * 10000) / 10000,math.floor(player_latLon.lat * 10000) / 10000,math.floor(ro * 100) / 100
-			-- echo("set map loc: ");echo(player_latLon)
 			SelectLocationTask.setPlayerCoordinate(player_latLon.lon, player_latLon.lat);
 			if NetManager.connectState == "client" then 
 				-- 如果当前运行的是客户端,则将人物位置信息发送给服务器

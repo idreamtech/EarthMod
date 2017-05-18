@@ -36,8 +36,11 @@ end
 function getOsmService.osmPNGUrl()
 	if ComVar.usingMap == "BAIDU" then
 		-- return "http://online2.map.bdimg.com/onlinelabel/?qt=tile&x={x}&y={y}&z={18}&styles=pl&scaler=1&p=0";
-		-- return "http://online2.map.bdimg.com/tile/?qt=tile&x={x}&y={y}&z=18&styles=pl&scaler=1";
-		return "http://api2.map.bdimg.com/customimage/tile?&x={x}&y={y}&z=18";
+		if ComVar.tileFormat == ".png" then
+			return "http://online2.map.bdimg.com/tile/?qt=tile&x={x}&y={y}&z=18&styles=pl&scaler=1";
+		elseif ComVar.tileFormat == ".jpg" then
+			return "http://api2.map.bdimg.com/customimage/tile?&x={x}&y={y}&z=18";
+		end
 	elseif ComVar.usingMap == "OSM" then
 		return "http://tile." .. getOsmService.osmHost .. "/" .. getOsmService.zoom .. "/{x}/{y}.png";
 	end
@@ -133,7 +136,7 @@ function getOsmService:getOsmPNGData(x,y,i,j,_callback)
 		getOsmService.isUpdateMode = nil
 	else
 		if ParaIO.DoesFileExist(path) then
-			echo("getOsmPNGData: load local data")
+			echo("getOsmPNGData: load local data: " .. path)
 			_callback();
 			return
 		end
