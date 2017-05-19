@@ -17,26 +17,20 @@ local BlockEngine = commonlib.gettable("MyCompany.Aries.Game.BlockEngine");
 local CommandManager  = commonlib.gettable("MyCompany.Aries.Game.CommandManager");
 -- NPL.load("(gl)Mod/EarthMod/DBStore.lua");
 -- local DBStore = commonlib.gettable("Mod.EarthMod.DBStore");
-
 MapBlock.ID = 2333 -- 彩色地图方块
-MapBlock.IDM = 2337 -- id上限
+MapBlock.IDM = 2339 -- id上限
 local Materials =
-{{  id = 2334; -- 水(76)
-	mc_id = "8";
-	name = "m_water";
-	class = "BlockLiquidFlow";
-	text = "虚拟校园方块-水";
-	texture = "Texture/blocks/water/water_fps10_a009.png";
-	speedReduction = "0.4";
-	mapcolor = "#ddeaf0";
-	associated_blockid = "76";
-	material = "water";
-	normalMap = "Texture/ripple/WaterBumpMap.dds";
-	disable_gen_icon = "true";
-	categoryID = "8";
-	liquid="true";
-	blendedTexture="true";
-	transparent="true"};
+{{  id = 2334; -- 预留地图方块(51)
+	mc_id = "10";
+	name = "m_magma";
+	text = "虚拟校园方块-预留";
+	mapcolor = "#f88633";
+	obstruction = "true";
+	solid = "true";
+	icon = "Texture/blocks/items/lava_flow.png";
+	light="true";
+	categoryID="5";
+	texture = "Texture/blocks/lava/lava_fps10_a010.png"};
 {  	id = 2335; -- 砖头(51)
 	mc_id = "12";
 	name = "m_brick";
@@ -75,7 +69,40 @@ local Materials =
 	template="DataOnlyTwo";
 	icon = "Texture/blocks/items/slab_jungle.png";
 	texture = "Texture/blocks/planks_jungle.png"};
+{  id = 2338; -- 动态水(75)
+	mc_id = "8";
+	name = "m_water";
+	class = "BlockLiquidFlow";
+	text = "虚拟校园方块-水";
+	texture = "Texture/blocks/water/water_fps10_a009.png";
+	speedReduction = "0.4";
+	mapcolor = "#ddeaf0";
+	associated_blockid = "76";
+	material = "water";
+	normalMap = "Texture/ripple/WaterBumpMap.dds";
+	disable_gen_icon = "true";
+	categoryID = "8";
+	liquid="true";
+	blendedTexture="true";
+	transparent="true"};
+{  id = 2339; -- 水(76)
+	mc_id = "9";
+	name = "m_waterStill";
+	class = "BlockLiquidStill";
+	text = "虚拟校园方块-静态水";
+	texture = "Texture/blocks/water/water_fps10_a009.png";
+	speedReduction = "0.4";
+	mapcolor = "#ddeaf0";
+	associated_blockid = "75";
+	material = "water";
+	normalMap = "Texture/ripple/WaterBumpMap.dds";
+	disable_gen_icon = "true";
+	categoryID = "8";
+	liquid="true";
+	blendedTexture="true";
+	transparent="true"};
 }
+
 -- 百度地图水的像素颜色
 local BaiduWater = {2749,2750,2765,2766,2494,2495,2509,2510,3054,3055,3038,3039}
 
@@ -164,7 +191,7 @@ function MapBlock:addBlock(spx,spy,spz,color,isUpdate,isMaterial)
 					end
 				end
 				if setWater then -- 水的颜色
-					BlockEngine:SetBlock(spx, spy, spz, 2334)
+					BlockEngine:SetBlock(spx, spy, spz, 2339)
 					return true
 				end
 			end
@@ -239,7 +266,6 @@ function MapBlock:deleteArea(po1,po2,blockID)
 	end
 end
 
--- MapBlock.MID = {2334, 2335, 2336, 2337} -- 泥巴，砂石，水，街道
 function MapBlock:initMaterial()
 	for k,Mat in ipairs(Materials) do
 		GameLogic.GetFilters():add_filter("block_types", function(xmlRoot) 

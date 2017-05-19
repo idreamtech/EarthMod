@@ -597,7 +597,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 
 							if(isDraw) then
 								draw2Point(self,crossWaterList.points,2337,"waterMore");
-								draw2area(self,crossWaterList.points,2334,"waterMore");
+								draw2area(self,crossWaterList.points,2339,"waterMore");
 								crossWaterList = false;
 							end
 						end
@@ -680,7 +680,7 @@ function gisToBlocks:OSMToBlock(vector, px, py, pz, tile)
 			waterPointList = v.points;
 		
 			draw2Point(self,waterPointList,2337,"water");
-			draw2area(self,waterPointList,2334,"waterMore");
+			draw2area(self,waterPointList,2339,"waterMore");
 		end
 	end
 
