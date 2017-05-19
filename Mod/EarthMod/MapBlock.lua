@@ -76,6 +76,8 @@ local Materials =
 	icon = "Texture/blocks/items/slab_jungle.png";
 	texture = "Texture/blocks/planks_jungle.png"};
 }
+-- 百度地图水的像素颜色
+local BaiduWater = {2749,2750,2765,2766,2494,2495,2509,2510,3054,3055,3038,3039}
 
 function MapBlock:ctor()
 end
@@ -154,8 +156,14 @@ function MapBlock:addBlock(spx,spy,spz,color,isUpdate,isMaterial)
 			if curid > MapBlock.ID and curid <= MapBlock.IDM then return true end
 			-- baidu color:167,192,223 [2749/2750/2765/2766] ctrl + T 取方块位置并到剪贴板
 			if ComVar.drawWater then
-				if (ComVar.usingMap == "BAIDU" and (color == 2749 or color == 2750 or color == 2765 or color == 2766 or color == 2494 or color == 2510 or color == 2509))
-				or (ComVar.usingMap == "OSM" and color == 3037) then -- 水的颜色
+				local setWater = nil
+				if ComVar.usingMap == "OSM" and color == 3037 then setWater = true end
+				if ComVar.usingMap == "BAIDU" then
+					for k,c in pairs(BaiduWater) do
+						if c == color then setWater = true; break; end
+					end
+				end
+				if setWater then -- 水的颜色
 					BlockEngine:SetBlock(spx, spy, spz, 2334)
 					return true
 				end
