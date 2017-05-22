@@ -46,8 +46,6 @@ ComVar = {
 
 
 
-
-
 --------------
 -- common function
 -- 克隆
@@ -90,3 +88,18 @@ function TipLog(str,delay,color)
     GameLogic.AddBBS("statusBar", str, delay, color)
 end
 -- 
+-- local Commands = commonlib.gettable("MyCompany.Aries.Game.Commands");
+-- local CmdParser = commonlib.gettable("MyCompany.Aries.Game.CmdParser");
+-- Commands["ComSet"] = {
+--     name="ComSet", 
+--     quick_ref="/ComSet [key] [value]",
+--     desc=[[warning! you should be used it with caution.]],
+--     handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
+--         key, cmd_text = CmdParser.ParseString(cmd_text);
+--         value, cmd_text = CmdParser.ParseString(cmd_text);
+--         if key and key ~= nil then
+--             _G["ComVar"][key] = value;
+--             TipLog("ComVar." .. key .. " = " .. tostring(value));
+--         end
+--     end,
+-- };

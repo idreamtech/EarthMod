@@ -1027,6 +1027,11 @@ function gisToBlocks:BoundaryCheck(px, py, pz)
 	if ComVar.DrawAllMap and (not self.isDrawedAllMap) then -- 自动全部绘制
 		self.isDrawedAllMap = true
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
+		TileManager.GetInstance().count = self.cols * self.rows
+		TileManager.GetInstance().curTimes = 0
+		echo("starting draw:");echo({self.cols, self.rows, TileManager.GetInstance().count,TileManager.GetInstance().curTimes})
+		TileManager.GetInstance().tiles = {}
+		TileManager.GetInstance().pushMapFlag = {}
 		for x = 1,self.cols do
 			for y=1,self.rows do
 				self:downloadMap(x,y)
