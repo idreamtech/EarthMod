@@ -253,7 +253,6 @@ function SelectLocationTask:ShowPage()
 			height = 32,
 		cancelShowAnimation = true,
 	});
-
 end
 
 function SelectLocationTask:Run()
@@ -350,9 +349,9 @@ end
 
 -- 显示地图
 function SelectLocationTask.OnShowMap()
-	-- 切换地图显示
 	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
+	-- 切换地图显示
 	if NplCefWindowManager:GetPageCtrl("my_window") then
 		NplCefWindowManager:Destroy("my_window")
 		echo("delete Cef web : my_window")
