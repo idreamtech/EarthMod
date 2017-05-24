@@ -871,8 +871,8 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 					raster:close();
 					if not tile.isUpdated then
 						tile.isUpdated = true
-						self:fillingGap(tile)
 					end
+					self:fillingGap()
 					TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes + 1
 					-- if TileManager.GetInstance().curTimes > TileManager.GetInstance().count then TileManager.GetInstance().curTimes = TileManager.GetInstance().count end
 					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
@@ -893,12 +893,12 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 end
 
 -- 填充所有块
-function gisToBlocks:fillingGap(tile)
+function gisToBlocks:fillingGap()
 	local ct = 0
-	TileManager.GetInstance():fillNullBlock(tile,function(block,x,y,px,py,pz)
+	TileManager.GetInstance():fillNullBlock(function(block,x,y,px,py,pz)
 		local data = BlockEngine:GetBlockData(px,py,pz)
 		if data == 0 and TileManager.GetInstance():checkMarkArea(px, py, pz) then
-			-- LOG.std(nil, "info", "PNGToBlockScale", "filling gap %d,%d .. (%d,%d,%d)",x,y,px,py,pz);
+			LOG.std(nil, "info", "PNGToBlockScale", "filling gap %d,%d .. (%d,%d,%d)",x,y,px,py,pz);
 			ct = ct + 1
 			local block_id, block_data = GetBlockIdFromPixel(block, self.colors);
 			self:AddBlock(px, py, pz, block_id, block_data);
@@ -1325,4 +1325,5 @@ function gisToBlocks:onMappingEnd()
 	if NetManager.connectState == "server" then
 		NetManager.sendMessage("all","tileNum",TileManager.GetInstance().curTimes,-1)
 	end
+	TileManager.GetInstance():clearFill()
 end
