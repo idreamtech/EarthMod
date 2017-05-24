@@ -872,7 +872,6 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 					if not tile.isUpdated then
 						tile.isUpdated = true
 					end
-					self:fillingGap()
 					TileManager.GetInstance().curTimes = TileManager.GetInstance().curTimes + 1
 					-- if TileManager.GetInstance().curTimes > TileManager.GetInstance().count then TileManager.GetInstance().curTimes = TileManager.GetInstance().count end
 					LOG.std(nil, "info", "PNGToBlockScale", "finished with %d process: %d / %d ", count, TileManager.GetInstance().curTimes + TileManager.GetInstance().passTimes, TileManager.GetInstance().count);
@@ -898,7 +897,7 @@ function gisToBlocks:fillingGap()
 	TileManager.GetInstance():fillNullBlock(function(block,x,y,px,py,pz)
 		local data = BlockEngine:GetBlockData(px,py,pz)
 		if data == 0 and TileManager.GetInstance():checkMarkArea(px, py, pz) then
-			LOG.std(nil, "info", "PNGToBlockScale", "filling gap %d,%d .. (%d,%d,%d)",x,y,px,py,pz);
+			-- LOG.std(nil, "info", "PNGToBlockScale", "filling gap %d,%d .. (%d,%d,%d)",x,y,px,py,pz);
 			ct = ct + 1
 			local block_id, block_data = GetBlockIdFromPixel(block, self.colors);
 			self:AddBlock(px, py, pz, block_id, block_data);
@@ -1059,7 +1058,7 @@ function gisToBlocks:BoundaryCheck(px, py, pz)
 end
 
 -- 申请下载地图
-function gisToBlocks:downloadMap(i,j)
+function gisToBlocks:downloadMap(i,j,isDirect)
 	if NetManager.connectState == "client" then return end
 	if ComVar.CorrectMode then return end
 	local po,tile,isUpdate = nil,nil,nil
@@ -1075,6 +1074,8 @@ function gisToBlocks:downloadMap(i,j)
 			TileManager.GetInstance().pushMapFlag[i][j] = nil
 			getOsmService.isUpdateMode = true
 			getOsmService.isUpdateModeOSM = true
+			gisToBlocks.isUpdate = true
+			if isDirect then MapBlock.airIsMap = true end
 		end
 	end
 	TileManager.GetInstance().pushMapFlag[i] = TileManager.GetInstance().pushMapFlag[i] or {}
@@ -1320,10 +1321,15 @@ function gisToBlocks:onMappingBegin()
 end
 -- 绘制结束
 function gisToBlocks:onMappingEnd()
+	if not gisToBlocks.isUpdate then
+		self:fillingGap()
+	end
 	echo("onMappingEnd 绘制结束")
 	GameLogic.AddBBS("statusBar","地图绘制完成。", 5000, "223 81 145")
 	if NetManager.connectState == "server" then
 		NetManager.sendMessage("all","tileNum",TileManager.GetInstance().curTimes,-1)
 	end
 	TileManager.GetInstance():clearFill()
+	if MapBlock.airIsMap then MapBlock.airIsMap = nil end
+	if gisToBlocks.isUpdate then gisToBlocks.isUpdate = nil end
 end
