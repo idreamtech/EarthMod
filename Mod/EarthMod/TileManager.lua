@@ -216,17 +216,21 @@ function TileManager:pushBlocksData(tile,data)
 	end
 end
 
--- 检查未绘制的方块并绘制
-function TileManager:fillNullBlock(tile,func)
-	if not self.blocks or not tile then return end
-	for y=1,self.tileSize do
-		for x=1,self.tileSize do
+-- -- 检查未绘制的方块并绘制
+function TileManager:fillNullBlock(func)
+	if not self.blocks then return end
+	for y=1,self.size.height do
+		for x=1,self.size.width do
 			if self.blocks[y] and self.blocks[y][x] then
-				local px,py,pz = x + tile.rect.l,self.firstBlockPo.y,y + tile.rect.b
+				local px,py,pz = x + self.firstBlockPo.x,self.firstBlockPo.y,y + self.firstBlockPo.z
 				func(self.blocks[y][x],x,y,px,py,pz)
 			end
 		end
 	end
+end
+
+function TileManager:clearFill()
+	self.blocks = {}
 end
 
 -- 获取该点处于哪个瓦片上
