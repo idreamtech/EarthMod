@@ -99,8 +99,20 @@ function SelectLocationTask.OnClickSelectLocationScript()
 	end, _guihelper.MessageBoxButtons.YesNo);
 end
 
+function SelectLocationTask.OnClickDirectUpdate()
+	_guihelper.MessageBox(L"点击后强制更新当前瓦片，用户挖空的方块将被强制替换！是否继续操作？", function(res)
+		if(res and res == _guihelper.DialogResult.Yes and gisToBlocks) then
+			if SelectLocationTask.isDownLoaded then
+				SelectLocationTask.checkUpdateMap(true)
+			else
+				_guihelper.MessageBox(L"瓦片信息未初始化");
+			end
+		end
+	end, _guihelper.MessageBoxButtons.YesNo);
+end
+
 -- 更新地图
-function SelectLocationTask.checkUpdateMap()
+function SelectLocationTask.checkUpdateMap(isDirect)
 	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
 		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
 			DBS:getValue(SysDB,"schoolName",function(schoolName) if schoolName then
@@ -131,11 +143,11 @@ function SelectLocationTask.checkUpdateMap()
 							NplCefWindowManager:Reload("my_window","http://127.0.0.1:" .. ComVar.prot .. "/earth")
 		                else
 		                	-- 更新一块瓦片
-		                	gisToBlocks:downloadMap();
+		                	gisToBlocks:downloadMap(nil,nil,isDirect);
 		                end
 		            else
 	                	-- 更新一块瓦片
-	                	gisToBlocks:downloadMap();
+	                	gisToBlocks:downloadMap(nil,nil,isDirect);
 		            end
 				end)
 			end end)
@@ -375,6 +387,7 @@ SelectLocationTask.menus = {
     {order=1,name="地图",icon="mapBtn",func=SelectLocationTask.OnShowMap};
     {order=2,name="信息",icon="infoBtn",func=SelectLocationTask.OnShowInfo};
     {order=3,name="更新瓦片",icon="updateBtn",func=SelectLocationTask.OnClickSelectLocationScript};
+    {order=4,name="强制更新瓦片",icon="updateDirectBtn",func=SelectLocationTask.OnClickDirectUpdate};
     -- add in other btn
     --
 }

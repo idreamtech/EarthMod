@@ -227,6 +227,7 @@ function MapBlock:isMap(fid,checkAir) -- ,func
 		if checkAir or ComVar.fillAirMode then
 			if fid == 0 then return true end -- 检测草地(id:62) 空气0
 		else
+			if MapBlock.airIsMap and fid == 0 then return true end
 			if fid == MapBlock.ID then return true end
 		end
 	end
