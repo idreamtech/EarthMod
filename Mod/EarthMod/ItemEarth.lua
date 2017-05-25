@@ -57,8 +57,6 @@ function ItemEarth.onInitWeb(func)
 	echo("ItemEarth.onInitWeb : " .. tostring(WebServer:IsStarted()))
 	if(not WebServer:IsStarted()) then
 		ItemEarth.checkPortRunWeb(fromPort,func)
-	else
-		func()
 	end
 end
 
