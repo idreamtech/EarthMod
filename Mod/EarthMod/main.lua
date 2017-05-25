@@ -269,6 +269,7 @@ function EarthMod:OnLeaveWorld()
 		gisToBlocks:OnLeaveWorld()
 		EarthMod.showWebPage()
 		ComVar.protInited = nil
+		-- WebServer:StopServer()
 		-- 离开当前世界时候初始化所有变量
 		echo("sltInstance set nil")
 		SelectLocationTask:OnLeaveWorld();

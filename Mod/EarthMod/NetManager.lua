@@ -257,11 +257,11 @@ Commands["net"] = {
 	desc=[[start earth mode with client and server
 @param mode: c/client,s/server
 @param ip: client connect ip
-@param port: client connect port default 8099
+@param port: client connect port default 8081(和左上角小地图地址栏端口号一致)
 Examples:
 /net -server
-/net -s 8099
-/net -client 192.168.0.1 8099
+/net -s 8081
+/net -client 192.168.0.1 8081
 /net -c 192.168.0.1
 ]],
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
