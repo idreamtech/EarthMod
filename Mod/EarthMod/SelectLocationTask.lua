@@ -348,17 +348,22 @@ function SelectLocationTask.OnShowInfo()
 end
 
 -- 显示地图
-function SelectLocationTask.OnShowMap()
+function SelectLocationTask.OnShowMap(isOpen)
 	NPL.load("(gl)Mod/NplCefBrowser/NplCefWindowManager.lua");
 	local NplCefWindowManager = commonlib.gettable("Mod.NplCefWindowManager");
 	-- 切换地图显示
+	local function open()
+		-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+		echo("open Cef web : " .. "http://127.0.0.1:" .. ComVar.prot .. "/earth")
+		NplCefWindowManager:Open("my_window", "Select Location Window", "http://127.0.0.1:" .. ComVar.prot .. "/earth", "_lt", 5, 70, 400, 400);		
+	end
 	if NplCefWindowManager:GetPageCtrl("my_window") then
 		NplCefWindowManager:Destroy("my_window")
 		echo("delete Cef web : my_window")
+	else
+		if not isOpen then open() end
 	end
-	-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
-	echo("open Cef web : " .. "http://127.0.0.1:" .. ComVar.prot .. "/earth")
-	NplCefWindowManager:Open("my_window", "Select Location Window", "http://127.0.0.1:" .. ComVar.prot .. "/earth", "_lt", 5, 70, 400, 400);		
+	if isOpen then open() end
 end
 
 -- 添加玩家坐标信息

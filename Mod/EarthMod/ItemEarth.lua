@@ -69,7 +69,7 @@ function ItemEarth:OnSelect(itemStack)
 		ComVar.protInited = true
 		ItemEarth.onInitWeb(function()
 			echo("ItemEarth:OnSelect to SelectLocationTask:OnShowMap")
-			SelectLocationTask.OnShowMap()
+			SelectLocationTask.OnShowMap(true)
 		end)
 		echo("startmap ItemEarth:OnSelect")
 		-- TipLog("startmap ItemEarth:OnSelect")
