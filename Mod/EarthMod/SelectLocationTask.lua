@@ -355,11 +355,10 @@ function SelectLocationTask.OnShowMap()
 	if NplCefWindowManager:GetPageCtrl("my_window") then
 		NplCefWindowManager:Destroy("my_window")
 		echo("delete Cef web : my_window")
-	else
-		-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
-		echo("open Cef web : " .. "http://127.0.0.1:" .. ComVar.prot .. "/earth")
-		NplCefWindowManager:Open("my_window", "Select Location Window", "http://127.0.0.1:" .. ComVar.prot .. "/earth", "_lt", 5, 70, 400, 400);		
 	end
+	-- Open a new window when window haven't been opened,otherwise it will call the show function to show the window
+	echo("open Cef web : " .. "http://127.0.0.1:" .. ComVar.prot .. "/earth")
+	NplCefWindowManager:Open("my_window", "Select Location Window", "http://127.0.0.1:" .. ComVar.prot .. "/earth", "_lt", 5, 70, 400, 400);		
 end
 
 -- 添加玩家坐标信息
