@@ -110,9 +110,15 @@ function NetManager.onPlayerLeave(name)
 end
 
 -- 启动服务器
-function NetManager.startServer(port)
+function NetManager.startServer(ip, port, psw)
 	port = port or (ComVar and ComVar.prot) or 8081
-	GameLogic.RunCommand("/startserver 0 " .. port);
+	if psw then
+		if port == "0" then port = 8081 end
+		log("Cmd: " .. "/startserver -tunnel " .. psw .. " " .. ip .. " " .. port)
+		GameLogic.RunCommand("/startserver -tunnel " .. psw .. " " .. ip .. " " .. port); -- 此时port为密码
+	else
+		GameLogic.RunCommand("/startserver 0 " .. port);
+	end
 	NetManager.name = "__MP__admin"
 	NetManager.connectState = "server"
 	-- set
@@ -127,10 +133,16 @@ function NetManager.startServer(port)
 end
 
 -- 启动客户端
-function NetManager.connectServer(ip,port)
+function NetManager.connectServer(ip, port, psw)
 	port = port or 8081
 	ip = ip or "127.0.0.1"
-	GameLogic.RunCommand("/connect " .. ip .. " " .. port);
+	if psw then
+		if port == "0" then port = 8081 end
+		log("Cmd: " .. "/connect -tunnel " .. psw .. " " .. ip .. " " .. port)
+		GameLogic.RunCommand("/connect -tunnel " .. psw .. " " .. ip .. " " .. port);
+	else
+		GameLogic.RunCommand("/connect " .. ip .. " " .. port);
+	end
 	NetManager.isConnecting = true
 end
 
@@ -263,18 +275,24 @@ Examples:
 /net -s 8081
 /net -client 192.168.0.1 8081
 /net -c 192.168.0.1
+/net -s [ip] [port] [psw] 使用tunnelserver创建服务器
+/net -c [ip] [port] [psw] 连接tunnelserver服务器
 ]],
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
 		if not ComVar.openNetwork then NetManager.showMsg("该版本不支持联网协作(openNetwork=nil)");return end
-		local mode, ip, port
+		local mode, ip, port, psw
 		mode, cmd_text = CmdParser.ParseOptions(cmd_text);
 		if mode.client or mode.c then
 			ip, cmd_text = CmdParser.ParseString(cmd_text);
 			port, cmd_text = CmdParser.ParseString(cmd_text);
-			NetManager.connectServer(ip,port)
+			psw, cmd_text = CmdParser.ParseString(cmd_text);
+			NetManager.connectServer(ip,port,psw)
 		elseif mode.server or mode.s then
+			ip, cmd_text = CmdParser.ParseString(cmd_text);
 			port, cmd_text = CmdParser.ParseString(cmd_text);
-			NetManager.startServer(port)
+			psw, cmd_text = CmdParser.ParseString(cmd_text);
+			if ip and (not port) then port = ip;ip = "127.0.0.1" end
+			NetManager.startServer(ip,port,psw)
 		end
 	end,
 };
