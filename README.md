@@ -3,7 +3,7 @@
 可选学校信息依赖于运营端添加的学校数据  
 同时由于需要用到内嵌浏览器，所以需要预先安装另w外两个Mod,下载地址参照下述链接  
 [NplCefBrowser](http://keepwork.com/wiki/mod/packages/packages_install/npl?id=8)  
-[NplCef3](http://keepwork.com/wiki/mod/packages/packages_install/npl?id=7)  
+[NplCef3](http://keepwork.com/wiki/mod/packages/packages_install/npl?id=7)  
 部署操作文档及使用说明书参照下述链接  
 [参考文档](https://github.com/idreamtech/EarthMod/tree/master/Doc)  
 
