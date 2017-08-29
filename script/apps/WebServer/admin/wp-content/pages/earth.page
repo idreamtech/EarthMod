@@ -72,8 +72,8 @@ wp_enqueue_script("jquery",             "/wp-includes/js/jquery/jquery.min.js");
 wp_enqueue_script("leaflet",            "/wp-content/pages/earth/js/leaflet.js");
 wp_enqueue_script("coordtransform",     "/wp-content/pages/earth/js/coordtransform.js");
 wp_enqueue_script("typeahead",          "/wp-content/pages/earth/js/bootstrap3-typeahead.min.js");
-wp_enqueue_script("drawingManager",     "http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js");
-wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E5WMdPfGhhrlsOpfFUKHHGCmS1zhbZGf");
+wp_enqueue_script("baiduMap",           "/wp-content/pages/earth/js/mapBd.js");
+wp_enqueue_script("drawingManager",     "/wp-content/pages/earth/js/DrawingManager_min.js");
 ?>
 <style>
 
@@ -101,8 +101,10 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
         border-radius: 5px;
     }
     .imgCls{
-        height: 30px;
-        width: 30px;
+        cursor: pointer;
+        height: 19px;
+        width: 19px;
+        box-shadow: 1px 1px 2px #888888;
     }
     .earth-main .spot-light {
         text-align:center;
@@ -124,12 +126,12 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
     }
     #map{
         /*width:100%;*/
-        position:fixed;
-        top:0px;
-        bottom:0px;
-        left:0px;
-        right:0px;
-        z-index:999;
+        position:fixed !important;
+        top:0px !important;
+        bottom:0px !important;
+        left:0px !important;
+        right:0px !important;
+        z-index:999 !important;
     }
     /*.query-list{*/
         /*width:98%;*/
@@ -156,6 +158,9 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
         overflow:hidden;/* 内容超出宽度时隐藏超出部分的内容 */
         text-overflow:ellipsis;/* 当对象内文本溢出时显示省略标记(...) ；需与overflow:hidden;一起使用。*/
     }
+    .anchorBL{  
+       display:none;  
+    } 
 </style>
 
 <div class="earth-main">
@@ -174,135 +179,141 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
 </div>
 
 <script>
+
     // 玩家当前经纬度坐标
     var player_lat,palyer_lng;
-    var currentIcon = L.icon({
-        iconUrl: '/wp-content/pages/earth/assets/css/images/marker-icon.png',
-        iconSize: [15, 47],
-    })
-    var myIcon = L.icon({
-        iconUrl: '/wp-content/pages/earth/assets/css/images/4.png',
-        iconSize: [15, 47],
+
+    var blueIcon = new BMap.Symbol(BMap_Symbol_SHAPE_POINT, {
+        scale: 1, //图标缩放大小
+        fillColor: "#327ef8", //填充颜色
+        fillOpacity: 0.8, //填充透明度
+        strokeColor: "#327ef8", //描边颜色
+        strokeOpacity: 0 //描边颜色
     });
-    var map  = L.map('map',{
-        zoomControl:false,
-        minZoom:3
+
+    var redIcon = new BMap.Symbol(BMap_Symbol_SHAPE_POINT, {
+        scale: 1, //图标缩放大小
+        fillColor: "#f04227", //填充颜色
+        fillOpacity: 0.8, //填充透明度
+        strokeColor: "#f04227", //填充透明度
+        strokeOpacity: 0 //描边颜色
     });
-    var china = [37.899050079360935, 102.83203125]; 
-    map.setView(china,3);
-    var corner1 = L.latLng(54.559322, -5.767822),
-        corner2 = L.latLng(56.1210604, -3.021240),
-        bounds = L.latLngBounds(corner1, corner2);
-    var rec = L.rectangle(bounds, {color: "#fff", weight: 1}).addTo(map);
-    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map);
-    L.control.scale().addTo(map);
-    L.control.zoom({  
-        position: 'bottomright'  
-    }).addTo(map);  
-    // map.on('keypress',stopkey);
-    // function stopkey(e){
-    //     console.log(e.which);
-    // }
+
+    var chinaLat = 37.899050079360935;
+    var chinaLng = 102.83203125;
+    var map = new BMap.Map("map",{enableMapClick: false});  // 创建地图实例
+    var point = new BMap.Point(chinaLng, chinaLat); // 创建点坐标
+    map.setMapStyle({style:'normal'});
+    map.centerAndZoom(point, 4);   // 初始化地图，设置中心点坐标和地图级别
+    map.enableScrollWheelZoom(true);    //开启鼠标滚轮缩放
+    var bottom_right_navigation = new BMap.NavigationControl({anchor: BMAP_ANCHOR_BOTTOM_RIGHT, type: BMAP_NAVIGATION_CONTROL_ZOOM});   //右下角，仅包含缩放按钮
+    // 添加缩放按钮控件
+    map.addControl(bottom_right_navigation);
+
+    var rec = null;
+
     $('body').on('keydown',function(e){
         // console.log(e.which);
         if(e.which ==37||e.which ==38||e.which ==39||e.which ==40||e.which ==32){
             return false;
         }
     })
-    //leaflet自定义一个control
-    L.Control.Search = L.Control.extend({
-        options:{
-            position:"topleft" // 初始化位置
-        },
-        // initialize:function(options){ //初始化
-        //     L.Util.extend(this.options, options);
-        // },
-        onAdd:function(map){ //添加控件
-            var container = L.DomUtil.create("div", "search")
-            var options = this.options;
-            var input = L.DomUtil.create("input", "search-inp");
-            input.placeholder = "请输入校园名称";
-            input.setAttribute('data-provide','typeahead');
-            input.setAttribute('maxlength','50');
-            input.ondblclick = this._ondblclick;
-            container.onclick = this._onclick;
-            // container.stopPropagation();
-            container.appendChild(input);
-            if (L.DomEvent) {
-                L.DomEvent.disableClickPropagation(container);
-            }
-            return container;
-        },
-        _onclick:function(e){
-            // e.stopPropagation();
-            e.stopPropagation();
-        },
-        _ondblclick:function(e){
-            // e.stopPropagation();// 阻止事件冒泡,双击输入框放大地图事件
-            // console.log(1);
-        }
-    })
-    L.control.search = function (options) {
-        return new L.Control.Search(options);
-    };
-    //启用控件并添加到地图中
-    L.control.search().addTo(map);
 
-    //自定义一个地图跳转返回用户位置按钮
-    L.Control.Return = L.Control.extend({
-        options:{
-            position:"bottomleft" // 初始化位置
-        },
-        // initialize:function(options){ //初始化
-        //     L.Util.extend(this.options, options);
-        // },
-        onAdd:function(map){ //添加控件
-            var container = L.DomUtil.create("img", "imgCls")
-            var options = this.options;
-            container.src = '/wp-content/pages/earth/assets/css/images/location2.png';
-            container.onclick = this._onclick;
-            container.ondblclick = this._ondblclick;
-            return container;
-        },
-        _onclick:function(e){
-            e.stopPropagation();
-            if (typeof(player_lat) != "undefined" && typeof(player_lng) != "undefined") {
-                map.setView([player_lat, player_lng]);
-            }
-        },
-        _ondblclick:function(e){
-            // 阻止事件冒泡,双击输入框放大地图事件
-            e.stopPropagation();
-        }
-    })
-    L.control.return = function (options) {
-        return new L.Control.Return(options);
-    };
-    //启用控件并添加到地图中
-    L.control.return().addTo(map);
+    // 定义一个搜索控件类,即function
+    function SearchControl(){
+        // 默认停靠位置和偏移量
+        this.defaultAnchor = BMAP_ANCHOR_TOP_LEFT;
+        this.defaultOffset = new BMap.Size(10, 10);
+    }
 
-     function renderUniversity(schoolName, uni){
+    // 通过JavaScript的prototype属性继承于BMap.Control
+    SearchControl.prototype = new BMap.Control();
+
+    // 自定义控件必须实现自己的initialize方法,并且将控件的DOM元素返回
+    // 在本方法中创建个div元素作为控件的容器,并将其添加到地图容器中
+    SearchControl.prototype.initialize = function(map){
+      // 创建一个DOM元素
+      var div = document.createElement("div");
+      div.setAttribute("class","search");
+      var input = document.createElement("input");
+      input.setAttribute("class","search-inp");
+      input.setAttribute('data-provide','typeahead');
+      input.setAttribute("maxlength", "50");
+      input.type = "text";
+      input.placeholder = "请输入学校名称";
+      div.appendChild(input);
+      // 按钮绑定点击事件
+      input.onclick = function(e){
+
+      }
+      // 添加DOM元素到地图中
+      map.getContainer().appendChild(div);
+      // 将DOM元素返回
+      return div;
+    }
+    // 创建控件
+    var searchCtrl = new SearchControl();
+    // 添加到地图当中
+    map.addControl(searchCtrl);
+
+    // 定义一个搜索控件类,即function
+    function ReturnControl(){
+        // 默认停靠位置和偏移量
+        this.defaultAnchor = BMAP_ANCHOR_BOTTOM_RIGHT;
+        this.defaultOffset = new BMap.Size(12, 55);
+    }
+
+    // 通过JavaScript的prototype属性继承于BMap.Control
+    ReturnControl.prototype = new BMap.Control();
+
+    // 自定义控件必须实现自己的initialize方法,并且将控件的DOM元素返回
+    // 在本方法中创建个div元素作为控件的容器,并将其添加到地图容器中
+    ReturnControl.prototype.initialize = function(map){
+      // 创建一个DOM元素
+      var img = document.createElement("img");
+      img.setAttribute("class","imgCls");
+      img.src = '/wp-content/pages/earth/assets/css/images/location3.png';
+      img.onclick = this._onclick;
+      // 按钮绑定点击事件
+      img.onclick = function(e){
+        if (typeof(player_lat) != "undefined" && typeof(player_lng) != "undefined") {
+            var player_point = new BMap.Point(player_lng, player_lat); // 创建点坐标  
+            map.centerAndZoom(player_point, 16);   // 初始化地图，设置中心点坐标和地图级别
+        }
+      }
+      // 添加DOM元素到地图中
+      map.getContainer().appendChild(img);
+      // 将DOM元素返回
+      return img;
+    }
+    // 创建控件
+    var returnCtrl = new ReturnControl();
+    // 添加到地图当中
+    map.addControl(returnCtrl);
+
+    function renderUniversity(schoolName, uni){
         if(uni != null & uni != undefined){
-            rec.remove();
-            corner1 = L.latLng(uni.southWestLat, uni.southWestLng);
-            corner2 = L.latLng(uni.northEastLat,uni.northEastLng);
-            bounds = L.latLngBounds(corner1, corner2);
-            rec = L.rectangle(bounds, {color: "#ff7800", weight: 1}).addTo(map);
-            map.fitBounds(bounds);
-            // console.log(rec.getBounds());
-            var data = rec.getBounds()
+            map.removeOverlay(rec);
+
+            rec = new BMap.Polygon([
+                new BMap.Point(uni.southWestLng, uni.northEastLat),
+                new BMap.Point(uni.northEastLng, uni.northEastLat),
+                new BMap.Point(uni.northEastLng, uni.southWestLat),
+                new BMap.Point(uni.southWestLng, uni.southWestLat)
+            ], {strokeColor:"black", fillColor:"orange", strokeWeight:1, strokeOpacity:0.5, fillOpacity:0.3, strokeStyle:"solid"});
+            map.addOverlay(rec);
+
+            map.centerAndZoom(rec.getBounds().getCenter(), 15);
+            var data = rec.getBounds();
             ajaxData(schoolName, data);
-        }
-        
-     }
-     function ajaxData(schoolName, d){
+        } 
+    }
+    function ajaxData(schoolName, d){
         var data = {
-            "minlat": d._southWest.lat,
-            "minlon": d._southWest.lng,
-            "maxlat": d._northEast.lat,
-            "maxlon": d._northEast.lng,
+            "minlat": d.getSouthWest().lat,
+            "minlon": d.getSouthWest().lng,
+            "maxlat": d.getNorthEast().lat,
+            "maxlon": d.getNorthEast().lng,
             "schoolName": schoolName
         };
         console.log(data)
@@ -314,16 +325,15 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
             success:function(res){
                 // 成功传送区域范围经纬度信息的情况下,清除多余的marker
                 markerArray.forEach(function (item, index, array) {
-                    item.remove();
+                    map.removeOverlay(item);
                 });
                 // console.log(res);
             },
             error:function(){
                 alert("请求失败")
             }
-
         })
-     }
+    }
     $('.search-inp').on('keydown',function(e){
         if(e.which == 13){
             // searchUniversity($('.search-inp').val());
@@ -341,6 +351,21 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
     var searchInpState = true;
     // 所有玩家的marker集合
     var allPlayerMarkers = new Array();
+
+    function getMapLabel() {
+        var reLable = null;
+        var allOverlay = map.getOverlays();
+        for (var i = 0; i < allOverlay.length - 1; i++) {
+            if (allOverlay[i].toString() == "[object Marker]") {
+                if (allOverlay[i].getTitle() == "admin") {
+                    reLable = allOverlay[i].getLabel();
+                    break;
+                }
+            }
+        }
+        return reLable;
+    }
+
     // 获取当前玩家在paracraft中的位置及是否已经进行了贴图操作,如果已经贴图,则禁用搜索框
     function getCurrentPostionInParacraft(){
         $.ajax({
@@ -356,67 +381,90 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
                 // 如果allPlayerPo为空,则为脱机模式
                 if (allPlayerPo == null || typeof(allPlayerPo) == "undefined") {
                     if (lon != null && lat != null && typeof(lon) != "undefined" && typeof(lat) != "undefined") {
-                        player_lat = lat;
-                        player_lng = lon;
                         // 判断marker是否存在,不存在则创建,存在则调用marker的setLatLng方法
                         if (marker == null) {
-                            marker = L.marker([lat, lon],{icon:currentIcon}).addTo(map);
+                            marker = new BMap.Marker(new BMap.Point(lon, lat), {icon:redIcon});
+                            map.addOverlay(marker);
                         } else {
-                            marker.setLatLng([lat, lon]);
+                            marker.setPosition(new BMap.Point(lon, lat));
                         }
                         if (searchInpState == true) {
                             searchInpState = false;
                             document.getElementsByClassName('search-inp')[0].disabled = true;
                         }
+                        // 如果玩家位置改变，默认让玩家显示位置在地图中心
+                        if (player_lat != lat || player_lng != lon) {
+                            map.centerAndZoom(new BMap.Point(lon, lat), map.getZoom());
+                        }
+                        player_lat = lat;
+                        player_lng = lon;
                     }
                     // map.setView(marker._latlng);
                 }else if (allPlayerPo != null && typeof(allPlayerPo) != "undefined") {
                     if (marker != null) {
-                        marker.remove();
+                        map.removeOverlay(marker);
                     }
-                    player_lat = lat;
-                    player_lng = lon;
                     // console.log(allPlayerPo)
                     $.each(allPlayerPo, function(playerName, postionData){
                         // falg为true时候add,反之则更新marker位置
                         var index = null;
                         for (var i = 0; i < allPlayerMarkers.length; i++) {
-                            var _playerName = allPlayerMarkers[i].getTooltip()._content;
-                            // console.log("each playerName is :" + playerName)
-                            // console.log("playerName is :" + _playerName)
-                            if (playerName == _playerName) {
-                                console.log("will modify " + playerName + " || " + i)
-                                index = i;
-                                break;
+                            if (allPlayerMarkers[i].getLabel() != null) {
+                                var _playerName = allPlayerMarkers[i].getLabel().content;
+                                // console.log("each playerName is :" + playerName)
+                                // console.log("playerName is :" + _playerName)
+                                if (playerName == _playerName) {
+                                    // console.log("will modify " + playerName + " || " + i)
+                                    index = i;
+                                    break;
+                                }
                             }
                         }
                         if (index == null) {
                             // 将marker添加到地图中,如果playerName=me则图标为红色图标
                             var playerMarker = null;
                             if (playerName == selfName) {
-                                playerMarker = L.marker([postionData.lat, postionData.lon],{icon:myIcon}).addTo(map).bindTooltip(playerName);
+                                var playerMarker = new BMap.Marker(new BMap.Point(postionData.lon, postionData.lat), {icon:redIcon});
+                                var label = new BMap.Label(playerName, {offset:new BMap.Size(20, -10)});
+                                label.setStyle({ maxWidth:"none" });
+                                playerMarker.setLabel(label);
+                                map.addOverlay(playerMarker);
                             }else{
-                                playerMarker = L.marker([postionData.lat, postionData.lon],{icon:currentIcon}).addTo(map).bindTooltip(playerName);
+                                var playerMarker = new BMap.Marker(new BMap.Point(postionData.lon, postionData.lat), {icon:blueIcon});
+                                var label = new BMap.Label(playerName, {offset:new BMap.Size(20, -10)});
+                                label.setStyle({ maxWidth:"none" });
+                                playerMarker.setLabel(label);
+                                map.addOverlay(playerMarker);
                             }
                             allPlayerMarkers.push(playerMarker)
                         }else{
-                            console.log("modify player postion " + index)
-                            allPlayerMarkers[index].setLatLng([postionData.lat, postionData.lon]);
+                            // console.log("modify player postion " + index)
+                            allPlayerMarkers[index].setPosition(new BMap.Point(postionData.lon, postionData.lat));
+                            
                         }
                     });
 
+                    // 如果玩家位置改变，默认让玩家显示位置在地图中心
+                    if (player_lat != lat || player_lng != lon) {
+                        map.centerAndZoom(new BMap.Point(lon, lat), map.getZoom());
+                    }
+                    player_lat = lat;
+                    player_lng = lon;
+
                     allPlayerMarkers.forEach(function (item, index, array) {
-                        var markerContent = item.getTooltip()._content;
-                        // 默认不存在
-                        var flag = false;
-                        $.each(allPlayerPo, function(playerName, postionData){
-                            // 如果姓名与content的值相等,则视为玩家仍然保持连接,反之删除玩家marker标记
-                            if (playerName == markerContent) {
-                                flag = true;
+                        if (item.getLabel() != null) {
+                            var markerContent = item.getLabel().content;
+                            // 默认不存在
+                            var flag = false;
+                            $.each(allPlayerPo, function(playerName, postionData){
+                                // 如果姓名与content的值相等,则视为玩家仍然保持连接,反之删除玩家marker标记
+                                if (playerName == markerContent) {
+                                    flag = true;
+                                }
+                            });
+                            if (flag == false) {
+                                map.removeOverlay(item);
                             }
-                        });
-                        if (flag == false) {
-                            item.remove();
                         }
                     });
                 }
@@ -424,14 +472,13 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
             error:function(){
                 console.log("获取人物当前坐标失败");
             }
-
         })
     }
 
     // 在地图上矩形选框内点击时候,触发marker位置移动,并通知pararcraft中的人物进行跳转
     function onMapClick(e) {
         // 判断点击区域是否在矩形区域内
-        if (e.latlng.lng != null && e.latlng.lat != null && typeof(e.latlng.lng) != "undefined" && typeof(e.latlng.lat) != "undefined") {
+        if (e.point.lng != null && e.point.lat != null && typeof(e.point.lng) != "undefined" && typeof(e.point.lat) != "undefined") {
             // console.log("获取到位置信息：")
             // console.log(e.latlng.lat)
             // console.log(e.latlng.lng)
@@ -442,8 +489,8 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
             //     marker.setLatLng([e.latlng.lat, e.latlng.lng]);
             // }
             var data = {
-                "curLat": e.latlng.lat,
-                "curLon": e.latlng.lng
+                "curLat": e.point.lat,
+                "curLon": e.point.lng
             }
             $.ajax({
                 url:"/ajax/earth?action=set_player_coordinate",
@@ -459,8 +506,12 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
             })
         }
     }
+    // 添加拖拽开始事件监听，避免拖拽时候触发click事件导致人物跳转
+    function onMapClick2(e) {
+    }
 
-    map.on('click', onMapClick);
+    map.addEventListener("click", onMapClick);
+    map.addEventListener("dragstart", onMapClick2);
 
     $(function(){
         // $('.navbar').remove();
@@ -479,7 +530,7 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
     // 获取所有学校
     function getAllSchool(){
         var urlStr = "http://119.23.36.48:8098/api/wiki/models/school/getAllSchool";
-        //var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getAllSchool";
+        // var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getAllSchool";
         var arr = [];
             $.ajax({
                 url:urlStr,
@@ -509,17 +560,30 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
                                 var school = res.data[i];
                                 if (school.schoolName && typeof(school.northEastLat) != "undefined" && typeof(school.southWestLat) != "undefined" && typeof(school.southWestLng) != "undefined" && typeof(school.northEastLng) != "undefined") {
                                     var schoolName = school.schoolName;
-                                    var schoolLat = school.southWestLat;
-                                    var schoolLng = school.southWestLng;
+                                    var schoolSW =  new BMap.Point(school.southWestLng, school.southWestLat);
+                                    var schoolNE =  new BMap.Point(school.northEastLng, school.northEastLat);
+                                    var schoolBounds = new BMap.Bounds(schoolSW, schoolNE);
                                     // 将marker添加到地图中
-                                    var schoolMarker = L.marker([schoolLat, schoolLng],{icon:currentIcon}).addTo(map).bindTooltip(schoolName);
+                                    var schoolMarker = new BMap.Marker(new BMap.Point(schoolBounds.getCenter().lng, schoolBounds.getCenter().lat), {icon:blueIcon});
+                                    var label = new BMap.Label(schoolName, {offset:new BMap.Size(20, -10)});
+                                    label.setStyle({ maxWidth:"none", display:"none" });
+                                    map.addOverlay(schoolMarker);
+                                    schoolMarker.setLabel(label);
                                     // console.log("push marker " + school.schoolName)
                                     markerArray.push(schoolMarker);
                                 }
                             }
                             for(var j=0;j<markerArray.length;j++){
-                                markerArray[j].on('click',function(e){
-                                    getSchoolByName(e.target._tooltip._content);
+                                markerArray[j].addEventListener('click',function(e){
+                                    console.log(e)
+                                    getSchoolByName(e.target.getLabel().content);
+                                })
+                                // 添加moouseOver mouserOut事件监听
+                                markerArray[j].addEventListener('mouseover', function(e){
+                                    e.target.getLabel().setStyle({ maxWidth:"none", display:"inline" });
+                                })
+                                markerArray[j].addEventListener('mouseout', function(e){
+                                    e.target.getLabel().setStyle({ maxWidth:"none", display:"none" });
                                 })
                             }
                         }
@@ -536,7 +600,7 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
     // 请求学校经纬度信息
     function getSchoolByName(schoolName){
         var urlStr = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName";
-        //var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName";
+        // var urlStr = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName";
         if (schoolName != null && typeof(schoolName) != "undefined" && $.trim(schoolName) != "") {
             urlStr = urlStr + "?name=" + $.trim(schoolName);
             $.ajax({
@@ -576,16 +640,18 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
                     // console.log(markerArray)
                     markerArray.forEach(function (item, index, array) {
                         // console.log("remove marker " + index)
-                        item.remove();
+                        map.removeOverlay(item);
                     });
-                    // 学校已经划定区域情况下,显示学校区域信息
-                    var _corner1 = L.latLng(res.data.minlat, res.data.minlon);
-                    var _corner2 = L.latLng(res.data.maxlat, res.data.maxlon);
-                    bounds = L.latLngBounds(_corner1, _corner2);
-                    rec.setBounds(bounds);
-                    rec.setStyle({color: "#ff7800", weight: 1});
-                    // var _rec = L.rectangle(_bounds, {color: "#ff7800", weight: 1}).addTo(map);
-                    map.fitBounds(bounds);
+
+                    rec = new BMap.Polygon([
+                        new BMap.Point(res.data.minlon, res.data.maxlat),
+                        new BMap.Point(res.data.maxlon, res.data.maxlat),
+                        new BMap.Point(res.data.maxlon, res.data.minlat),
+                        new BMap.Point(res.data.minlon, res.data.minlat)
+                    ], {strokeColor:"black", fillColor:"orange", strokeWeight:1, strokeOpacity:0.5, fillOpacity:0.3, strokeStyle:"solid"});
+                    map.addOverlay(rec);
+                    map.centerAndZoom(rec.getBounds().getCenter(), 15);
+
                     var currentSchool = res.data.schoolName;
                     document.getElementsByClassName('search-inp')[0].disabled = true;
                     document.getElementsByClassName('search-inp')[0].value = currentSchool;
@@ -596,6 +662,8 @@ wp_enqueue_script("baiduMap",           "http://api.map.baidu.com/api?v=2.0&ak=E
                     searchInpState = false;
                     // var number = map.getZoom()
                     // map.scrollWheelZoom.disable();
+
+                    map.setZoom(18);
                     
                 }else if(res != null && typeof(res) != "undefined" && res.status == 400){
                     // 400情况下,继续请求

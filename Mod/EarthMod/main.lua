@@ -86,7 +86,7 @@ function EarthMod:init()
 	end
 	if ComVar.usingMap == "BAIDU" then
     	ComVar.factor = 1 -- 百度地图18级已经是1:1比例了
-    	ComVar.tileFormat = ".jpg" -- 百度地图是否使用jpg的平面地图贴图开关
+    	-- ComVar.tileFormat = ".jpg" -- 百度地图是否使用jpg的平面地图贴图开关
 	end
 	MapBlock:init()
 end

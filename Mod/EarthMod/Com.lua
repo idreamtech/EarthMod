@@ -13,16 +13,16 @@ NPL.load("(gl)Mod/EarthMod/Com.lua");
 ComVar = {
 	CorrectMode = nil; -- 开启矫正模式  矫正地图定位偏差
 	DrawAllMap = nil; -- 开启全部自动绘制
-	Draw3DBuilding = true; -- 是否绘制地上建筑
+	Draw3DBuilding = false; -- 是否绘制地上建筑
 	-- gis
-	factor = 1; -- 地图缩放比例（百度地图自动设置为1）
+	factor = 1; -- 该值固定不需修改,地图缩放比例（百度地图自动设置为1）
 	FloorLevel = 5; -- 绘制地图层层高：草地层
 	buildLevelMax = 60; -- 绘制地图层层高：草地层
     buildLevelHeight = 4; -- 每层建筑高度
 	-- map
 	fillAirMode = nil; -- 填充所有空气
 	fillAll = nil; -- 填充所有方块
-    usingMap = "OSM"; -- 使用的地图类型 OSM/BAIDU
+    usingMap = "BAIDU"; -- 使用的地图类型 OSM/BAIDU
     tileFormat = ".png";
     drawWater = true; -- 将地图上水的颜色替换为液体水
 	-- net
