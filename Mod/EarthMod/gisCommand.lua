@@ -23,14 +23,14 @@ local CommandManager = commonlib.gettable("MyCompany.Aries.Game.CommandManager")
 
 Commands["gis"] = {
 	name="gis", 
-	quick_ref="/gis [-coordinate] [minlat] [minlng] [maxlat] [maxlng] [-cache] [true/false]",
+	quick_ref="/gis [-coordinate] [minlat] [minlng] [maxlat] [maxlng] [rotation] [-cache] [true/false]",
 	desc=[[
 		
 	]],
 	handler = function(cmd_name, cmd_text, cmd_params, fromEntity)
-		local lat,lon,minlat,minlon,maxlat,maxlon;
+		local lat,lon,minlat,minlon,maxlat,maxlon,rotation;
 		-- 深圳大学区域信息
-		-- local minlat,minlon,maxlat,maxlon=22.5308,113.9250,22.5424,113.9402;
+		-- local minlat,minlon,maxlat,maxlon,rotation=22.5308,113.9250,22.5424,113.9402,15;
 		options, cmd_text = CmdParser.ParseOptions(cmd_text);
 		--LOG.std(nil,"debug","options",options);
 		if options.already then
@@ -39,21 +39,25 @@ Commands["gis"] = {
 			minlon, cmd_text = CmdParser.ParseString(cmd_text);
 			maxlat, cmd_text = CmdParser.ParseString(cmd_text);
 			maxlon, cmd_text = CmdParser.ParseString(cmd_text);
-			LOG.std(nil,"debug","minlat,minlon,maxlat,maxlon",{minlat,minlon,maxlat,maxlon});
+			rotation, cmd_text = CmdParser.ParseString(cmd_text);
+
+			LOG.std(nil,"debug","minlat,minlon,maxlat,maxlon,rotation",{minlat,minlon,maxlat,maxlon,rotation});
+
 			if(options.cache) then
 				cache, cmd_text = CmdParser.ParseString(cmd_text);
 			else
 				cache = 'false';
 			end
-			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon,cache=cache});
+			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon,rotation=rotation,cache=cache});
 			return;
 		elseif options.coordinate then
 			minlat, cmd_text = CmdParser.ParseString(cmd_text);
 			minlon, cmd_text = CmdParser.ParseString(cmd_text);
 			maxlat, cmd_text = CmdParser.ParseString(cmd_text);
 			maxlon, cmd_text = CmdParser.ParseString(cmd_text);
+			rotation, cmd_text = CmdParser.ParseString(cmd_text);
 
-			LOG.std(nil,"debug","minlat,minlon,maxlat,maxlon",{minlat,minlon,maxlat,maxlon});
+			LOG.std(nil,"debug","minlat,minlon,maxlat,maxlon,rotation",{minlat,minlon,maxlat,maxlon,rotation});
 
 			optionsType = "coordinate";
 
@@ -67,7 +71,7 @@ Commands["gis"] = {
 				cache = 'false';
 			end
 
-			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon,cache=cache});
+			gisCommand.gis = Tasks.gisToBlocks:new({options=optionsType,minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon,rotation=rotation,cache=cache});
 			-- echo("got cordi:");echo({minlat=minlat,minlon=minlon,maxlat=maxlat,maxlon=maxlon})
 			gisCommand.gis:Run();
 			return;

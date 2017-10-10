@@ -205,60 +205,72 @@ function EarthMod:initMap(func)
 	TileManager:new() -- 初始化并加载数据
 	MapGeography.GetInstance() -- 初始化地理信息类
 	-- 检测是否是读取存档
-	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
-		DBS:getValue(SysDB,"coordinate",function(coordinate) if coordinate then
-			TileManager.GetInstance():Load() -- 加载配置
-			-- local coordinate = EarthMod:GetWorldData("coordinate");
-			gisToBlocks.minlat = coordinate.minlat
-			gisToBlocks.minlon = coordinate.minlon
-			gisToBlocks.maxlat = coordinate.maxlat
-			gisToBlocks.maxlon = coordinate.maxlon
-			DBS:getValue(SysDB,"schoolName",function(schoolName) if schoolName then
-				schoolName = string.gsub(schoolName, "\"", "");
-				-- 根据学校名称调用getSchoolByName接口,请求最新的经纬度范围信息,如果信息不一致,则更新文件中已有数据
-				System.os.GetUrl({url = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
-				-- System.os.GetUrl({url = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
-					if(res and res.error and res.data and res.data ~= {} and res.error.id == 0) then
-		                -- 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
-		                -- echo("getSchoolByName by name : ")
-		                -- echo(res.data)
-		                local areaInfo = res.data[1];
-		                -- 如果查询到的最新的经纬度范围不等于原有的范围,则更新已有tileManager信息
-		                -- echo(areaInfo.southWestLng .. " , " .. areaInfo.southWestLat .. " , " .. areaInfo.northEastLng .. " , " .. areaInfo.northEastLat)
-		                -- echo(tostring(tonumber(areaInfo.southWestLng) ~= tonumber(coordinate.minlon)) .. " , " .. tostring(tonumber(areaInfo.southWestLat) ~= tonumber(coordinate.minlat)) .. " , " .. tostring(tonumber(areaInfo.northEastLng) ~= tonumber(coordinate.maxlon)) .. " , " .. tostring(tonumber(areaInfo.northEastLat) ~= tonumber(coordinate.maxlat)))
-		                if areaInfo and areaInfo.southWestLng and areaInfo.southWestLat and areaInfo.northEastLng and areaInfo.northEastLat 
-		                	and (tonumber(areaInfo.southWestLng) ~= tonumber(coordinate.minlon) or tonumber(areaInfo.southWestLat) ~= tonumber(coordinate.minlat) 
-		                	or tonumber(areaInfo.northEastLng) ~= tonumber(coordinate.maxlon) or tonumber(areaInfo.northEastLat) ~= tonumber(coordinate.maxlat)) then
-		                	gisToBlocks.minlat = areaInfo.southWestLat
-							gisToBlocks.minlon = areaInfo.southWestLng
-							gisToBlocks.maxlat = areaInfo.northEastLat
-							gisToBlocks.maxlon = areaInfo.northEastLng
-							echo("call reInitWorld")
-							-- 更新原有坐标信息
-							DBS:setValue(SysDB,"coordinate",{minlat=tostring(gisToBlocks.minlat),minlon=tostring(gisToBlocks.minlon),maxlat=tostring(gisToBlocks.maxlat),maxlon=tostring(gisToBlocks.maxlon)});
-							DBS:flush(SysDB)
-							-- EarthMod:SetWorldData("coordinate",{minlat=tostring(gisToBlocks.minlat),minlon=tostring(gisToBlocks.minlon),maxlat=tostring(gisToBlocks.maxlat),maxlon=tostring(gisToBlocks.maxlon)});
-							-- EarthMod:SaveWorldData();
-		                	gisToBlocks:reInitWorld()
-		                	if func then func() end
-		                else
-		                	echo("call initworld")
-		                	gisToBlocks:initWorld()
-		                	if func then func() end
-		                end
-		            else
-		            	gisToBlocks:initWorld()
-		                if func then func() end
-		            end
-				end);
-			end end)
-			-- 从文件读取学校名称,由于字符串数据自带双引号,所以需要替换掉
-			-- local schoolName = EarthMod:GetWorldData("schoolName");
-			-- echo("school name is : "..schoolName)
-		end end)
-	else
-		if func then func() end
-	end end)
+	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) 
+		if alreadyBlock then
+			DBS:getValue(SysDB,"rotation",function(rotation)
+				if rotation then
+					DBS:getValue(SysDB,"coordinate",function(coordinate)
+						if coordinate then
+							TileManager.GetInstance():Load() -- 加载配置
+							-- local coordinate = EarthMod:GetWorldData("coordinate");
+							gisToBlocks.minlat = coordinate.minlat
+							gisToBlocks.minlon = coordinate.minlon
+							gisToBlocks.maxlat = coordinate.maxlat
+							gisToBlocks.maxlon = coordinate.maxlon
+							gisToBlocks.rotation = rotation
+							echo{"rotation value is", gisToBlocks.rotation, rotation}
+							DBS:getValue(SysDB,"schoolName",function(schoolName)
+								if schoolName then
+									schoolName = string.gsub(schoolName, "\"", "");
+									-- 根据学校名称调用getSchoolByName接口,请求最新的经纬度范围信息,如果信息不一致,则更新文件中已有数据
+									System.os.GetUrl({url = "http://119.23.36.48:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
+									-- System.os.GetUrl({url = "http://192.168.1.160:8098/api/wiki/models/school/getSchoolByName", form = {name=schoolName,} }, function(err, msg, res)
+										if(res and res.error and res.data and res.data ~= {} and res.error.id == 0) then
+							                -- 获取经纬度信息,如果获取到的经纬度信息不存在,需要提示用户
+							                -- echo("getSchoolByName by name : ")
+							                -- echo(res.data)
+							                local areaInfo = res.data[1];
+							                -- 如果查询到的最新的经纬度范围不等于原有的范围,则更新已有tileManager信息
+							                -- echo(areaInfo.southWestLng .. " , " .. areaInfo.southWestLat .. " , " .. areaInfo.northEastLng .. " , " .. areaInfo.northEastLat)
+							                -- echo(tostring(tonumber(areaInfo.southWestLng) ~= tonumber(coordinate.minlon)) .. " , " .. tostring(tonumber(areaInfo.southWestLat) ~= tonumber(coordinate.minlat)) .. " , " .. tostring(tonumber(areaInfo.northEastLng) ~= tonumber(coordinate.maxlon)) .. " , " .. tostring(tonumber(areaInfo.northEastLat) ~= tonumber(coordinate.maxlat)))
+							                if areaInfo and areaInfo.southWestLng and areaInfo.southWestLat and areaInfo.northEastLng and areaInfo.northEastLat 
+							                	and (tonumber(areaInfo.southWestLng) ~= tonumber(coordinate.minlon) or tonumber(areaInfo.southWestLat) ~= tonumber(coordinate.minlat) 
+							                	or tonumber(areaInfo.northEastLng) ~= tonumber(coordinate.maxlon) or tonumber(areaInfo.northEastLat) ~= tonumber(coordinate.maxlat)) then
+							                	gisToBlocks.minlat = areaInfo.southWestLat
+												gisToBlocks.minlon = areaInfo.southWestLng
+												gisToBlocks.maxlat = areaInfo.northEastLat
+												gisToBlocks.maxlon = areaInfo.northEastLng
+												echo("call reInitWorld")
+												-- 更新原有坐标信息
+												DBS:setValue(SysDB,"coordinate",{minlat=tostring(gisToBlocks.minlat),minlon=tostring(gisToBlocks.minlon),maxlat=tostring(gisToBlocks.maxlat),maxlon=tostring(gisToBlocks.maxlon)});
+												DBS:flush(SysDB)
+												-- EarthMod:SetWorldData("coordinate",{minlat=tostring(gisToBlocks.minlat),minlon=tostring(gisToBlocks.minlon),maxlat=tostring(gisToBlocks.maxlat),maxlon=tostring(gisToBlocks.maxlon)});
+												-- EarthMod:SaveWorldData();
+							                	gisToBlocks:reInitWorld()
+							                	if func then func() end
+							                else
+							                	echo("call initworld")
+							                	gisToBlocks:initWorld()
+							                	if func then func() end
+							                end
+							            else
+							            	gisToBlocks:initWorld()
+							                if func then func() end
+							            end
+									end);
+								end 
+							end)
+							-- 从文件读取学校名称,由于字符串数据自带双引号,所以需要替换掉
+							-- local schoolName = EarthMod:GetWorldData("schoolName");
+							-- echo("school name is : "..schoolName)
+						end 
+					end)
+				end
+			end)
+		else
+			if func then func() end
+		end 
+	end)
 end
 
 

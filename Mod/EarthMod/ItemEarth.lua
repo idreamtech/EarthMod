@@ -89,29 +89,69 @@ function ItemEarth:TryCreate(itemStack, entityPlayer, x, y, z, side, data, side_
 		return;
 	end
 
-	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock) if alreadyBlock then
-		-- _guihelper.MessageBox(L"地图已生成");
-	else
-		_guihelper.MessageBox(L"点击确认后开始地图绘制", function(res)
-			if(res and res == _guihelper.DialogResult.Yes) then
-				-- if(EarthMod:GetWorldData("alreadyBlock") == nil or EarthMod:GetWorldData("alreadyBlock") == false) then
-				-- 	EarthMod:SetWorldData("alreadyBlock",true);
-				-- end
-				DBS:setValue(SysDB,"alreadyBlock",true);
-				local gisCommandText = "/gis -coordinate " .. SelectLocationTask.minlat .. " " .. SelectLocationTask.minlon.." ".. SelectLocationTask.maxlat .. " " .. SelectLocationTask.maxlon;
-		
-				if(SelectLocationTask.isChange)then
-					SelectLocationTask.isChange = false;
-					gisCommandText = gisCommandText .. " -cache true";
-				else
-					gisCommandText = gisCommandText .. " -cache false";
-				end
+	DBS:getValue(SysDB,"alreadyBlock",function(alreadyBlock)
+		if alreadyBlock then
+			-- _guihelper.MessageBox(L"地图已生成");
+		else
+			-- _guihelper.MessageBox(L"点击确认后开始地图绘制", function(res)
+			-- 	if(res and res == _guihelper.DialogResult.Yes) then
+			-- 		-- if(EarthMod:GetWorldData("alreadyBlock") == nil or EarthMod:GetWorldData("alreadyBlock") == false) then
+			-- 		-- 	EarthMod:SetWorldData("alreadyBlock",true);
+			-- 		-- end
+			-- 		DBS:setValue(SysDB,"alreadyBlock",true);
+			-- 		local gisCommandText = "/gis -coordinate " .. SelectLocationTask.minlat .. " " .. SelectLocationTask.minlon.." ".. SelectLocationTask.maxlat .. " " .. SelectLocationTask.maxlon;
+			
+			-- 		if(SelectLocationTask.isChange)then
+			-- 			SelectLocationTask.isChange = false;
+			-- 			gisCommandText = gisCommandText .. " -cache true";
+			-- 		else
+			-- 			gisCommandText = gisCommandText .. " -cache false";
+			-- 		end
 
-				CommandManager:RunCommand(gisCommandText);
-				self:boundaryCheck();
-			end
-		end, _guihelper.MessageBoxButtons.YesNo);
-	end end)
+			-- 		CommandManager:RunCommand(gisCommandText);
+			-- 		self:boundaryCheck();
+			-- 	end
+			-- end, _guihelper.MessageBoxButtons.YesNo);
+			NPL.load("(gl)script/apps/Aries/Creator/Game/GUI/EnterTextDialog.lua");
+			local EnterTextDialog = commonlib.gettable("MyCompany.Aries.Game.GUI.EnterTextDialog");
+			EnterTextDialog.ShowPage("点击确认,并输入地图旋转值(0~360)后开始地图绘制：", function(rotation)
+				if rotation then
+					-- 不输入值时候,rotation传递过来为空字符串,当作0处理
+					if rotation == "" then rotation = 0 end
+					-- if(EarthMod:GetWorldData("alreadyBlock") == nil or EarthMod:GetWorldData("alreadyBlock") == false) then
+					-- 	EarthMod:SetWorldData("alreadyBlock",true);
+					-- end
+					local result = tonumber(rotation);
+					if not result then
+						-- 转数字失败,不是数字,操作中止
+						_guihelper.MessageBox(L"输入的旋转值非数字,操作中止");
+						return
+					end
+					if tonumber(rotation) < 0 or tonumber(rotation) > 360 then
+						-- 数值范围必须0-360
+						_guihelper.MessageBox(L"输入的旋转值不在取值范围之内,操作中止");
+						return
+					end
+					DBS:setValue(SysDB,"alreadyBlock",true);
+					DBS:setValue(SysDB,"rotation",rotation);
+					local gisCommandText = "/gis -coordinate " .. SelectLocationTask.minlat .. " " .. SelectLocationTask.minlon.." ".. SelectLocationTask.maxlat .. " " .. SelectLocationTask.maxlon .. " " .. rotation;
+			
+					if(SelectLocationTask.isChange)then
+						SelectLocationTask.isChange = false;
+						gisCommandText = gisCommandText .. " -cache true";
+					else
+						gisCommandText = gisCommandText .. " -cache false";
+					end
+
+					CommandManager:RunCommand(gisCommandText);
+					self:boundaryCheck();
+				else
+					-- 点击右上角X按钮情况下,不做任何操作
+					return
+				end
+			end)
+		end 
+	end)
 	-- if(EarthMod:GetWorldData("alreadyBlock")) then
 	-- 	_guihelper.MessageBox(L"地图已生成");
 	-- 	return;
