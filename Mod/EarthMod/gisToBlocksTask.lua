@@ -1187,7 +1187,7 @@ function gisToBlocks:reInitWorld()
 			firstPo = {lat=self.minlat,lon=self.minlon},lastPo = {lat=self.maxlat,lon=self.maxlon}, -- 传入地理位置信息
 			rotation = self.rotation,
 		})
-		echo("重新初始化世界的旋转值:"..self.rotation)
+		-- echo("重新初始化世界的旋转值:"..self.rotation)
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
 		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);
 		self:startDrawTiles()
@@ -1231,7 +1231,7 @@ function gisToBlocks:initWorld()
 			firstPo = {lat=self.minlat,lon=self.minlon},lastPo = {lat=self.maxlat,lon=self.maxlon}, -- 传入地理位置信息
 			rotation = self.rotation,
 		})
-		echo("初始化世界的旋转值:"..self.rotation)
+		-- echo("初始化世界的旋转值:"..self.rotation)
 		self.cols, self.rows = TileManager.GetInstance():getIterSize();
 		LOG.std(nil,"debug","gisToBlocks","cols : "..self.cols.." rows : ".. self.rows);
 		self:startDrawTiles()

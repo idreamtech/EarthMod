@@ -218,7 +218,6 @@ function EarthMod:initMap(func)
 							gisToBlocks.maxlat = coordinate.maxlat
 							gisToBlocks.maxlon = coordinate.maxlon
 							gisToBlocks.rotation = rotation
-							echo{"rotation value is", gisToBlocks.rotation, rotation}
 							DBS:getValue(SysDB,"schoolName",function(schoolName)
 								if schoolName then
 									schoolName = string.gsub(schoolName, "\"", "");
