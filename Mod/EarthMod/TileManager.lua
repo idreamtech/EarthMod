@@ -370,7 +370,7 @@ end
 function TileManager:getForward(needStr) -- 正北为0度，东南西为90 180 270
 	local player = ParaScene.GetPlayer()
 	local facing = player:GetFacing() + 3 -- 0 ~ 6 0 指向西
-	local ro = (facing * 60 + 270) % 360 -- 转换为指向旋转度 --  + self.userRotate
+	local ro = (facing * 60 + 270 - self.userRotate) % 360 -- 转换为指向旋转度 -- 
 	if needStr then
 		local dt = 10 -- 定位精度（方向的夹角差）
 		local tb = {{"北","东"},{"东","南"},{"南","西"},{"西","北"}}
