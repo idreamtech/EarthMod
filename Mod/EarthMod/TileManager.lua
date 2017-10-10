@@ -241,6 +241,7 @@ function TileManager:getInTile(x,y,z)
 	if y == nil and z == nil and x and type(x) == "table" then
 		z = x.z;y = x.y; x = x.x
 	end
+	x,y,z = self:coordReverseTransform(x,y,z)
 	for i,one in pairs(self.tiles) do
 		if one and type(one) == "table" then
 			if (not one.rect) then
@@ -464,14 +465,14 @@ end
 function TileManager:coordTransform(x,y,z)
 	if (not self.userRotate) or (self.userRotate == 0) or (not self.cenPo) then return x,y,z end
 	local x2,z2 = self:twoDimensionRotate(self.cenPo.x,self.cenPo.z,x,z,-self.userRotate)
-	return math.floor(x2),y,math.floor(z2)
+	return x2,y,z2
 end
 
 -- 坐标逆向转换
 function TileManager:coordReverseTransform(x,y,z)
 	if (not self.userRotate) or (self.userRotate == 0) or (not self.cenPo) then return x,y,z end
 	local x2,z2 = self:twoDimensionRotate(self.cenPo.x,self.cenPo.z,x,z,self.userRotate)
-	return math.floor(x2),y,math.floor(z2)
+	return x2,y,z2
 end
 
 --[[

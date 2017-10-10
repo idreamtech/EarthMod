@@ -148,8 +148,7 @@ function gisToBlocks:ctor()
 	self.history = {};
 end
 
-function gisToBlocks:AddBlock(x, y, z, block_id, block_data, tile)
-	local spx, spy, spz = TileManager.GetInstance():coordTransform(x, y, z) -- 旋转地图绘制
+function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data, tile)
 	if(self.add_to_history) then
 		local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 		local from_data, from_entity_data;
@@ -804,8 +803,24 @@ function gisToBlocks:PNGToBlockScale(raster, px, py, pz, tile)
 		local function CreateBlock_(ix, iy, block_id, block_data)
 			local spx, spy, spz = px+ix-(PngWidth/2 * ComVar.factor), py, pz+iy-(PngWidth/2 * ComVar.factor);
 			if TileManager.GetInstance():checkMarkArea(spx,spy,spz) then
-				ParaBlockWorld.LoadRegion(block_world, spx, spy, spz);
-				self:AddBlock(spx, spy, spz, block_id, block_data, tile);
+				-- 最邻近插值算法
+				local lx, ly, lz = TileManager.GetInstance():coordTransform(spx,spy,spz) -- 旋转地图绘制
+				local ix,mx,iz,mz = math.floor(lx),math.ceil(lx),math.floor(lz),math.ceil(lz)
+				local pod = {x=math.round(lx),y=math.round(lz)}
+				local pos = {{x=ix,y=iz},{x=mx,y=iz},{x=ix,y=mz},{x=mx,y=mz}}
+				for k,po in pairs(pos) do
+					if po.x == pod.x and po.y == pod.y then
+						ParaBlockWorld.LoadRegion(block_world, po.x, ly, po.y);
+						self:AddBlock(po.x, ly, po.y, block_id, block_data, tile);
+					else
+						local data = BlockEngine:GetBlockData(po.x, ly, po.y)
+						if data == 0 then
+							ParaBlockWorld.LoadRegion(block_world, po.x, ly, po.y);
+							self:AddBlock(po.x, ly, po.y, block_id, block_data, tile);
+						end
+					end
+				end
+				--
 			end
 		end
 
