@@ -319,6 +319,8 @@ function MapGeography:getGPo(x,y,z)
         z = x.z;y = x.y; x = x.x
     end
     local tpack = TileManager.GetInstance()
+    x,y,z = tpack:coordReverseTransform(x,y,z) -- 逆向二维旋转校园
+    x = math.floor(x);z = math.floor(z)
     local dx = (x - tpack.firstBlockPo.x) / self.tileSize + tpack.beginPo.x
     local dz = nil
     if ComVar.usingMap == "BAIDU" then dz = (z - tpack.firstBlockPo.z) / self.tileSize + tpack.beginPo.y
@@ -341,8 +343,10 @@ function MapGeography:getParaPo(lon,lat)
     local dz = nil
     if ComVar.usingMap == "BAIDU" then dz = (tileZ - tpack.beginPo.y) * self.tileSize + z + tpack.firstBlockPo.z
     else dz = (tpack.beginPo.y - tileZ + 1) * self.tileSize - z + tpack.firstBlockPo.z end
-    echo({x = math.round(dx),y = tpack.firstBlockPo.y,z = math.round(dz)})
-    return {x = math.round(dx),y = tpack.firstBlockPo.y,z = math.round(dz)}
+    local x1,y1,z1 = math.round(dx),tpack.firstBlockPo.y,math.round(dz)
+    local x2,y2,z2 = tpack:coordTransform(x1,y1,z1) -- 二维旋转校园
+    echo{x=x2,y=y2,z=z2}
+    return {x=math.floor(x2),y=y2,z=math.floor(z2)}
 end
 
 -- GPS偏移纠正到百度
