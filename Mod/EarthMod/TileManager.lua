@@ -35,6 +35,7 @@ TileManager.curTimes = 0
 TileManager.passTimes = 0
 TileManager.pushMapFlag = {} -- 瓦块下载数据 以1,1为起点的瓦片数据
 TileManager.idHL = nil
+TileManager.userRotate = 0
 
 function math.round(decimal)
 	-- decimal = decimal * 100
@@ -61,16 +62,18 @@ function TileManager:ctor()
 	self.passTimes = 0
 	self.pushMapFlag = {}
 	self.idHL = nil
+	self.userRotate = 0
 	curInstance = self
 end
 
 -- lid = gisToBlocks.tile_MIN_X,bid = gisToBlocks.tile_MIN_Y,
--- rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y,
+-- rid = gisToBlocks.tile_MAX_X,tid = gisToBlocks.tile_MAX_Y, rotation: 顺时针转多少度
 function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐标（左下点），瓦片大小
 	self.tileSize = para.tileSize or TILE_SIZE
 	self.col = para.rid - para.lid + 1
 	if ComVar.usingMap == "BAIDU" then self.row = para.tid - para.bid + 1
 	else self.row = para.bid - para.tid + 1 end
+	self.userRotate = para.rotation or 0
 	self.oPo = {x = para.bx - (self.col - 1) * self.tileSize * 0.5,y = para.by,z = para.bz - (self.row - 1) * self.tileSize * 0.5}
 	self.idHL = {col=para.lid,row=para.bid} -- 记录左下角行列式
 	self.beginPo = {x = para.lid, y = para.bid}
@@ -83,16 +86,16 @@ function TileManager:init(para) -- 左下行列号，右上行列号，焦点坐
 	self.firstPo = MapGeography.GetInstance():getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
 	self.lastPo = MapGeography.GetInstance():getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
 	self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
-
 end
 
--- 扩充校园；传入新的 firstPo,lastPo,lid,bid,rid,tid 调整瓦片数据
+-- 扩充校园；传入新的 firstPo,lastPo,lid,bid,rid,tid 调整瓦片数据, rotation: 顺时针转多少度
 function TileManager:reInit(para)
 	self.col = para.rid - para.lid + 1
 	-- self.row = para.bid - para.tid + 1
 	if ComVar.usingMap == "BAIDU" then self.row = para.tid - para.bid + 1
 	else self.row = para.bid - para.tid + 1 end
 	self.count = self.col * self.row
+	self.userRotate = para.rotation or 0
 	self.size = {width = self.tileSize * self.col,height = self.tileSize * self.row}
 	self.firstGPo = para.firstPo -- 传入地理位置信息
 	self.lastGPo = para.lastPo
@@ -366,7 +369,7 @@ end
 function TileManager:getForward(needStr) -- 正北为0度，东南西为90 180 270
 	local player = ParaScene.GetPlayer()
 	local facing = player:GetFacing() + 3 -- 0 ~ 6 0 指向西
-	local ro = (facing * 60 + 270) % 360 -- 转换为指向旋转度
+	local ro = (facing * 60 + 270) % 360 -- 转换为指向旋转度 --  + self.userRotate
 	if needStr then
 		local dt = 10 -- 定位精度（方向的夹角差）
 		local tb = {{"北","东"},{"东","南"},{"南","西"},{"西","北"}}
@@ -410,6 +413,7 @@ function TileManager:Save()
 	tileData.firstGPo = self.firstGPo -- 传入地理位置信息
 	tileData.lastGPo = self.lastGPo
 	tileData.idHL = self.idHL
+	tileData.userRotate = self.userRotate
 	DBStore.GetInstance():saveTable(self:db(),tileData)
 end
 -- 读取参数
@@ -431,6 +435,7 @@ function TileManager:Load()
 		self.firstGPo = tileData.firstGPo -- 传入地理位置信息
 		self.lastGPo = tileData.lastGPo
 		self.idHL = tileData.idHL
+		self.userRotate = tileData.userRotate
 		self.firstPo = MapGeography.GetInstance():getParaPo(self.firstGPo.lon,self.firstGPo.lat) -- 计算出标注左下角坐标
 		self.lastPo = MapGeography.GetInstance():getParaPo(self.lastGPo.lon,self.lastGPo.lat) -- 计算出标注右上角坐标
 		self.cenPo = {x=math.ceil((self.firstPo.x + self.lastPo.x) * 0.5),y=self.firstPo.y,z=math.ceil((self.firstPo.z + self.lastPo.z) * 0.5)}
@@ -444,6 +449,29 @@ function TileManager:checkMarkArea(x, y, z)
 	-- return true
 	if x >= self.firstPo.x and x <= self.lastPo.x and z >= self.firstPo.z and z <= self.lastPo.z then return true end
 	return false
+end
+
+-- 二维图形旋转公式（传入原点坐标x0y0 起点坐标x1y1 旋转角度ro 计算返回终点坐标x2y2）
+function TileManager:twoDimensionRotate(x0,y0,x1,y1,ro)
+	local x2,y2 = nil,nil
+	local cos,sin = math.cos(math.rad(ro)),math.sin(math.rad(ro))
+	x2 = (x1 - x0) * cos - (y1 - y0) * sin + x0
+	y2 = (x1 - x0) * sin + (y1 - y0) * cos + y0
+	return x2,y2
+end
+
+-- 坐标转换 http://blog.csdn.net/zhouxuguang236/article/details/31820095
+function TileManager:coordTransform(x,y,z)
+	if (not self.userRotate) or (self.userRotate == 0) or (not self.cenPo) then return x,y,z end
+	local x2,z2 = self:twoDimensionRotate(self.cenPo.x,self.cenPo.z,x,z,-self.userRotate)
+	return math.floor(x2),y,math.floor(z2)
+end
+
+-- 坐标逆向转换
+function TileManager:coordReverseTransform(x,y,z)
+	if (not self.userRotate) or (self.userRotate == 0) or (not self.cenPo) then return x,y,z end
+	local x2,z2 = self:twoDimensionRotate(self.cenPo.x,self.cenPo.z,x,z,self.userRotate)
+	return math.floor(x2),y,math.floor(z2)
 end
 
 --[[

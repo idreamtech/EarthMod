@@ -148,7 +148,8 @@ function gisToBlocks:ctor()
 	self.history = {};
 end
 
-function gisToBlocks:AddBlock(spx, spy, spz, block_id, block_data, tile)
+function gisToBlocks:AddBlock(x, y, z, block_id, block_data, tile)
+	local spx, spy, spz = TileManager.GetInstance():coordTransform(x, y, z) -- 旋转地图绘制
 	if(self.add_to_history) then
 		local from_id = BlockEngine:GetBlockId(spx,spy,spz);
 		local from_data, from_entity_data;
